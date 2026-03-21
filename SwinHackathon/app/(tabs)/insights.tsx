@@ -1,143 +1,330 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme } from '@/constants/theme';
+import { StockTrendChart } from '@/components/finance/StockTrendChart';
+import {
+  formatCompactCurrency,
+  formatCurrency,
+  formatDisplayCurrency,
+} from '@/components/finance/finance-utils';
+import { budgetCategories, spendingInsights } from '@/components/home/mock-data';
+import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-type UtilityPreset = {
-  id: string;
-  keyLabel: string;
-  code: string;
-  title: string;
-  description: string;
-  primaryLabel: string;
-  secondaryLabel?: string;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-};
-
-const utilityPresets: UtilityPreset[] = [
-  {
-    id: 'not-found',
-    keyLabel: '404',
-    code: 'Error Code: 404',
-    title: 'Not Found',
-    description: 'Unfortunately, this page is not found. Please try again sometime later or refresh.',
-    primaryLabel: 'Go Home',
-    secondaryLabel: 'Or Contact Support',
-    icon: 'find-in-page',
-  },
-  {
-    id: 'server-error',
-    keyLabel: '501',
-    code: 'Error Code: 501',
-    title: 'Server Error',
-    description: 'Unfortunately, we encountered an issue with our server. Please try again later.',
-    primaryLabel: 'Try Again',
-    secondaryLabel: 'Or Contact Support',
-    icon: 'dns',
-  },
-  {
-    id: 'no-internet',
-    keyLabel: 'Net',
-    code: 'Error Code: 100',
-    title: 'No Internet!',
-    description: 'Unfortunately, we encountered an issue with our server. Please try again or later.',
-    primaryLabel: 'Try Again',
-    secondaryLabel: 'Or Contact Support',
-    icon: 'wifi-off',
-  },
-  {
-    id: 'maintenance',
-    keyLabel: 'Mtn',
-    code: 'Come back in 2d 11h',
-    title: 'Maintenance',
-    description: 'Unfortunately, we encountered an issue with our server. Please try again or later.',
-    primaryLabel: 'Go Home',
-    secondaryLabel: 'Or Contact Support',
-    icon: 'construction',
-  },
-  {
-    id: 'not-allowed',
-    keyLabel: '555',
-    code: 'Error Code: 555',
-    title: 'Not Allowed',
-    description: 'Unfortunately, we encountered an issue with our server. Please try again or later.',
-    primaryLabel: 'Go Home',
-    secondaryLabel: 'Or Contact Support',
-    icon: 'block',
-  },
-  {
-    id: 'feature-locked',
-    keyLabel: 'Pro',
-    code: 'Go Pro',
-    title: 'Feature Locked',
-    description: 'Unfortunately, we encountered an issue with our server. Please try again or later.',
-    primaryLabel: 'Go Pro',
-    icon: 'lock',
-  },
-];
+function formatSignedPercent(value: number) {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
 
 export default function InsightsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { issue } = useLocalSearchParams<{ issue?: string }>();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const selectedPreset = useMemo(
-    () => utilityPresets.find((item) => item.id === issue) ?? null,
-    [issue],
+  const { stocks, stockHoldings, watchlistSymbols, displayCurrency, defaultStockSymbol } =
+    useFinance();
+  const [selectedActivityDay, setSelectedActivityDay] = React.useState(
+    spendingInsights[3] ?? spendingInsights[0]
   );
-
-  if (!selectedPreset) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <View style={styles.defaultState}>
-          <View style={styles.defaultIconWrap}>
-            <MaterialIcons name="insights" size={34} color={colors.primaryDark} />
-          </View>
-          <Text style={styles.defaultTitle}>Insights</Text>
-          <Text style={styles.defaultDescription}>
-            Utility screens chi hien khi he thong gap van de. Khi khong co loi, man nay se giu trang thai binh thuong.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const weeklyAverage =
+    spendingInsights.reduce((sum, item) => sum + item.amount, 0) / spendingInsights.length;
+  const holdings = stockHoldings
+    .map((holding) => {
+      const stock = stocks.find((item) => item.symbol === holding.symbol);
+      return stock ? { holding, stock } : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const watchlist = watchlistSymbols
+    .map((symbol) => stocks.find((item) => item.symbol === symbol))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const portfolioValue = holdings.reduce(
+    (sum, item) => sum + item.holding.shares * item.stock.price,
+    0
+  );
+  const portfolioDayChange = holdings.reduce(
+    (sum, item) => sum + item.holding.shares * item.stock.dayChange,
+    0
+  );
+  const featuredStock =
+    stocks.find((item) => item.symbol === defaultStockSymbol) ??
+    holdings[0]?.stock ??
+    watchlist[0] ??
+    stocks[0];
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Utility & Helper</Text>
+    <ScrollView
+      style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.heroCard, { backgroundColor: colors.primaryDark }]}>
+        <Text style={[styles.eyebrow, { color: hexToRgba(colors.card, 0.74) }]}>
+          Insights & markets
+        </Text>
+        <Text style={[styles.title, { color: colors.card }]}>
+          Spending is on track, and your portfolio is still trending upward this week.
+        </Text>
+      </View>
 
-        <View style={styles.phoneFrame}>
-          <View style={styles.statusBarRow}>
-            <Text style={styles.statusBarTime}>9:41</Text>
-            <View style={styles.statusBarIcons}>
-              <MaterialIcons name="signal-cellular-4-bar" size={12} color={colors.text} />
-              <MaterialIcons name="wifi" size={12} color={colors.text} />
-              <MaterialIcons name="battery-full" size={12} color={colors.text} />
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Portfolio Snapshot</Text>
+          <Pressable onPress={() => router.push('/(finance)/investments')}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.portfolioHeader}>
+          <View>
+            <Text style={[styles.portfolioValue, { color: colors.text }]}>
+              {formatDisplayCurrency(portfolioValue, displayCurrency)}
+            </Text>
+            <Text
+              style={[
+                styles.portfolioMeta,
+                { color: portfolioDayChange >= 0 ? colors.primaryDark : colors.error },
+              ]}
+            >
+              {portfolioDayChange >= 0 ? '+' : '-'}
+              {formatDisplayCurrency(Math.abs(portfolioDayChange), displayCurrency)} today
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.portfolioBadge,
+              { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+            ]}
+          >
+            <MaterialIcons name="query-stats" size={22} color={colors.primaryDark} />
+          </View>
+        </View>
+
+        {featuredStock ? (
+          <>
+            <View style={styles.featuredRow}>
+              <View>
+                <Text style={[styles.featuredSymbol, { color: colors.text }]}>
+                  {featuredStock.symbol}
+                </Text>
+                <Text style={[styles.featuredName, { color: hexToRgba(colors.text, 0.56) }]}>
+                  {featuredStock.name}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.featuredChange,
+                  {
+                    color: featuredStock.changePercent >= 0 ? colors.primaryDark : colors.error,
+                  },
+                ]}
+              >
+                {formatSignedPercent(featuredStock.changePercent)}
+              </Text>
+            </View>
+
+            <View style={styles.chartWrap}>
+              <StockTrendChart
+                values={featuredStock.chart}
+                accent={featuredStock.accent}
+                labelColor={hexToRgba(colors.text, 0.44)}
+                height={94}
+                barWidth={10}
+              />
+            </View>
+
+            <View style={styles.buttonRow}>
+              <ThemeButton
+                title="Buy stock"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(finance)/buy-stock',
+                    params: { symbol: featuredStock.symbol },
+                  })
+                }
+                colorBackground={colors.primaryDark}
+                colorText={colors.card}
+                style={styles.halfButton}
+              />
+              <ThemeButton
+                title="View chart"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(finance)/stock/[symbol]',
+                    params: { symbol: featuredStock.symbol },
+                  })
+                }
+                colorBackground={colors.backgroundSoft}
+                colorText={colors.text}
+                style={styles.halfButton}
+              />
+            </View>
+          </>
+        ) : null}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Watchlist</Text>
+          <Pressable onPress={() => router.push('/(finance)/investments')}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Manage</Text>
+          </Pressable>
+        </View>
+
+        {watchlist.slice(0, 4).map((stock) => (
+          <Pressable
+            key={stock.symbol}
+            style={[
+              styles.watchRow,
+              { borderBottomColor: hexToRgba(colors.primaryDark, 0.08) },
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: '/(finance)/stock/[symbol]',
+                params: { symbol: stock.symbol },
+              })
+            }
+          >
+            <View style={styles.watchLeft}>
+              <View
+                style={[
+                  styles.watchIcon,
+                  { backgroundColor: hexToRgba(stock.accent, 0.12) },
+                ]}
+              >
+                <MaterialIcons name={stock.icon} size={18} color={stock.accent} />
+              </View>
+              <View>
+                <Text style={[styles.watchSymbol, { color: colors.text }]}>{stock.symbol}</Text>
+                <Text style={[styles.watchName, { color: hexToRgba(colors.text, 0.52) }]}>
+                  {stock.sector}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.watchRight}>
+              <Text style={[styles.watchPrice, { color: colors.text }]}>
+                {formatDisplayCurrency(stock.price, displayCurrency)}
+              </Text>
+              <Text
+                style={[
+                  styles.watchChange,
+                  { color: stock.changePercent >= 0 ? colors.primaryDark : colors.error },
+                ]}
+              >
+                {formatSignedPercent(stock.changePercent)}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Weekly Activity</Text>
+          <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+            {selectedActivityDay.label}
+          </Text>
+        </View>
+        <View style={styles.chartRow}>
+          {spendingInsights.map((item) => (
+            <Pressable
+              key={item.label}
+              style={styles.chartColumn}
+              onPress={() => setSelectedActivityDay(item)}
+            >
+              <View
+                style={[
+                  styles.chartBar,
+                  {
+                    height: 30 + item.value,
+                    backgroundColor:
+                      selectedActivityDay.label === item.label
+                        ? colors.primaryDark
+                        : item.value > 80
+                          ? colors.primaryDark
+                          : hexToRgba(colors.primaryDark, 0.2),
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.chartLabel,
+                  {
+                    color:
+                      selectedActivityDay.label === item.label
+                        ? colors.primaryDark
+                        : hexToRgba(colors.text, 0.52),
+                  },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View
+          style={[
+            styles.activityDetailCard,
+            { backgroundColor: hexToRgba(colors.primaryDark, 0.06) },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={[styles.activityDetailLabel, { color: hexToRgba(colors.text, 0.52) }]}>
+                {selectedActivityDay.label} spending
+              </Text>
+              <Text style={[styles.activityDetailValue, { color: colors.text }]}>
+                {formatCurrency(selectedActivityDay.amount)}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.activityBadge,
+                { backgroundColor: hexToRgba(colors.primaryDark, 0.1) },
+              ]}
+            >
+              <Text style={[styles.activityBadgeText, { color: colors.primaryDark }]}>
+                {selectedActivityDay.transactions} txns
+              </Text>
             </View>
           </View>
 
-          <View style={styles.artWrap}>
-            <View style={styles.artCircle}>
-              <MaterialIcons name={selectedPreset.icon} size={70} color={hexToRgba(colors.text, 0.8)} />
+          <Text style={[styles.activityDetailBody, { color: hexToRgba(colors.text, 0.58) }]}>
+            Top category: {selectedActivityDay.topCategory}. {selectedActivityDay.summary}
+          </Text>
+
+          <Text style={[styles.activityDetailFooter, { color: colors.primaryDark }]}>
+            Weekly average {formatCurrency(weeklyAverage)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Categories</Text>
+          <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+            {formatCompactCurrency(
+              budgetCategories.reduce((sum, item) => sum + item.spent, 0)
+            )}
+          </Text>
+        </View>
+
+        {budgetCategories.map((item) => (
+          <View key={item.id} style={styles.categoryRow}>
+            <View style={styles.categoryTextWrap}>
+              <View
+                style={[
+                  styles.categoryIcon,
+                  { backgroundColor: hexToRgba(item.accent, 0.12) },
+                ]}
+              >
+                <MaterialIcons name={item.icon} size={18} color={item.accent} />
+              </View>
+              <Text style={[styles.categoryName, { color: colors.text }]}>{item.name}</Text>
             </View>
-            <MaterialIcons
-              name="settings"
-              size={22}
-              color={hexToRgba(colors.text, 0.18)}
-              style={styles.floatLeft}
-            />
-            <MaterialIcons
-              name="blur-circular"
-              size={20}
-              color={hexToRgba(colors.text, 0.18)}
-              style={styles.floatRight}
-            />
+            <Text style={[styles.categoryValue, { color: item.accent }]}>
+              {formatCurrency(item.spent)}
+            </Text>
           </View>
 
           <View style={styles.badge}>
@@ -145,193 +332,233 @@ export default function InsightsScreen() {
             <Text style={styles.badgeText}>{selectedPreset.code}</Text>
           </View>
 
-          <Text style={styles.title}>{selectedPreset.title}</Text>
-          <Text style={styles.description}>{selectedPreset.description}</Text>
-
-          <Pressable style={styles.primaryButton} onPress={() => router.replace('/(tabs)/home')}>
-            <MaterialIcons name="home-filled" size={14} color={colors.card} />
-            <Text style={styles.primaryButtonText}>{selectedPreset.primaryLabel}</Text>
-          </Pressable>
-
-          {selectedPreset.secondaryLabel ? (
-            <Pressable>
-              <Text style={styles.secondaryAction}>{selectedPreset.secondaryLabel}</Text>
-            </Pressable>
-          ) : null}
-
-          <View style={styles.homeIndicator} />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <ThemeButton
+        title="Open investment center"
+        onPress={() => router.push('/(finance)/investments')}
+        colorBackground={colors.primaryDark}
+        colorText={colors.card}
+      />
+    </ScrollView>
   );
 }
 
-function createStyles(colors: ColorTheme) {
-  return StyleSheet.create({
-    screen: {
-      flex: 1,
-      backgroundColor: colors.backgroundSoft,
-    },
-    content: {
-      paddingHorizontal: 16,
-      paddingTop: 10,
-      paddingBottom: 110,
-      gap: 16,
-      alignItems: 'center',
-    },
-    defaultState: {
-      flex: 1,
-      paddingHorizontal: 24,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 14,
-    },
-    defaultIconWrap: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: hexToRgba(colors.primaryDark, 0.12),
-    },
-    defaultTitle: {
-      fontSize: 26,
-      fontWeight: '900',
-      color: colors.text,
-      letterSpacing: -0.4,
-    },
-    defaultDescription: {
-      maxWidth: 320,
-      textAlign: 'center',
-      fontSize: 14,
-      lineHeight: 20,
-      color: hexToRgba(colors.text, 0.66),
-    },
-    heading: {
-      width: '100%',
-      fontSize: 30,
-      fontWeight: '900',
-      color: colors.text,
-      letterSpacing: -0.5,
-      marginTop: 6,
-    },
-    phoneFrame: {
-      width: '100%',
-      maxWidth: 360,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      paddingHorizontal: 12,
-      paddingTop: 8,
-      paddingBottom: 10,
-      alignItems: 'center',
-    },
-    statusBarRow: {
-      width: '100%',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-      paddingHorizontal: 2,
-    },
-    statusBarTime: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    statusBarIcons: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
-    },
-    artWrap: {
-      width: '100%',
-      height: 250,
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-    },
-    artCircle: {
-      width: 190,
-      height: 190,
-      borderRadius: 95,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    floatLeft: {
-      position: 'absolute',
-      left: 48,
-      top: 70,
-    },
-    floatRight: {
-      position: 'absolute',
-      right: 52,
-      bottom: 48,
-    },
-    badge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      borderWidth: 1,
-      borderColor: hexToRgba(colors.error, 0.2),
-      backgroundColor: hexToRgba(colors.error, 0.08),
-      borderRadius: 12,
-      paddingHorizontal: 10,
-      height: 24,
-    },
-    badgeText: {
-      color: colors.error,
-      fontSize: 11,
-      fontWeight: '700',
-    },
-    title: {
-      marginTop: 14,
-      fontSize: 40,
-      lineHeight: 44,
-      fontWeight: '900',
-      letterSpacing: -0.8,
-      color: colors.text,
-    },
-    description: {
-      marginTop: 10,
-      textAlign: 'center',
-      color: hexToRgba(colors.text, 0.64),
-      fontSize: 14,
-      lineHeight: 20,
-      width: '90%',
-    },
-    primaryButton: {
-      marginTop: 16,
-      width: '100%',
-      borderRadius: 20,
-      height: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row',
-      gap: 8,
-      backgroundColor: colors.primaryDark,
-    },
-    primaryButtonText: {
-      color: colors.card,
-      fontSize: 14,
-      fontWeight: '800',
-    },
-    secondaryAction: {
-      marginTop: 16,
-      fontSize: 14,
-      fontWeight: '700',
-      color: colors.primaryDark,
-    },
-    homeIndicator: {
-      marginTop: 40,
-      width: 120,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: hexToRgba(colors.text, 0.9),
-    },
-  });
-}
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  content: {
+    paddingTop: 66,
+    paddingHorizontal: 20,
+    paddingBottom: 110,
+    gap: 16,
+  },
+  heroCard: {
+    borderRadius: 26,
+    padding: 20,
+  },
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+  },
+  title: {
+    marginTop: 10,
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: '800',
+  },
+  card: {
+    borderRadius: 24,
+    padding: 18,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  sectionLink: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  portfolioHeader: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 14,
+  },
+  portfolioValue: {
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  portfolioMeta: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  portfolioBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  featuredSymbol: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  featuredName: {
+    marginTop: 4,
+    fontSize: 12,
+  },
+  featuredChange: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chartWrap: {
+    marginTop: 16,
+  },
+  buttonRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  halfButton: {
+    flex: 1,
+  },
+  watchRow: {
+    minHeight: 70,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  watchLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  watchIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  watchSymbol: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  watchName: {
+    marginTop: 4,
+    fontSize: 12,
+  },
+  watchRight: {
+    alignItems: 'flex-end',
+  },
+  watchPrice: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  watchChange: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chartRow: {
+    marginTop: 20,
+    height: 150,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  chartColumn: {
+    alignItems: 'center',
+  },
+  chartBar: {
+    width: 24,
+    borderRadius: 12,
+  },
+  chartLabel: {
+    marginTop: 10,
+    fontSize: 12,
+  },
+  activityDetailCard: {
+    marginTop: 18,
+    borderRadius: 18,
+    padding: 14,
+  },
+  activityDetailLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  activityDetailValue: {
+    marginTop: 6,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  activityBadge: {
+    minHeight: 28,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  activityDetailBody: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  activityDetailFooter: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  categoryRow: {
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  categoryTextWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  categoryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  categoryValue: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+});

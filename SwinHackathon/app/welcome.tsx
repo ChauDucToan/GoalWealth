@@ -1,0 +1,1093 @@
+import { ThemeButton } from '@/components/ThemeButton';
+import { hexToRgba } from '@/components/auth/AuthKit';
+import { ColorTheme } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme-colors';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useRef, useState } from 'react';
+import {
+  FlatList,
+  ListRenderItemInfo,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+
+type Slide = {
+  id: string;
+  title: string;
+  description: string;
+  backgroundColor: string;
+  renderIllustration: (colors: ColorTheme) => React.ReactNode;
+};
+
+function AccentShape({
+  colors,
+  top,
+  left,
+  right,
+  bottom,
+  icon,
+  tint,
+}: {
+  colors: ColorTheme;
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  tint: 'warning' | 'secondary' | 'error' | 'background';
+}) {
+  const colorMap = {
+    warning: colors.warning,
+    secondary: colors.secondary,
+    error: colors.error,
+    background: colors.primaryDark,
+  };
+
+  return (
+    <MaterialIcons
+      name={icon}
+      size={20}
+      color={colorMap[tint]}
+      style={{ position: 'absolute', top, left, right, bottom }}
+    />
+  );
+}
+
+function BrandIllustration({ colors }: { colors: ColorTheme }) {
+  return (
+    <View style={styles.brandIllustration}>
+      <View
+        style={[
+          styles.brandBadge,
+          {
+            backgroundColor: hexToRgba(colors.primaryDark, 0.08),
+            shadowColor: colors.primaryDark,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons name="robot-outline" size={54} color={colors.primaryDark} />
+      </View>
+      <Text style={[styles.brandTitle, { color: colors.text }]}>finpal</Text>
+    </View>
+  );
+}
+
+function BudgetLine({
+  colors,
+  icon,
+  label,
+  value,
+}: {
+  colors: ColorTheme;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.budgetLine}>
+      <View style={styles.rowGap}>
+        <MaterialIcons name={icon} size={16} color={hexToRgba(colors.text, 0.46)} />
+        <Text style={[styles.budgetLineLabel, { color: colors.text }]}>{label}</Text>
+      </View>
+      <Text style={[styles.budgetLineValue, { color: colors.text }]}>{value}</Text>
+    </View>
+  );
+}
+
+function BudgetIllustration({ colors }: { colors: ColorTheme }) {
+  return (
+    <View style={styles.illustrationStage}>
+      <AccentShape colors={colors} top={20} right={24} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={126} left={16} icon="stars" tint="warning" />
+
+      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+        <View
+          style={[
+            styles.ledgerCard,
+            {
+              backgroundColor: colors.card,
+              shadowColor: colors.primaryDark,
+            },
+          ]}
+        >
+          <View style={styles.rowBetween}>
+            <View style={styles.rowGap}>
+              <View
+                style={[
+                  styles.smallRoundBadge,
+                  { backgroundColor: hexToRgba(colors.primaryDark, 0.12) },
+                ]}
+              >
+                <MaterialIcons name="settings" size={15} color={colors.primaryDark} />
+              </View>
+              <View>
+                <Text style={[styles.ledgerTitle, { color: colors.text }]}>
+                  Your budget this month
+                </Text>
+                <Text style={[styles.ledgerMeta, { color: hexToRgba(colors.text, 0.56) }]}>
+                  Good job! You have $200 left.
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={18} color={hexToRgba(colors.text, 0.34)} />
+          </View>
+
+          <View
+            style={[
+              styles.progressTrack,
+              { backgroundColor: hexToRgba(colors.primaryDark, 0.1) },
+            ]}
+          >
+            <View
+              style={[
+                styles.progressValue,
+                { width: '68%', backgroundColor: colors.primaryDark },
+              ]}
+            />
+          </View>
+
+          <BudgetLine
+            colors={colors}
+            icon="restaurant"
+            label="Food & Dining"
+            value="$158 of $200"
+          />
+          <BudgetLine
+            colors={colors}
+            icon="sports-esports"
+            label="Entertainment"
+            value="$99 of $150"
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function AssistantIllustration({ colors }: { colors: ColorTheme }) {
+  return (
+    <View style={styles.illustrationStage}>
+      <AccentShape colors={colors} top={18} left={14} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={162} right={16} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={108} left={6} icon="change-history" tint="secondary" />
+
+      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+        <View
+          style={[
+            styles.chatBubbleRight,
+            {
+              backgroundColor: colors.card,
+              shadowColor: colors.primaryDark,
+            },
+          ]}
+        >
+          <Text style={[styles.chatPrompt, { color: colors.primaryDark }]}>
+            What&apos;s my total spending on grocery last month?
+          </Text>
+          <View
+            style={[
+              styles.avatarBadge,
+              { backgroundColor: hexToRgba(colors.text, 0.1) },
+            ]}
+          >
+            <MaterialIcons name="person" size={17} color={colors.text} />
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.chatBubbleLeft,
+            {
+              backgroundColor: colors.card,
+              shadowColor: colors.primaryDark,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.avatarBadge,
+              { backgroundColor: hexToRgba(colors.primaryDark, 0.12) },
+            ]}
+          >
+            <MaterialCommunityIcons name="robot-outline" size={17} color={colors.primaryDark} />
+          </View>
+          <Text style={[styles.chatReply, { color: colors.text }]}>
+            Based on history & habits, your total spending in January 2025 is $1,541.15.
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function GoalCard({
+  colors,
+  title,
+  progress,
+  rightLabel,
+  footerLeft,
+  footerRight,
+  icon,
+}: {
+  colors: ColorTheme;
+  title: string;
+  progress: number;
+  rightLabel: string;
+  footerLeft: string;
+  footerRight: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+}) {
+  return (
+    <View
+      style={[
+        styles.goalCard,
+        {
+          backgroundColor: colors.card,
+          shadowColor: colors.primaryDark,
+        },
+      ]}
+    >
+      <View style={styles.rowBetween}>
+        <View style={styles.rowGap}>
+          <MaterialIcons name={icon} size={17} color={hexToRgba(colors.text, 0.44)} />
+          <Text style={[styles.goalTitle, { color: colors.text }]}>{title}</Text>
+        </View>
+        <Text style={[styles.goalPercent, { color: hexToRgba(colors.text, 0.54) }]}>
+          {rightLabel}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.progressTrack,
+          { marginTop: 10, backgroundColor: hexToRgba(colors.primaryDark, 0.1) },
+        ]}
+      >
+        <View
+          style={[
+            styles.progressValue,
+            { width: `${progress * 100}%`, backgroundColor: colors.primaryDark },
+          ]}
+        />
+      </View>
+      <View style={[styles.rowBetween, { marginTop: 8 }]}>
+        <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.46) }]}>
+          {footerLeft}
+        </Text>
+        <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.46) }]}>
+          {footerRight}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function GoalsIllustration({ colors }: { colors: ColorTheme }) {
+  return (
+    <View style={styles.illustrationStage}>
+      <AccentShape colors={colors} top={18} left={18} icon="blur-circular" tint="secondary" />
+      <AccentShape colors={colors} top={164} right={20} icon="stars" tint="warning" />
+
+      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+        <GoalCard
+          colors={colors}
+          title="Trip to Paris"
+          progress={0.5}
+          rightLabel="50%"
+          footerLeft="Jan 13, 2025"
+          footerRight="1y 22d left"
+          icon="flight-takeoff"
+        />
+        <GoalCard
+          colors={colors}
+          title="University Saving"
+          progress={0.8}
+          rightLabel="80%"
+          footerLeft="Dec 18, 2026"
+          footerRight="2y 188d left"
+          icon="school"
+        />
+      </View>
+    </View>
+  );
+}
+
+function SavingsCard({
+  colors,
+  month,
+  amount,
+  delta,
+  tone,
+}: {
+  colors: ColorTheme;
+  month: string;
+  amount: string;
+  delta: string;
+  tone: 'positive' | 'negative';
+}) {
+  const fillColor = tone === 'positive' ? colors.primaryDark : '#E11D48';
+  const deltaColor = tone === 'positive' ? colors.primaryDark : '#E11D48';
+
+  return (
+    <View
+      style={[
+        styles.savingsCard,
+        {
+          backgroundColor: colors.card,
+          shadowColor: colors.primaryDark,
+        },
+      ]}
+    >
+      <Text style={[styles.savingsMonth, { color: hexToRgba(colors.text, 0.48) }]}>
+        {month}
+      </Text>
+      <Text style={[styles.savingsAmount, { color: colors.text }]}>{amount}</Text>
+      <Text style={[styles.savingsDelta, { color: deltaColor }]}>{delta}</Text>
+      <View
+        style={[
+          styles.savingsFill,
+          { backgroundColor: hexToRgba(fillColor, 0.18) },
+        ]}
+      >
+        <View style={[styles.savingsFillValue, { backgroundColor: fillColor }]} />
+      </View>
+    </View>
+  );
+}
+
+function SavingsIllustration({ colors }: { colors: ColorTheme }) {
+  return (
+    <View style={styles.illustrationStage}>
+      <AccentShape colors={colors} top={14} left={24} icon="close" tint="secondary" />
+      <AccentShape colors={colors} top={164} right={26} icon="lens" tint="background" />
+
+      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+        <View style={styles.savingsRow}>
+          <SavingsCard
+            colors={colors}
+            month="January"
+            amount="$1,487"
+            delta="+11.5%"
+            tone="positive"
+          />
+          <SavingsCard
+            colors={colors}
+            month="December"
+            amount="$2,487"
+            delta="-1.88%"
+            tone="negative"
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function GraphBubble({
+  colors,
+  label,
+  tiny = false,
+  textColor,
+  top,
+  left,
+  right,
+  bottom,
+}: {
+  colors: ColorTheme;
+  label: string;
+  tiny?: boolean;
+  textColor?: string;
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
+}) {
+  return (
+    <View
+      style={[
+        tiny ? styles.graphBubbleTiny : styles.graphBubble,
+        {
+          top,
+          left,
+          right,
+          bottom,
+          borderColor: hexToRgba(colors.primaryDark, 0.26),
+          backgroundColor: colors.card,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          tiny ? styles.graphBubbleTinyText : styles.graphBubbleText,
+          { color: textColor ?? colors.primaryDark },
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function SubscriptionsIllustration({ colors }: { colors: ColorTheme }) {
+  return (
+    <View style={styles.illustrationStage}>
+      <AccentShape colors={colors} top={74} right={12} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={174} left={34} icon="stars" tint="error" />
+
+      <View style={[styles.graphWrap, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+        <View
+          style={[
+            styles.graphCenter,
+            { backgroundColor: colors.primaryDark, shadowColor: colors.primaryDark },
+          ]}
+        >
+          <MaterialCommunityIcons name="robot-outline" size={44} color={colors.card} />
+        </View>
+
+        <GraphBubble
+          colors={colors}
+          label="NETFLIX"
+          top={48}
+          left={18}
+          textColor="#E11D48"
+        />
+        <GraphBubble
+          colors={colors}
+          label="Pay"
+          top={24}
+          right={18}
+          textColor="#1E40AF"
+        />
+        <GraphBubble
+          colors={colors}
+          label="Star"
+          bottom={40}
+          left={22}
+          textColor="#16A34A"
+        />
+        <GraphBubble
+          colors={colors}
+          label="Coke"
+          bottom={34}
+          right={22}
+          textColor="#EF4444"
+        />
+        <GraphBubble
+          colors={colors}
+          label="$15"
+          top={18}
+          left={82}
+          tiny
+        />
+        <GraphBubble
+          colors={colors}
+          label="$50"
+          bottom={22}
+          right={78}
+          tiny
+        />
+      </View>
+    </View>
+  );
+}
+
+function HomeIndicator({ colors }: { colors: ColorTheme }) {
+  return (
+    <View
+      style={[
+        styles.homeIndicator,
+        { backgroundColor: hexToRgba(colors.text, 0.82) },
+      ]}
+    />
+  );
+}
+
+export default function WelcomeScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const listRef = useRef<FlatList<Slide>>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const slides = useMemo<Slide[]>(
+    () => [
+      {
+        id: 'intro',
+        title: 'Your Smart Personal Finance AI Companion UI Kit',
+        description: '',
+        backgroundColor: colors.card,
+        renderIllustration: (themeColors) => <BrandIllustration colors={themeColors} />,
+      },
+      {
+        id: 'budget',
+        title: 'Control Your Finances\nwith Personal Budgets',
+        description:
+          'Invest your spare change with every transaction and let it grow effortlessly.',
+        backgroundColor: colors.primaryLight,
+        renderIllustration: (themeColors) => <BudgetIllustration colors={themeColors} />,
+      },
+      {
+        id: 'assistant',
+        title: 'AI Finance Assistant,\nEverywhere, Anywhere.',
+        description:
+          'Invest your spare change everytime you do something and let it grows.',
+        backgroundColor: colors.primaryLight,
+        renderIllustration: (themeColors) => <AssistantIllustration colors={themeColors} />,
+      },
+      {
+        id: 'goals',
+        title: 'Set Your Own Financial\nGoals Easily',
+        description:
+          'Invest your spare change everytime you do something and let it grows.',
+        backgroundColor: colors.primaryLight,
+        renderIllustration: (themeColors) => <GoalsIllustration colors={themeColors} />,
+      },
+      {
+        id: 'save',
+        title: 'Save More & Spend\nMore Smarter',
+        description:
+          'Invest your spare change everytime you do something and let it grows.',
+        backgroundColor: colors.primaryLight,
+        renderIllustration: (themeColors) => <SavingsIllustration colors={themeColors} />,
+      },
+      {
+        id: 'subs',
+        title: 'Manage subscriptions in\none single place.',
+        description:
+          'Invest your spare change everytime you do something and let it grows.',
+        backgroundColor: colors.primaryLight,
+        renderIllustration: (themeColors) => <SubscriptionsIllustration colors={themeColors} />,
+      },
+    ],
+    [colors.card, colors.primaryLight]
+  );
+
+  const currentSlide = slides[currentIndex] ?? slides[0];
+  const hasSecondaryButton = currentIndex > 0;
+  const isLastSlide = currentIndex === slides.length - 1;
+
+  const goToSlide = (index: number) => {
+    listRef.current?.scrollToIndex({ index, animated: true });
+    setCurrentIndex(index);
+  };
+
+  const handlePrimaryPress = () => {
+    if (currentIndex === 0) {
+      goToSlide(1);
+      return;
+    }
+
+    if (isLastSlide) {
+      router.push('/(auth)/signUp');
+      return;
+    }
+
+    goToSlide(currentIndex + 1);
+  };
+
+  const renderSlide = ({ item }: ListRenderItemInfo<Slide>) => {
+    const introSlide = item.id === 'intro';
+
+    return (
+      <View style={[styles.slide, { width }]}>
+        <View style={styles.slideInner}>
+          <View style={styles.topSpace}>{item.renderIllustration(colors)}</View>
+
+          <View style={styles.textBlock}>
+            <Text style={[styles.headline, { color: colors.text }]}>{item.title}</Text>
+            {introSlide ? (
+              <View style={styles.featureList}>
+                {[
+                  'Smart Goal Tracking',
+                  'Subscription Management',
+                  'Finance Companion',
+                  'AI-Powered Budgeting',
+                  'Achievements & More!',
+                ].map((feature) => (
+                  <View key={feature} style={styles.featureRow}>
+                    <View
+                      style={[
+                        styles.featureIconWrap,
+                        { backgroundColor: colors.primaryDark },
+                      ]}
+                    >
+                      <MaterialIcons name="check" size={12} color={colors.card} />
+                    </View>
+                    <Text
+                      style={[
+                        styles.featureText,
+                        { color: hexToRgba(colors.text, 0.72) },
+                      ]}
+                    >
+                      {feature}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={[styles.body, { color: hexToRgba(colors.text, 0.52) }]}>
+                {item.description}
+              </Text>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: currentSlide.backgroundColor },
+      ]}
+    >
+      <FlatList
+        ref={listRef}
+        data={slides}
+        renderItem={renderSlide}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        key={width}
+        style={styles.carousel}
+        onMomentumScrollEnd={(event) => {
+          const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+          setCurrentIndex(nextIndex);
+        }}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
+      />
+
+      <View
+        style={[
+          styles.footer,
+          { backgroundColor: currentSlide.backgroundColor },
+        ]}
+      >
+        <View style={styles.dotRow}>
+          {currentIndex === 0 ? (
+            <View style={styles.dotRowSpacer} />
+          ) : (
+            slides.slice(1).map((slide, index) => {
+              const active = currentSlide.id === slide.id;
+              return (
+                <Pressable
+                  key={slide.id}
+                  style={[
+                    active ? styles.dotActive : styles.dot,
+                    {
+                      backgroundColor: active
+                        ? colors.primaryDark
+                        : hexToRgba(colors.primaryDark, 0.22),
+                    },
+                  ]}
+                  onPress={() => goToSlide(index + 1)}
+                />
+              );
+            })
+          )}
+        </View>
+
+        <ThemeButton
+          title="Get Started"
+          onPress={handlePrimaryPress}
+          colorBackground={colors.primaryDark}
+          colorText={colors.card}
+          textStyle={styles.primaryButtonText}
+          style={styles.primaryButton}
+        />
+
+        <View style={styles.secondarySlot}>
+          {hasSecondaryButton ? (
+            <ThemeButton
+              title="Sign In"
+              onPress={() => router.push('/(auth)/signIn')}
+              colorBackground={hexToRgba(colors.primaryDark, 0)}
+              colorText={colors.primaryDark}
+              textStyle={styles.secondaryButtonText}
+              style={[
+                styles.secondaryButton,
+                { borderColor: hexToRgba(colors.primaryDark, 0.3) },
+              ]}
+            />
+          ) : null}
+        </View>
+      </View>
+
+      <HomeIndicator colors={colors} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  carousel: {
+    flex: 1,
+  },
+  slide: {
+    flex: 1,
+    paddingTop: 46,
+    paddingBottom: 8,
+  },
+  slideInner: {
+    flex: 1,
+    paddingHorizontal: 28,
+  },
+  topSpace: {
+    minHeight: 336,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textBlock: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  headline: {
+    fontSize: 28,
+    lineHeight: 38,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  body: {
+    marginTop: 14,
+    fontSize: 15,
+    lineHeight: 23,
+    textAlign: 'center',
+    paddingHorizontal: 14,
+  },
+  featureList: {
+    marginTop: 32,
+    gap: 14,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  featureIconWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  dotRow: {
+    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 16,
+  },
+  dotRowSpacer: {
+    height: 12,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotActive: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  primaryButton: {
+    width: '100%',
+    minHeight: 58,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  secondarySlot: {
+    minHeight: 72,
+  },
+  secondaryButton: {
+    width: '100%',
+    minHeight: 58,
+    marginTop: 10,
+    borderWidth: 1,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  homeIndicator: {
+    alignSelf: 'center',
+    width: 120,
+    height: 5,
+    borderRadius: 999,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  brandIllustration: {
+    alignItems: 'center',
+  },
+  brandBadge: {
+    width: 116,
+    height: 116,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  brandTitle: {
+    marginTop: 18,
+    fontSize: 40,
+    fontWeight: '800',
+    letterSpacing: -1,
+  },
+  illustrationStage: {
+    width: '100%',
+    height: 308,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardFrame: {
+    width: 250,
+    height: 214,
+    borderRadius: 34,
+    borderWidth: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ledgerCard: {
+    width: 218,
+    borderRadius: 24,
+    padding: 16,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rowGap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smallRoundBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ledgerTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  ledgerMeta: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  progressTrack: {
+    height: 7,
+    borderRadius: 999,
+  },
+  progressValue: {
+    height: 7,
+    borderRadius: 999,
+  },
+  budgetLine: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  budgetLineLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  budgetLineValue: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  chatBubbleRight: {
+    position: 'absolute',
+    top: 36,
+    left: 34,
+    right: 10,
+    borderRadius: 22,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  chatBubbleLeft: {
+    position: 'absolute',
+    left: 18,
+    right: 20,
+    bottom: 24,
+    borderRadius: 22,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  avatarBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatPrompt: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
+    marginRight: 10,
+  },
+  chatReply: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '700',
+  },
+  goalCard: {
+    width: 220,
+    borderRadius: 20,
+    padding: 14,
+    marginVertical: 6,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  goalTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  goalPercent: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  goalMeta: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  savingsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  savingsCard: {
+    width: 104,
+    borderRadius: 22,
+    padding: 14,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  savingsMonth: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  savingsAmount: {
+    marginTop: 6,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  savingsDelta: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  savingsFill: {
+    marginTop: 12,
+    height: 82,
+    borderRadius: 14,
+    justifyContent: 'flex-end',
+    padding: 6,
+  },
+  savingsFillValue: {
+    width: '100%',
+    height: 34,
+    borderRadius: 8,
+  },
+  graphWrap: {
+    width: 258,
+    height: 218,
+    borderRadius: 34,
+    borderWidth: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  graphCenter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  graphBubble: {
+    position: 'absolute',
+    minWidth: 62,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  graphBubbleTiny: {
+    position: 'absolute',
+    minWidth: 42,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  graphBubbleText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  graphBubbleTinyText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+});

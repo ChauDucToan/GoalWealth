@@ -30,15 +30,15 @@ export const ThemeButton = ({ title, onPress, colorBackground = '#fff', colorTex
 
 const styles = StyleSheet.create({
   pill: {
-    minHeight: 48,
+    minHeight: 44,
     borderRadius: 999,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   }
 });

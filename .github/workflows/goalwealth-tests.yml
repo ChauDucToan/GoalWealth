@@ -1,0 +1,40 @@
+name: GoalWealth Tests
+
+on:
+  push:
+    paths:
+      - "goalwealth/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/goalwealth-tests.yml"
+  pull_request:
+    paths:
+      - "goalwealth/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/goalwealth-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --extra dev
+
+      - name: Run backend tests
+        run: uv run pytest goalwealth/test
