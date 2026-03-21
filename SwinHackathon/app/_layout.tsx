@@ -10,6 +10,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{}}/>
         {/* auth */}
         <Stack.Screen name="(auth)" options={{}}/>
+        {/* main app */}
+        <Stack.Screen name="(tabs)" options={{}}/>
       </Stack>
     </ThemeProvider>
   );

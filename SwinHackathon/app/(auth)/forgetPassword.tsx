@@ -1,102 +1,72 @@
 import { InputField } from "@/components/InputField";
-import { ThemeButton } from "@/components/ThemeButton";
+import {
+    AuthPrimaryButton,
+    AuthScaffold,
+    AuthSupportText,
+    ShieldIllustration,
+} from "@/components/auth/AuthKit";
 import { useTheme } from "@/hooks/use-theme-colors";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+
 export default function ForgetPassword() {
     const { colors } = useTheme();
-    const navigation = useNavigation();
+    const router = useRouter();
     const [email, setEmail] = useState('');
+
+    const [submitAttempted, setSubmitAttempted] = useState(false);
+    const isEmailValid = /\S+@\S+\.\S+/.test(email.trim());
+    const emailError = submitAttempted && !isEmailValid
+        ? 'Invalid email address!'
+        : '';
+
+    const handleContinue = () => {
+        setSubmitAttempted(true);
+
+        if (isEmailValid) {
+            console.log('(auth) Password Reset Sent');
+            router.push('/(auth)/passwordResent');
+        }
+    };
+
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: colors.primaryLight }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        <AuthScaffold
+            title="Forgot Password"
+            subtitle="Please enter your email address to reset your password."
+            illustration={<ShieldIllustration />}
         >
-            <ScrollView
-                contentContainerStyle={styles.container}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-            >
-                <MaterialIcons name="password" size={64} color={colors.darkBackground} />
-                <Text style={[styles.text, { color: colors.darkBackground }]}>
-                    Forget Password
-                </Text>
-                <Text style={[styles.textDescription, { color: colors.text }]}>
-                    Enter your email address and we'll send you a link to reset your password.
-                </Text>
-                <InputField
-                    label="Email"
-                    placeholder="Enter your email"
-                    iconName="email"
-                    value={email}
-                    onChangeText={setEmail}
-                    containerStyle={{ marginTop: 24 }}
+            <InputField
+                label="Email Address"
+                placeholder="Enter your email address..."
+                iconName="email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={(value) => {
+                    setEmail(value);
+                    if (submitAttempted) setSubmitAttempted(false);
+                }}
+                status={emailError ? 'error' : 'default'}
+                helperText={emailError || undefined}
+            />
+
+            <View style={styles.buttonWrap}>
+                <AuthPrimaryButton
+                    title="Continue"
+                    onPress={handleContinue}
+                    colorBackground={colors.primaryDark}
+                    colorText={colors.textLight}
                 />
+            </View>
 
-                <View style={{ marginTop: 24, marginBottom: 24, alignItems: 'center' }}>
-                    <ThemeButton
-                        title="Send"
-                        onPress={() => {
-                            console.log('(auth) Password Resent');
-                            navigation.navigate('passwordResent' as never);
-                            // console.log(navigation.getState());
-                        }}
-                        colorBackground={colors.darkBackground}
-                        colorText={colors.textLight}
-                        style={styles.button}
-                    />
-
-                    <ThemeButton
-                        title="Back to Sign In"
-                        onPress={() => {
-                            navigation.goBack();
-                        }}
-                        colorBackground={colors.primaryLight}
-                        colorText={colors.darkBackground}
-                        style={[styles.button, styles.buttonOdd]}
-                    />
-                </View>
-                <Text style={styles.textDescription}>
-                    Don't remember your email? Contact us at <Text style={[styles.textNote, { color: colors.darkBackground }]}> "help@gmail.com"</Text>
-                </Text>
-            </ScrollView>
-        </KeyboardAvoidingView>
+            <AuthSupportText />
+        </AuthScaffold>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingTop: 50,
-        paddingBottom: 100,
-    },
-    text: {
-        fontSize: 24,
-        fontWeight: "bold",
-    },
-    button: {
-        width: 300,
-    },
-    buttonOdd: {
-        borderColor: "#0c3a7b",
-        borderWidth: 1,
-        marginTop: 12,
-    },
-    textDescription: {
-        fontSize: 14,
-        textAlign: "center",
-        paddingLeft: 8,
-        paddingRight: 8,
-        marginTop: 8,
-        fontWeight: "200",
-    },
-    textNote: {
-        fontSize: 14,
-        fontWeight: "bold",
-        textDecorationLine: 'underline',
+    buttonWrap: {
+        marginTop: 20,
     }
 });

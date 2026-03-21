@@ -1,129 +1,151 @@
 import { InputField } from '@/components/InputField';
-import { ThemeButton } from '@/components/ThemeButton';
+import {
+    AuthPrimaryButton,
+    AuthScaffold,
+    RememberMe,
+    RobotIllustration,
+    hexToRgba,
+} from '@/components/auth/AuthKit';
 import { useTheme } from '@/hooks/use-theme-colors';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+const ENABLE_HOME_TEST_BYPASS = true;
+
 export default function SignIn() {
-    const navigation = useNavigation();
+    const router = useRouter();
     const { colors } = useTheme();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(true);
+    const [submitAttempted, setSubmitAttempted] = useState(false);
 
-    const getPasswordStrength = (pass: string) => {
-        if (!pass) return { label: '', color: 'transparent' };
-        if (pass.length < 6) return { label: 'Weak', color: '#ff4d4d' };
+    const showPasswordError = submitAttempted && password.trim().length < 8;
 
-        const hasNumber = /[0-9]/.test(pass);
-        const hasLetter = /[a-zA-Z]/.test(pass);
-        const hasSpecial = /[^a-zA-Z0-9]/.test(pass);
-
-        if (pass.length >= 8 && hasNumber && hasLetter && hasSpecial) {
-            return { label: 'Strong', color: '#4CAF50' };
+    const handleSubmit = () => {
+        if (ENABLE_HOME_TEST_BYPASS) {
+            router.replace('/(tabs)/home');
+            return;
         }
-        return { label: 'Medium', color: '#FFA500' };
+
+        setSubmitAttempted(true);
+
+        if (email.trim() && password.trim().length >= 8) {
+            router.replace('/(tabs)/home');
+        }
     };
 
-    const strength = getPasswordStrength(password);
-
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: colors.primaryLight }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-            <ScrollView
-                contentContainerStyle={styles.container}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-            >
-                <MaterialCommunityIcons name="finance" size={64} color={colors.darkBackground} />
-                <Text style={[styles.text, { color: colors.darkBackground }]}>
-                    Sign In to Goal Wealth
-                </Text>
+        <AuthScaffold title="Sign In to finpal" illustration={<RobotIllustration />}>
+            <InputField
+                label="Email Address"
+                placeholder="Enter your email address..."
+                iconName="email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={(value) => {
+                    setEmail(value);
+                    if (submitAttempted) setSubmitAttempted(false);
+                }}
+            />
 
-                <InputField label="Email" placeholder="Enter your email" iconName="email" value={email} onChangeText={setEmail} containerStyle={{ marginTop: 24 }} />
-                <InputField label="Password" placeholder="Enter your password" iconName="lock" secureTextEntry isPassword={true} value={password} onChangeText={setPassword} containerStyle={{ marginTop: 12 }} />
+            <InputField
+                label="Password"
+                placeholder="Enter your password..."
+                iconName="lock"
+                secureTextEntry
+                isPassword
+                value={password}
+                onChangeText={(value) => {
+                    setPassword(value);
+                    if (submitAttempted) setSubmitAttempted(false);
+                }}
+                containerStyle={styles.fieldSpacing}
+                status={showPasswordError ? 'error' : 'default'}
+                helperText={showPasswordError ? 'ERROR: Incorrect password.' : undefined}
+            />
 
-                {password.length > 0 && (
-                    <View style={styles.strengthContainer}>
-                        <Text style={[styles.strengthText, { color: strength.color }]}>
-                            Password Strength: {strength.label}
-                        </Text>
-                    </View>
-                )}
+            <RememberMe
+                checked={rememberMe}
+                onPress={() => setRememberMe((current) => !current)}
+            />
 
-                <View style={{ marginTop: 24, marginBottom: 24, alignItems: 'center' }}>
-                    <ThemeButton title="Sign In" onPress={() => {
-                        console.log('(auth) Sign In');
-                    }} colorBackground={colors.darkBackground} colorText={colors.textLight} style={styles.button} />
+            <View style={styles.buttonStack}>
+                <AuthPrimaryButton
+                    title={ENABLE_HOME_TEST_BYPASS ? 'Sign In (Test to Home)' : 'Sign In'}
+                    onPress={handleSubmit}
+                    colorBackground={colors.primaryDark}
+                    colorText={colors.textLight}
+                />
+                <AuthPrimaryButton
+                    title="Create New Account"
+                    onPress={() => router.push('/(auth)/signUp')}
+                    colorBackground={colors.card}
+                    colorText={colors.primaryDark}
+                    style={[
+                        styles.outlineButton,
+                        { borderColor: hexToRgba(colors.primaryDark, 0.38) },
+                    ]}
+                />
+            </View>
 
-                    <ThemeButton title="Create New Account" onPress={() => {
-                        navigation.navigate('signUp' as never);
-                        // console.log(navigation.getState());
-                    }} colorBackground={colors.primaryLight} colorText={colors.darkBackground} style={[styles.button, styles.buttonOdd]} />
-                    <Pressable style={{ marginTop: 4 }} onPress={() => {
-                        navigation.navigate('forgetPassword' as never);
-                    }}>
-                        <Text style={[styles.textNote, { color: colors.darkBackground }]}>
-                            Forgot password?
-                        </Text>
-                    </Pressable>
+            {ENABLE_HOME_TEST_BYPASS ? (
+                <View
+                    style={[
+                        styles.testBadge,
+                        { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+                    ]}
+                >
+                    <Text style={[styles.testBadgeText, { color: colors.primaryDark }]}>
+                        Test mode enabled: sign in now routes straight to Home.
+                    </Text>
                 </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+            ) : null}
 
+            <Pressable
+                style={styles.linkWrap}
+                onPress={() => router.push('/(auth)/forgetPassword')}
+            >
+                <Text style={[styles.link, { color: colors.primaryDark }]}>
+                    Forgot Password
+                </Text>
+            </Pressable>
+        </AuthScaffold>
     )
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingTop: 50,
-        paddingBottom: 100,
+    fieldSpacing: {
+        marginTop: 18,
     },
-    subContainer: {
-        marginTop: 24,
-        marginBottom: 24
+    buttonStack: {
+        marginTop: 26,
+        gap: 10,
     },
-    text: {
-        fontSize: 24,
-        fontWeight: "bold",
-    },
-    textDescription: {
-        fontSize: 18,
-        fontWeight: "200",
-        paddingLeft: 8,
-        paddingRight: 8,
-        textAlign: "center"
-    },
-    textNote: {
-        fontSize: 14,
-        fontWeight: "bold",
-        textDecorationLine: 'underline',
-
-    },
-    loading: {
-        marginTop: 12,
-    },
-    button: {
-        width: 300,
-    },
-    buttonOdd: {
-        borderColor: "#0c3a7b",
+    outlineButton: {
         borderWidth: 1,
     },
-    strengthContainer: {
-        width: '85%',
-        alignItems: 'flex-start',
-        marginTop: 4,
-        paddingLeft: 4,
+    testBadge: {
+        marginTop: 14,
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
     },
-    strengthText: {
+    testBadgeText: {
         fontSize: 12,
-        fontWeight: 'bold',
+        fontWeight: '700',
+        textAlign: 'center',
+    },
+    linkWrap: {
+        marginTop: 18,
+        alignSelf: 'center',
+    },
+    link: {
+        fontSize: 13,
+        fontWeight: '700',
+        textDecorationLine: 'underline',
     }
 })

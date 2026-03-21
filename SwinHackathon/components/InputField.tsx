@@ -25,6 +25,23 @@ interface InputFieldProps extends Omit<TextInputProps, 'style'> {
   inputStyle?: TextStyle | TextStyle[];
   labelStyle?: TextStyle | TextStyle[];
   iconContainerStyle?: ViewStyle | ViewStyle[];
+  status?: 'default' | 'error' | 'success';
+  helperText?: string;
+  helperTextStyle?: TextStyle | TextStyle[];
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const cleanHex = hex.replace('#', '');
+  const normalized = cleanHex.length === 3
+    ? cleanHex.split('').map((value) => `${value}${value}`).join('')
+    : cleanHex;
+
+  const bigint = parseInt(normalized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export const InputField = React.forwardRef<TextInput, InputFieldProps>(
@@ -38,6 +55,9 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
       inputStyle,
       labelStyle,
       iconContainerStyle,
+      status = 'default',
+      helperText,
+      helperTextStyle,
       placeholderTextColor,
       secureTextEntry,
       ...rest
@@ -48,18 +68,37 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const effectiveSecureTextEntry = isPassword ? !isPasswordVisible : secureTextEntry;
+    const borderColor = status === 'error'
+      ? colors.error
+      : status === 'success'
+        ? colors.primaryDark
+        : colors.border;
+    const helperColor = status === 'error'
+      ? colors.error
+      : status === 'success'
+        ? colors.primaryDark
+        : hexToRgba(colors.text, 0.58);
+    const backgroundColor = status === 'error'
+      ? hexToRgba(colors.error, 0.04)
+      : colors.card;
 
     return (
       <View style={[styles.container, containerStyle]}>
         <Text style={[styles.label, { color: colors.text }, labelStyle]}>{label}</Text>
 
-        <View style={[styles.inputRow, iconContainerStyle]}>
+        <View
+          style={[
+            styles.inputRow,
+            { borderColor, backgroundColor },
+            iconContainerStyle,
+          ]}
+        >
           {icon ??
             (iconName ? (
               <MaterialIcons
                 name={iconName}
                 size={20}
-                color={colors.text}
+                color={hexToRgba(colors.text, 0.66)}
                 style={styles.icon}
               />
             ) : null)}
@@ -68,10 +107,10 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
             ref={ref}
             style={[
               styles.input,
-              { color: colors.text, borderColor: colors.border },
+              { color: colors.text },
               inputStyle,
             ]}
-            placeholderTextColor={placeholderTextColor ?? colors.text}
+            placeholderTextColor={placeholderTextColor ?? hexToRgba(colors.text, 0.4)}
             secureTextEntry={effectiveSecureTextEntry}
             {...rest}
           />
@@ -84,11 +123,17 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
               <MaterialIcons
                 name={isPasswordVisible ? 'visibility' : 'visibility-off'}
                 size={20}
-                color={colors.text}
+                color={hexToRgba(colors.text, 0.48)}
               />
             </Pressable>
           )}
         </View>
+
+        {helperText ? (
+          <Text style={[styles.helperText, { color: helperColor }, helperTextStyle]}>
+            {helperText}
+          </Text>
+        ) : null}
       </View>
     );
   }
@@ -96,33 +141,38 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
 
 const styles = StyleSheet.create({
   container: {
-    width: '85%',
-    
+    width: '100%',
   },
   label: {
-    marginBottom: 6,
-    fontSize: 14,
-    fontWeight: '600',
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 999,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   icon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     padding: 0,
   },
   eyeIcon: {
-    marginLeft: 10,
-    padding: 4,
+    marginLeft: 8,
+    padding: 2,
+  },
+  helperText: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
 
