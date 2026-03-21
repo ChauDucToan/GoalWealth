@@ -283,6 +283,7 @@ function GoalCard({
   footerLeft,
   footerRight,
   icon,
+  compact = false,
 }: {
   colors: ColorTheme;
   title: string;
@@ -291,12 +292,16 @@ function GoalCard({
   footerLeft: string;
   footerRight: string;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  compact?: boolean;
 }) {
   return (
     <View
       style={[
         styles.goalCard,
         {
+          width: compact ? 228 : 252,
+          borderRadius: compact ? 20 : 22,
+          padding: compact ? 13 : 15,
           backgroundColor: colors.card,
           shadowColor: colors.primaryDark,
         },
@@ -305,11 +310,28 @@ function GoalCard({
       <View style={styles.rowBetween}>
         <View style={[styles.rowGap, styles.goalHeaderTextWrap]}>
           <MaterialIcons name={icon} size={17} color={hexToRgba(colors.text, 0.44)} />
-          <Text style={[styles.goalTitle, { color: colors.text }]}>{title}</Text>
+          <Text
+            style={[
+              styles.goalTitle,
+              {
+                color: colors.text,
+                fontSize: compact ? 13 : Typography.body,
+                lineHeight: compact ? 16 : 18,
+              },
+            ]}
+          >
+            {title}
+          </Text>
         </View>
         <Text
           numberOfLines={1}
-          style={[styles.goalPercent, { color: hexToRgba(colors.text, 0.54) }]}
+          style={[
+            styles.goalPercent,
+            {
+              color: hexToRgba(colors.text, 0.54),
+              fontSize: compact ? 12 : Typography.body,
+            },
+          ]}
         >
           {rightLabel}
         </Text>
@@ -330,13 +352,27 @@ function GoalCard({
       <View style={[styles.rowBetween, styles.goalFooterRow, { marginTop: 8 }]}>
         <Text
           numberOfLines={1}
-          style={[styles.goalMeta, styles.goalMetaLeft, { color: hexToRgba(colors.text, 0.46) }]}
+          style={[
+            styles.goalMeta,
+            styles.goalMetaLeft,
+            {
+              color: hexToRgba(colors.text, 0.46),
+              fontSize: compact ? 11 : Typography.body,
+            },
+          ]}
         >
           {footerLeft}
         </Text>
         <Text
           numberOfLines={1}
-          style={[styles.goalMeta, styles.goalMetaRight, { color: hexToRgba(colors.text, 0.46) }]}
+          style={[
+            styles.goalMeta,
+            styles.goalMetaRight,
+            {
+              color: hexToRgba(colors.text, 0.46),
+              fontSize: compact ? 11 : Typography.body,
+            },
+          ]}
         >
           {footerRight}
         </Text>
@@ -345,7 +381,13 @@ function GoalCard({
   );
 }
 
-function GoalsIllustration({ colors }: { colors: ColorTheme }) {
+function GoalsIllustration({
+  colors,
+  compact = false,
+}: {
+  colors: ColorTheme;
+  compact?: boolean;
+}) {
   return (
     <View style={styles.illustrationStage}>
       <AccentShape colors={colors} top={24} left={20} icon="blur-circular" tint="secondary" />
@@ -360,6 +402,7 @@ function GoalsIllustration({ colors }: { colors: ColorTheme }) {
           footerLeft="Jan 13, 2025"
           footerRight="1y 22d left"
           icon="flight-takeoff"
+          compact={compact}
         />
         <GoalCard
           colors={colors}
@@ -369,6 +412,7 @@ function GoalsIllustration({ colors }: { colors: ColorTheme }) {
           footerLeft="Dec 18, 2026"
           footerRight="2y 188d left"
           icon="school"
+          compact={compact}
         />
       </PhoneShell>
     </View>
@@ -381,12 +425,14 @@ function SavingsCard({
   amount,
   delta,
   tone,
+  compact = false,
 }: {
   colors: ColorTheme;
   month: string;
   amount: string;
   delta: string;
   tone: 'positive' | 'negative';
+  compact?: boolean;
 }) {
   const fillColor = tone === 'positive' ? colors.primaryDark : '#E11D48';
   const deltaColor = tone === 'positive' ? colors.primaryDark : '#E11D48';
@@ -396,42 +442,81 @@ function SavingsCard({
       style={[
         styles.savingsCard,
         {
+          width: compact ? 108 : 120,
+          minHeight: compact ? 144 : 158,
+          borderRadius: compact ? 22 : 24,
+          padding: compact ? 13 : 15,
           backgroundColor: colors.card,
           shadowColor: colors.primaryDark,
         },
       ]}
     >
-      <Text style={[styles.savingsMonth, { color: hexToRgba(colors.text, 0.48) }]}>
+      <Text
+        style={[
+          styles.savingsMonth,
+          { color: hexToRgba(colors.text, 0.48), fontSize: compact ? 11 : Typography.body },
+        ]}
+      >
         {month}
       </Text>
-      <Text style={[styles.savingsAmount, { color: colors.text }]}>{amount}</Text>
-      <Text style={[styles.savingsDelta, { color: deltaColor }]}>{delta}</Text>
+      <Text
+        style={[
+          styles.savingsAmount,
+          { color: colors.text, fontSize: compact ? 18 : 22, lineHeight: compact ? 22 : 26 },
+        ]}
+      >
+        {amount}
+      </Text>
+      <Text
+        style={[
+          styles.savingsDelta,
+          { color: deltaColor, fontSize: compact ? 11 : Typography.body },
+        ]}
+      >
+        {delta}
+      </Text>
       <View
         style={[
           styles.savingsFill,
-          { backgroundColor: hexToRgba(fillColor, 0.18) },
+          {
+            backgroundColor: hexToRgba(fillColor, 0.18),
+            height: compact ? 74 : 88,
+            marginTop: compact ? 10 : 12,
+          },
         ]}
       >
-        <View style={[styles.savingsFillValue, { backgroundColor: fillColor }]} />
+        <View
+          style={[
+            styles.savingsFillValue,
+            { backgroundColor: fillColor, height: compact ? 28 : 34 },
+          ]}
+        />
       </View>
     </View>
   );
 }
 
-function SavingsIllustration({ colors }: { colors: ColorTheme }) {
+function SavingsIllustration({
+  colors,
+  compact = false,
+}: {
+  colors: ColorTheme;
+  compact?: boolean;
+}) {
   return (
     <View style={styles.illustrationStage}>
       <AccentShape colors={colors} top={16} left={26} icon="close" tint="secondary" />
       <AccentShape colors={colors} top={170} right={28} icon="lens" tint="background" />
 
       <PhoneShell colors={colors} shellStyle={styles.savingsShell}>
-        <View style={styles.savingsRow}>
+        <View style={[styles.savingsRow, compact && styles.savingsRowCompact]}>
           <SavingsCard
             colors={colors}
             month="January"
             amount="$1,487"
             delta="+11.5%"
             tone="positive"
+            compact={compact}
           />
           <SavingsCard
             colors={colors}
@@ -439,6 +524,7 @@ function SavingsIllustration({ colors }: { colors: ColorTheme }) {
             amount="$2,487"
             delta="-1.88%"
             tone="negative"
+            compact={compact}
           />
         </View>
       </PhoneShell>
@@ -581,6 +667,7 @@ export default function WelcomeScreen() {
   const bodyMaxWidth = isShortHeight ? 302 : 322;
   const headlineMaxWidth = isShortHeight ? 304 : 328;
   const featureListMaxWidth = isShortHeight ? 304 : 316;
+  const isSmallDevice = width < 360 || height < 760;
 
   const slides = useMemo<Slide[]>(
     () => [
@@ -613,7 +700,9 @@ export default function WelcomeScreen() {
         description:
           'Invest your spare change everytime you do something and let it grows.',
         backgroundColor: colors.primaryLight,
-        renderIllustration: (themeColors) => <GoalsIllustration colors={themeColors} />,
+        renderIllustration: (themeColors) => (
+          <GoalsIllustration colors={themeColors} compact={isSmallDevice} />
+        ),
       },
       {
         id: 'save',
@@ -621,7 +710,9 @@ export default function WelcomeScreen() {
         description:
           'Invest your spare change everytime you do something and let it grows.',
         backgroundColor: colors.primaryLight,
-        renderIllustration: (themeColors) => <SavingsIllustration colors={themeColors} />,
+        renderIllustration: (themeColors) => (
+          <SavingsIllustration colors={themeColors} compact={isSmallDevice} />
+        ),
       },
       {
         id: 'subs',
@@ -632,7 +723,7 @@ export default function WelcomeScreen() {
         renderIllustration: (themeColors) => <SubscriptionsIllustration colors={themeColors} />,
       },
     ],
-    [colors.card, colors.primaryLight]
+    [colors.card, colors.primaryLight, isSmallDevice]
   );
 
   const currentSlide = slides[currentIndex] ?? slides[0];
@@ -1326,11 +1417,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
   },
+  savingsRowCompact: {
+    gap: 10,
+  },
   savingsCard: {
-    width: 120,
-    minHeight: 158,
-    borderRadius: 24,
-    padding: 15,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
