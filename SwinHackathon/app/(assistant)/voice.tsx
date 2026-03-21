@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function VoiceAssistantScreen() {
   const { colors } = useTheme();
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heroEyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
   },
   heroBody: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   micOrb: {
     marginTop: 28,
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   promptWrap: {
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   promptText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   previewCard: {
@@ -255,12 +256,12 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   previewTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   previewBody: {
     marginTop: 8,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   buttonRow: {

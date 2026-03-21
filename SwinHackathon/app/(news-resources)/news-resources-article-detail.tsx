@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Typography } from '@/constants/theme';
 
 export default function ArticleDetailScreen() {
   const { colors } = useTheme();
@@ -56,9 +57,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '800' },
   hero: { width: '100%', height: 180, borderRadius: 12 },
   title: { marginTop: 8, fontSize: 22, lineHeight: 26, fontWeight: '800' },
-  body: { fontSize: 12, lineHeight: 18 },
+  body: { fontSize: Typography.body, lineHeight: 18 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowText: { fontSize: 11 },
   cta: { marginTop: 8, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  ctaText: { fontSize: 12, fontWeight: '700' },
+  ctaText: { fontSize: Typography.body, fontWeight: '700' },
 });

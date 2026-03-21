@@ -1,6 +1,7 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import React, { useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export function StockTrendChart({
   values,
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 10,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
 });

@@ -3,6 +3,7 @@ import { DisplayCurrency, DisplayUnit } from '@/components/finance/finance-utils
 import { useTheme } from '@/hooks/use-theme-colors';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const CURRENCIES: DisplayCurrency[] = ['USD', 'AUD', 'VND'];
 const UNITS: { label: string; value: DisplayUnit }[] = [
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   label: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
 });

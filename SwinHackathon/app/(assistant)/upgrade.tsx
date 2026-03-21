@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const planFeatures = [
   'Voice-first assistant sessions',
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   heroEyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
     letterSpacing: 1.1,
   },
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
   },
   heroBody: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   planStack: {
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
   },
   planTileCaption: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 19,
   },
   selectedBadge: {
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   selectedText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   planTilePrice: {
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   },
   featureText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   buttonRow: {

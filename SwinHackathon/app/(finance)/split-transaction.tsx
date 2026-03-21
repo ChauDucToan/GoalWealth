@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const participants = [
   { id: 'p1', name: 'Andrew', owes: 8.0, status: 'Received' },
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
   meta: {
     marginTop: 8,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: Typography.body,
   },
   list: {
     marginTop: 22,
@@ -110,23 +111,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   detail: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   rowAmount: {
     alignItems: 'flex-end',
   },
   value: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   status: {
     marginTop: 4,
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   button: {
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
 });

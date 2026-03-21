@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Typography } from '@/constants/theme';
 
 export default function WorkshopDetailScreen() {
   const { colors } = useTheme();
@@ -59,11 +60,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontWeight: '800' },
   hero: { width: '100%', height: 180, borderRadius: 12 },
   title: { marginTop: 8, fontSize: 22, lineHeight: 26, fontWeight: '800' },
-  body: { fontSize: 12, lineHeight: 18 },
+  body: { fontSize: Typography.body, lineHeight: 18 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rowText: { fontSize: 11 },
   priceRow: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   price: { fontSize: 24, fontWeight: '800' },
   ctaSmall: { height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
-  ctaText: { fontSize: 12, fontWeight: '700' },
+  ctaText: { fontSize: Typography.body, fontWeight: '700' },
 });

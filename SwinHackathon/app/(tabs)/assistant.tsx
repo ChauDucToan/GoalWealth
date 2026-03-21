@@ -12,6 +12,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function AssistantTabScreen() {
   const { colors } = useTheme();
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   introBadgeText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   introTitle: {
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
   },
   introSkip: {
     marginTop: 16,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -507,7 +508,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
@@ -518,12 +519,17 @@ const styles = StyleSheet.create({
   },
   headerBody: {
     marginTop: 8,
-    fontSize: 15,
+    fontSize: Typography.body,
     lineHeight: 23,
   },
   heroCard: {
     borderWidth: 0,
     gap: 18,
+    shadowColor: 'rgba(15,23,42,0.14)',
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -539,7 +545,7 @@ const styles = StyleSheet.create({
   },
   heroPrompt: {
     marginTop: 8,
-    fontSize: 15,
+    fontSize: Typography.body,
     lineHeight: 22,
   },
   heroAvatar: {
@@ -563,7 +569,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroPillText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   heroButtonRow: {
@@ -585,7 +591,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionCaption: {
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 19,
   },
   threadList: {
@@ -599,6 +605,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   threadIcon: {
     width: 46,
@@ -619,15 +630,15 @@ const styles = StyleSheet.create({
   },
   threadTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   threadMeta: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   threadPreview: {
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 19,
   },
   threadFooter: {
@@ -641,7 +652,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   threadTagText: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
 });

@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function OutOfTokensScreen() {
   const { colors } = useTheme();
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
   },
   heroBody: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
   },
   progressMeta: {
     marginTop: 10,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   sectionTitle: {
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   },
   itemText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   buttonRow: {

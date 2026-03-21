@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Typography } from '@/constants/theme';
 
 export default function InstructorScreen() {
   const { colors } = useTheme();
@@ -78,5 +79,5 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 18, fontWeight: '800' },
   statLabel: { marginTop: 2, fontSize: 10 },
-  bio: { marginTop: 6, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  bio: { marginTop: 6, fontSize: Typography.body, lineHeight: 18, textAlign: 'center' },
 });

@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { Typography } from '@/constants/theme';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,10 +18,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AssistantChatScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ scenario?: string | string[] }>();
   const {
     activeScenarioId,
@@ -54,7 +57,10 @@ export default function AssistantChatScreen() {
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 138 },
+        ]}
       >
         <View style={styles.content}>
           <View style={styles.headerRow}>
@@ -115,7 +121,11 @@ export default function AssistantChatScreen() {
       <View
         style={[
           styles.bottomDock,
-          { backgroundColor: colors.backgroundSoft },
+          {
+            backgroundColor: colors.backgroundSoft,
+            bottom: Math.max(insets.bottom, 12),
+            paddingBottom: 8,
+          },
         ]}
       >
         {isToolMenuOpen ? (
@@ -237,7 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
     letterSpacing: 1.1,
   },
@@ -248,7 +258,7 @@ const styles = StyleSheet.create({
   },
   headerBody: {
     marginTop: 7,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   summaryCard: {
@@ -268,7 +278,7 @@ const styles = StyleSheet.create({
   },
   summaryBody: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   summaryIcon: {
@@ -282,7 +292,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: Platform.OS === 'ios' ? 4 : 2,
     paddingHorizontal: 18,
     paddingTop: 8,
     paddingBottom: 2,
@@ -303,7 +312,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   toolChipText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   composerShell: {
@@ -326,7 +335,7 @@ const styles = StyleSheet.create({
   composerInput: {
     flex: 1,
     maxHeight: 104,
-    fontSize: 15,
+    fontSize: Typography.body,
     lineHeight: 21,
     paddingVertical: 6,
   },

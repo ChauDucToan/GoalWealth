@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 type FilterKey = 'all' | 'income' | 'expense' | 'pending';
 
@@ -43,7 +44,7 @@ export default function TransactionsScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
+      <View style={[styles.headerCard, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <Text style={[styles.title, { color: colors.text }]}>My Transactions</Text>
         <Text style={[styles.subtitle, { color: hexToRgba(colors.text, 0.56) }]}>
           Track all money in and out in one place.
@@ -69,7 +70,10 @@ export default function TransactionsScreen() {
           <View
             style={[
               styles.summaryCard,
-              { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+              {
+                backgroundColor: hexToRgba(colors.primaryDark, 0.08),
+                shadowColor: colors.shadow,
+              },
             ]}
           >
             <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.58) }]}>
@@ -83,7 +87,10 @@ export default function TransactionsScreen() {
           <View
             style={[
               styles.summaryCard,
-              { backgroundColor: hexToRgba(colors.error, 0.08) },
+              {
+                backgroundColor: hexToRgba(colors.error, 0.08),
+                shadowColor: colors.shadow,
+              },
             ]}
           >
             <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.58) }]}>
@@ -97,7 +104,10 @@ export default function TransactionsScreen() {
           <View
             style={[
               styles.summaryCard,
-              { backgroundColor: hexToRgba('#F59E0B', 0.12) },
+              {
+                backgroundColor: hexToRgba('#F59E0B', 0.12),
+                shadowColor: colors.shadow,
+              },
             ]}
           >
             <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.58) }]}>
@@ -204,7 +214,7 @@ export default function TransactionsScreen() {
         />
       </View>
 
-      <View style={[styles.categoryPanel, { backgroundColor: colors.card }]}>
+      <View style={[styles.categoryPanel, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <View style={styles.panelHeader}>
           <Text style={[styles.panelTitle, { color: colors.text }]}>Top Categories</Text>
           <Pressable onPress={() => router.push('/(finance)/categories')}>
@@ -225,7 +235,7 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <View style={[styles.listCard, { backgroundColor: colors.card }]}>
+      <View style={[styles.listCard, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         {Object.entries(groupedTransactions).map(([group, items]) => (
           <View key={group} style={styles.groupWrap}>
             <Text style={[styles.groupLabel, { color: hexToRgba(colors.text, 0.54) }]}>
@@ -303,6 +313,10 @@ const styles = StyleSheet.create({
   headerCard: {
     borderRadius: 28,
     padding: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
   },
   title: {
     fontSize: 28,
@@ -310,7 +324,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 22,
   },
   searchRow: {
@@ -324,7 +338,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   searchText: {
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   summaryRow: {
     marginTop: 18,
@@ -335,9 +349,13 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 18,
     padding: 14,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   summaryValue: {
@@ -368,7 +386,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   merchantText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   filterRow: {
@@ -386,7 +404,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   utilityRow: {
@@ -401,6 +419,10 @@ const styles = StyleSheet.create({
     marginTop: 18,
     borderRadius: 24,
     padding: 18,
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   panelHeader: {
     flexDirection: 'row',
@@ -412,7 +434,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   panelMeta: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   categoryWrap: {
@@ -430,20 +452,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   categoryChipText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   listCard: {
     marginTop: 18,
     borderRadius: 26,
     padding: 18,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
   },
   groupWrap: {
     marginTop: 6,
   },
   groupLabel: {
     marginBottom: 10,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
@@ -465,23 +491,23 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   transactionMerchant: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   transactionMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   amountWrap: {
     alignItems: 'flex-end',
   },
   transactionAmount: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   statusText: {
     marginTop: 4,
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
 });

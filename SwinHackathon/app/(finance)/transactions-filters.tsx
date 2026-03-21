@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const transactionTypes = ['All', 'Income', 'Expense', 'Transfer'];
 
@@ -104,7 +105,7 @@ export default function TransactionsFiltersScreen() {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chipWrap: {
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   linkRow: {

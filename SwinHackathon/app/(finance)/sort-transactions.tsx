@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function SortTransactionsScreen() {
   const { colors } = useTheme();
@@ -76,12 +77,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   optionMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   button: {
     marginTop: 18,

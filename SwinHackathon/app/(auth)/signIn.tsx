@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function SignIn() {
     const router = useRouter();
@@ -203,13 +204,13 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     testBadgeText: {
-        fontSize: 12,
+        fontSize: Typography.body,
         fontWeight: '700',
         textAlign: 'center',
     },
     hintText: {
         marginTop: 6,
-        fontSize: 11,
+        fontSize: Typography.body,
         textAlign: 'center',
         lineHeight: 16,
     },
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     link: {
-        fontSize: 13,
+        fontSize: Typography.body,
         fontWeight: '700',
         textDecorationLine: 'underline',
     }

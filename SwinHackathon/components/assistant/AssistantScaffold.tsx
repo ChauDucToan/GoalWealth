@@ -3,6 +3,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
+import { Typography } from '@/constants/theme';
 import {
   Pressable,
   ScrollView,
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 5,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   rightAccessory: {

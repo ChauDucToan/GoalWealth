@@ -1,5 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme } from '@/constants/theme';
+import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useMemo, useState } from 'react';
@@ -14,15 +14,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type DemoMode =
-  | 'notifications'
-  | 'notifications-empty'
-  | 'search-start'
-  | 'search-empty'
-  | 'search-suggest'
-  | 'search-loading'
-  | 'search-results'
-  | 'search-filter';
+type SurfaceTab = 'notifications' | 'search';
+type NotificationPreview = 'inbox' | 'empty';
+type SearchPreview = 'start' | 'suggest' | 'loading' | 'results' | 'filter' | 'empty';
 
 type NotificationItem = {
   id: string;
@@ -30,6 +24,7 @@ type NotificationItem = {
   body: string;
   time: string;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  group: 'Today' | 'Earlier';
 };
 
 type SearchResult = {
@@ -40,15 +35,23 @@ type SearchResult = {
   amount: string;
 };
 
-const modes: { id: DemoMode; label: string }[] = [
-  { id: 'notifications', label: 'Inbox' },
-  { id: 'notifications-empty', label: 'Empty' },
-  { id: 'search-start', label: 'Search' },
-  { id: 'search-empty', label: 'No Result' },
-  { id: 'search-suggest', label: 'Suggest' },
-  { id: 'search-loading', label: 'Loading' },
-  { id: 'search-results', label: 'Results' },
-  { id: 'search-filter', label: 'Filter' },
+const surfaceTabs: { id: SurfaceTab; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] = [
+  { id: 'notifications', label: 'Notifications', icon: 'notifications-none' },
+  { id: 'search', label: 'Search', icon: 'search' },
+];
+
+const notificationStates: { id: NotificationPreview; label: string }[] = [
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'empty', label: 'Empty' },
+];
+
+const searchStates: { id: SearchPreview; label: string }[] = [
+  { id: 'start', label: 'Start' },
+  { id: 'suggest', label: 'Suggest' },
+  { id: 'loading', label: 'Loading' },
+  { id: 'results', label: 'Results' },
+  { id: 'filter', label: 'Filter' },
+  { id: 'empty', label: 'No result' },
 ];
 
 const notifications: NotificationItem[] = [
@@ -58,6 +61,7 @@ const notifications: NotificationItem[] = [
     body: "You've exceeded your Dining Out budget by $50 this month.",
     time: '1h ago',
     icon: 'warning-amber',
+    group: 'Today',
   },
   {
     id: 'n2',
@@ -65,13 +69,15 @@ const notifications: NotificationItem[] = [
     body: 'Your $50 payment to Amazon has been successfully completed.',
     time: '1h ago',
     icon: 'check-circle-outline',
+    group: 'Today',
   },
   {
     id: 'n3',
     title: 'Goal Progress Update',
     body: "You're 70% towards your Vacation Savings Goal.",
-    time: '1h ago',
+    time: '3h ago',
     icon: 'track-changes',
+    group: 'Today',
   },
   {
     id: 'n4',
@@ -79,278 +85,488 @@ const notifications: NotificationItem[] = [
     body: 'Your music subscription renews tomorrow.',
     time: '3d ago',
     icon: 'notifications-active',
+    group: 'Earlier',
   },
 ];
 
 const results: SearchResult[] = [
-  { id: 'r1', merchant: 'Starbucks Coffee', note: 'Checking account individual', date: 'Jun 25, 2025', amount: '$15' },
-  { id: 'r2', merchant: 'Starbucks Coffee', note: 'Checking account individual', date: 'Jun 21, 2025', amount: '$10' },
-  { id: 'r3', merchant: 'Starbucks Coffee', note: 'Checking account individual', date: 'Jun 20, 2025', amount: '$10' },
-  { id: 'r4', merchant: 'Starbucks Coffee', note: 'Checking account individual', date: 'Jun 19, 2025', amount: '$8' },
+  {
+    id: 'r1',
+    merchant: 'Starbucks Coffee',
+    note: 'Checking account individual',
+    date: 'Mar 18, 2026',
+    amount: '$15',
+  },
+  {
+    id: 'r2',
+    merchant: 'FreshMart Grocery',
+    note: 'Debit card ending 2241',
+    date: 'Mar 16, 2026',
+    amount: '$42',
+  },
+  {
+    id: 'r3',
+    merchant: 'Metro Transit',
+    note: 'Public transport top-up',
+    date: 'Mar 14, 2026',
+    amount: '$10',
+  },
 ];
 
-const chips = ['Budget', 'Goal', 'Savings', 'Subscription'];
-const suggestItems = ['Apparel', 'Accessories', 'Art', 'Beauty', 'Books', 'Computers', 'Electronics'];
+const categoryCards = [
+  { label: 'Groceries', icon: 'local-grocery-store' as const },
+  { label: 'Dining', icon: 'restaurant' as const },
+  { label: 'Subscriptions', icon: 'subscriptions' as const },
+  { label: 'Transfers', icon: 'swap-horiz' as const },
+];
+
+const suggestItems = [
+  'Apparel',
+  'Accessories',
+  'Art',
+  'Beauty',
+  'Books',
+  'Computers',
+  'Electronics',
+];
+
+const recentSearches = ['Groceries this week', 'Dining over $40', 'Spotify recurring', 'Transfers to Maya'];
 
 export default function SearchNotificationsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const [mode, setMode] = useState<DemoMode>('notifications');
+  const [surface, setSurface] = useState<SurfaceTab>('notifications');
+  const [notificationPreview, setNotificationPreview] = useState<NotificationPreview>('inbox');
+  const [searchPreview, setSearchPreview] = useState<SearchPreview>('start');
   const [query, setQuery] = useState('');
 
   const searchText =
-    mode === 'search-results' ? 'Starbucks June' : mode === 'search-suggest' || mode === 'search-loading' ? 'Groceries' : query;
+    searchPreview === 'results'
+      ? 'Coffee March'
+      : searchPreview === 'suggest' || searchPreview === 'loading'
+        ? 'Groceries'
+        : query;
+
+  const groupedNotifications = notifications.reduce<Record<string, NotificationItem[]>>((groups, item) => {
+    if (!groups[item.group]) {
+      groups[item.group] = [];
+    }
+
+    groups[item.group].push(item);
+    return groups;
+  }, {});
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Search & Notifications</Text>
+        <View style={styles.pageHeader}>
+          <View style={styles.pageHeaderCopy}>
+            <Text style={styles.pageTitle}>Search & Notifications</Text>
+            <Text style={styles.pageBody}>
+              One place for alerts, merchant lookup and transaction discovery without the old clutter.
+            </Text>
+          </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modeRow}>
-          {modes.map((item) => {
-            const active = item.id === mode;
-            return (
-              <Pressable
-                key={item.id}
-                onPress={() => setMode(item.id)}
-                style={[
-                  styles.modeChip,
-                  {
-                    backgroundColor: active ? colors.primaryDark : colors.card,
-                    borderColor: active ? colors.primaryDark : colors.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.modeChipText, { color: active ? colors.card : hexToRgba(colors.text, 0.62) }]}>
-                  {item.label}
+          <View style={styles.pageHeaderAction}>
+            <MaterialIcons
+              name={surface === 'notifications' ? 'notifications-active' : 'manage-search'}
+              size={24}
+              color={colors.primaryDark}
+            />
+          </View>
+        </View>
+
+        <View style={[styles.heroCard, { backgroundColor: colors.darkBackground }]}>
+          <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.74) }]}>
+            {surface === 'notifications' ? 'INBOX HEALTH' : 'SEARCH TOOLS'}
+          </Text>
+          <Text style={[styles.heroTitle, { color: colors.card }]}>
+            {surface === 'notifications'
+              ? 'Stay ahead of every alert without drowning in noise.'
+              : 'Find any transaction, merchant or pattern in seconds.'}
+          </Text>
+          <View style={styles.heroStatsRow}>
+            <View style={[styles.heroStat, { backgroundColor: hexToRgba(colors.card, 0.14) }]}>
+              <Text style={[styles.heroStatValue, { color: colors.card }]}>
+                {surface === 'notifications' ? '04' : '2168'}
+              </Text>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.74) }]}>
+                {surface === 'notifications' ? 'Unread alerts' : 'Indexed results'}
+              </Text>
+            </View>
+            <View style={[styles.heroStat, { backgroundColor: hexToRgba(colors.card, 0.14) }]}>
+              <Text style={[styles.heroStatValue, { color: colors.card }]}>
+                {surface === 'notifications' ? '02' : '07'}
+              </Text>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.74) }]}>
+                {surface === 'notifications' ? 'Need action' : 'Smart suggestions'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.switchCard}>
+          <View style={styles.surfaceSwitch}>
+            {surfaceTabs.map((item) => {
+              const active = item.id === surface;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => setSurface(item.id)}
+                  style={[
+                    styles.surfaceButton,
+                    {
+                      backgroundColor: active ? colors.primaryDark : colors.card,
+                      borderColor: active ? colors.primaryDark : colors.border,
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={item.icon}
+                    size={18}
+                    color={active ? colors.card : hexToRgba(colors.text, 0.58)}
+                  />
+                  <Text
+                    style={[
+                      styles.surfaceButtonText,
+                      { color: active ? colors.card : colors.text },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.previewRow}
+          >
+            {(surface === 'notifications' ? notificationStates : searchStates).map((item) => {
+              const active =
+                surface === 'notifications'
+                  ? notificationPreview === item.id
+                  : searchPreview === item.id;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => {
+                    if (surface === 'notifications') {
+                      setNotificationPreview(item.id as NotificationPreview);
+                      return;
+                    }
+
+                    setSearchPreview(item.id as SearchPreview);
+                  }}
+                  style={[
+                    styles.previewChip,
+                    {
+                      backgroundColor: active ? hexToRgba(colors.primaryDark, 0.1) : colors.backgroundSoft,
+                      borderColor: active ? hexToRgba(colors.primaryDark, 0.16) : hexToRgba(colors.primaryDark, 0.06),
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.previewChipText,
+                      { color: active ? colors.primaryDark : hexToRgba(colors.text, 0.58) },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {surface === 'notifications' ? (
+          <>
+            <View style={styles.surfaceCard}>
+              <View style={styles.surfaceCardHeader}>
+                <View style={styles.surfaceHeaderCopy}>
+                  <Text style={styles.surfaceCardTitle}>Notification Inbox</Text>
+                  <Text style={styles.surfaceCardBody}>
+                    Review warnings, completed payments and goal updates in one place.
+                  </Text>
+                </View>
+                <View style={styles.statusRow}>
+                  <View style={[styles.statusPill, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
+                    <Text style={[styles.statusPillText, { color: colors.primaryDark }]}>Unread</Text>
+                  </View>
+                  <View style={[styles.statusPill, { backgroundColor: colors.primaryLight }]}>
+                    <Text style={[styles.statusPillText, { color: hexToRgba(colors.text, 0.6) }]}>Read</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {notificationPreview === 'empty' ? (
+              <View style={styles.emptyCard}>
+                <View style={styles.emptyIconWrap}>
+                  <MaterialIcons name="notifications-none" size={42} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.emptyTitle}>You are all caught up.</Text>
+                <Text style={styles.emptyBody}>
+                  No new alerts right now. The inbox will fill up again when budgets, goals or
+                  transfers need attention.
                 </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+              </View>
+            ) : (
+              <>
+                {Object.entries(groupedNotifications).map(([group, items]) => (
+                  <View key={group} style={styles.sectionStack}>
+                    <View style={styles.inlineHeader}>
+                      <Text style={styles.sectionTitle}>{group}</Text>
+                      <Text style={styles.inlineLink}>{items.length} items</Text>
+                    </View>
 
-        <View style={styles.phone}>
-          {(mode === 'notifications' || mode === 'notifications-empty') && (
-            <>
-              <View style={styles.headerRow}>
-                <MaterialIcons name="chevron-left" size={22} color={hexToRgba(colors.text, 0.62)} />
-                <Text style={styles.headerTitle}>Notifications</Text>
-                <View style={styles.avatar}>
-                  <MaterialIcons name="person" size={14} color={colors.card} />
+                    {items.map((item) => (
+                      <View key={item.id} style={styles.notificationCard}>
+                        <View style={styles.notificationTopRow}>
+                          <View style={styles.notificationLeading}>
+                            <View style={styles.notificationIconWrap}>
+                              <MaterialIcons name={item.icon} size={18} color={colors.primaryDark} />
+                            </View>
+                            <View style={styles.notificationCopy}>
+                              <Text style={styles.notificationTitle}>{item.title}</Text>
+                              <Text style={styles.notificationBody}>{item.body}</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.notificationTime}>{item.time}</Text>
+                        </View>
+
+                        {item.id === 'n2' ? (
+                          <Pressable style={styles.inlineAction}>
+                            <Text style={styles.inlineActionText}>See transaction</Text>
+                            <MaterialIcons name="arrow-forward" size={14} color={colors.primaryDark} />
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <View style={styles.surfaceCard}>
+              <View style={styles.surfaceCardHeader}>
+                <View>
+                  <Text style={styles.surfaceCardTitle}>Search Workspace</Text>
+                  <Text style={styles.surfaceCardBody}>
+                    Search by merchant, note, date or category without leaving the page.
+                  </Text>
                 </View>
               </View>
-              <View style={styles.toggleRow}>
-                <View style={[styles.togglePill, styles.togglePillActive]}>
-                  <Text style={styles.toggleTextActive}>Unread</Text>
-                </View>
-                <View style={styles.togglePill}>
-                  <Text style={styles.toggleText}>Read</Text>
-                </View>
-              </View>
-            </>
-          )}
 
-          {(mode === 'search-start' ||
-            mode === 'search-empty' ||
-            mode === 'search-suggest' ||
-            mode === 'search-loading' ||
-            mode === 'search-results' ||
-            mode === 'search-filter') && (
-            <>
-              <View style={styles.searchTopRow}>
-                <MaterialIcons name="chevron-left" size={22} color={hexToRgba(colors.text, 0.62)} />
-                <View style={styles.avatar}>
-                  <MaterialIcons name="person" size={14} color={colors.card} />
-                </View>
-              </View>
-              <Text style={styles.searchTitle}>Search Anything...</Text>
-
-              <View style={[styles.searchBar, mode === 'search-results' || mode === 'search-suggest' || mode === 'search-loading' ? styles.searchBarFocused : undefined]}>
-                <MaterialIcons name="search" size={15} color={hexToRgba(colors.text, 0.45)} />
+              <View style={[styles.searchBar, searchPreview !== 'start' ? styles.searchBarFocused : undefined]}>
+                <MaterialIcons name="search" size={18} color={hexToRgba(colors.text, 0.45)} />
                 <TextInput
                   value={searchText}
                   onChangeText={setQuery}
                   style={styles.searchInput}
-                  placeholder="Search..."
+                  placeholder="Search transactions, merchants, notes..."
                   placeholderTextColor={hexToRgba(colors.text, 0.45)}
                 />
-                <MaterialIcons name="tune" size={15} color={hexToRgba(colors.text, 0.6)} />
+                <Pressable style={styles.searchFilterButton}>
+                  <MaterialIcons name="tune" size={18} color={colors.primaryDark} />
+                </Pressable>
               </View>
-            </>
-          )}
+            </View>
 
-          {mode === 'notifications' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Today</Text>
-              {notifications.map((item, index) => (
-                <View key={item.id} style={[styles.notificationCard, index > 0 ? styles.mt8 : undefined]}>
-                  <View style={styles.notificationRow}>
-                    <View style={styles.notificationTitleWrap}>
-                      <MaterialIcons name={item.icon} size={14} color={colors.primaryDark} />
-                      <Text style={styles.notificationTitle}>{item.title}</Text>
-                    </View>
-                    <Text style={styles.notificationTime}>{item.time}</Text>
+            {searchPreview === 'start' ? (
+              <>
+                <View style={styles.surfaceCard}>
+                  <View style={styles.inlineHeader}>
+                    <Text style={styles.sectionTitle}>Popular categories</Text>
+                    <Text style={styles.inlineLink}>See all</Text>
                   </View>
-                  <Text style={styles.notificationBody}>{item.body}</Text>
-                  {item.id === 'n2' && (
-                    <Pressable style={styles.actionGhost}>
-                      <Text style={styles.actionGhostText}>See Transaction</Text>
-                      <MaterialIcons name="arrow-forward" size={12} color={colors.primaryDark} />
-                    </Pressable>
-                  )}
+                  <View style={styles.categoryGrid}>
+                    {categoryCards.map((item) => (
+                      <Pressable key={item.label} style={styles.categoryCard}>
+                        <View style={styles.categoryIconWrap}>
+                          <MaterialIcons name={item.icon} size={20} color={colors.primaryDark} />
+                        </View>
+                        <Text style={styles.categoryCardText}>{item.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
                 </View>
-              ))}
-            </View>
-          )}
 
-          {mode === 'notifications-empty' && (
-            <View style={styles.emptyWrap}>
-              <View style={styles.emptyArt}>
-                <MaterialIcons name="notifications-none" size={46} color={hexToRgba(colors.primaryDark, 0.7)} />
-              </View>
-              <Text style={styles.emptyTitle}>You are all caught up.</Text>
-              <Text style={styles.emptyDesc}>There are no notifications to show. Pull down to refresh this list.</Text>
-              <Pressable style={styles.refreshChip}>
-                <MaterialIcons name="refresh" size={12} color={hexToRgba(colors.text, 0.55)} />
-                <Text style={styles.refreshText}>Pull to refresh</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {mode === 'search-start' && (
-            <View style={styles.section}>
-              <View style={styles.inlineTitleRow}>
-                <Text style={styles.sectionLabel}>Search by categories</Text>
-                <Text style={styles.seeAll}>See All</Text>
-              </View>
-              <View style={styles.chipsWrap}>
-                {chips.map((item) => (
-                  <View key={item} style={styles.filterChip}>
-                    <MaterialIcons name="sell" size={11} color={hexToRgba(colors.text, 0.52)} />
-                    <Text style={styles.filterChipText}>{item}</Text>
+                <View style={styles.surfaceCard}>
+                  <View style={styles.inlineHeader}>
+                    <Text style={styles.sectionTitle}>Recent searches</Text>
+                    <Text style={styles.inlineLink}>Clear</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {mode === 'search-empty' && (
-            <View style={styles.emptyWrap}>
-              <View style={styles.emptyCircle}>
-                <MaterialIcons name="close" size={20} color={colors.error} />
-              </View>
-              <Text style={styles.emptyTitle}>No results found</Text>
-              <Text style={styles.emptyDesc}>Try browsing the following categories below to see if you can find something.</Text>
-              <View style={styles.chipsWrapCenter}>
-                {chips.map((item) => (
-                  <View key={item} style={styles.filterChip}>
-                    <Text style={styles.filterChipText}>{item}</Text>
+                  <View style={styles.searchHistoryList}>
+                    {recentSearches.map((item, index) => (
+                      <View
+                        key={item}
+                        style={[
+                          styles.historyRow,
+                          index !== recentSearches.length - 1 ? styles.rowDivider : undefined,
+                        ]}
+                      >
+                        <View style={styles.historyLeading}>
+                          <MaterialIcons name="history" size={18} color={hexToRgba(colors.text, 0.44)} />
+                          <Text style={styles.historyText}>{item}</Text>
+                        </View>
+                        <MaterialIcons name="north-east" size={18} color={hexToRgba(colors.text, 0.32)} />
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            </View>
-          )}
+                </View>
+              </>
+            ) : null}
 
-          {mode === 'search-suggest' && (
-            <View style={styles.suggestCard}>
-              {suggestItems.map((item, index) => (
-                <Text key={item} style={[styles.suggestItem, index !== suggestItems.length - 1 ? styles.suggestDivider : undefined]}>
-                  {item}
+            {searchPreview === 'suggest' ? (
+              <View style={styles.surfaceCard}>
+                <Text style={styles.sectionTitle}>Suggested categories</Text>
+                <Text style={styles.surfaceCardBody}>
+                  We found possible matches based on your input.
                 </Text>
-              ))}
-            </View>
-          )}
+                <View style={styles.suggestionList}>
+                  {suggestItems.map((item, index) => (
+                    <View
+                      key={item}
+                      style={[
+                        styles.suggestRow,
+                        index !== suggestItems.length - 1 ? styles.rowDivider : undefined,
+                      ]}
+                    >
+                      <Text style={styles.suggestText}>{item}</Text>
+                      <MaterialIcons name="north-east" size={18} color={hexToRgba(colors.text, 0.3)} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
 
-          {mode === 'search-loading' && (
-            <View style={styles.loaderWrap}>
-              <ActivityIndicator size="large" color={colors.primaryDark} />
-            </View>
-          )}
+            {searchPreview === 'loading' ? (
+              <View style={styles.loaderCard}>
+                <ActivityIndicator size="large" color={colors.primaryDark} />
+                <Text style={styles.loaderTitle}>Searching transactions...</Text>
+                <Text style={styles.loaderBody}>We are scanning merchants, notes and categories for matches.</Text>
+              </View>
+            ) : null}
 
-          {mode === 'search-results' && (
-            <View style={styles.section}>
-              <View style={styles.chipsWrap}>
-                {chips.map((item) => (
-                  <View key={item} style={styles.filterChip}>
-                    <Text style={styles.filterChipText}>{item}</Text>
+            {searchPreview === 'results' ? (
+              <>
+                <View style={styles.surfaceCard}>
+                  <View style={styles.inlineHeader}>
+                    <Text style={styles.sectionTitle}>Search results</Text>
+                    <Text style={styles.inlineLink}>2,168 found</Text>
+                  </View>
+                  <View style={styles.resultChips}>
+                    {categoryCards.map((item) => (
+                      <View key={item.label} style={styles.filterChip}>
+                        <Text style={styles.filterChipText}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {results.map((item) => (
+                  <View key={item.id} style={styles.resultCard}>
+                    <View style={styles.resultLeft}>
+                      <View style={styles.resultIconWrap}>
+                        <MaterialIcons name="local-cafe" size={18} color={colors.primaryDark} />
+                      </View>
+                      <View style={styles.resultCopy}>
+                        <Text style={styles.resultMerchant}>{item.merchant}</Text>
+                        <Text style={styles.resultNote}>{item.note}</Text>
+                        <Text style={styles.resultDate}>{item.date}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.resultAmount}>{item.amount}</Text>
                   </View>
                 ))}
-              </View>
+              </>
+            ) : null}
 
-              <View style={styles.resultsHeader}>
-                <Text style={styles.resultsCount}>2,168 results found</Text>
-                <Text style={styles.sortText}>Sort By: Date</Text>
-              </View>
+            {searchPreview === 'filter' ? (
+              <View style={styles.filterPanel}>
+                <View style={styles.inlineHeader}>
+                  <Text style={styles.sectionTitle}>Filter search</Text>
+                  <Text style={styles.inlineLink}>Clear all</Text>
+                </View>
+                <Text style={styles.surfaceCardBody}>
+                  Narrow results by date, category and amount range.
+                </Text>
 
-              {results.map((item) => (
-                <View key={item.id} style={styles.resultCard}>
-                  <View style={styles.resultLeft}>
-                    <View style={styles.logoBubble}>
-                      <MaterialIcons name="local-cafe" size={12} color={colors.primaryDark} />
+                <View style={styles.filterBlock}>
+                  <View style={styles.inlineHeader}>
+                    <Text style={styles.filterLabel}>Date range</Text>
+                    <Text style={styles.filterMeta}>Flexible</Text>
+                  </View>
+                  <View style={styles.dateRow}>
+                    <View style={styles.dateInput}>
+                      <Text style={styles.dateText}>03/01/2026</Text>
                     </View>
-                    <View>
-                      <Text style={styles.resultMerchant}>{item.merchant}</Text>
-                      <Text style={styles.resultNote}>{item.note}</Text>
-                      <Text style={styles.resultDate}>{item.date}</Text>
+                    <View style={styles.dateInput}>
+                      <Text style={styles.dateText}>03/21/2026</Text>
                     </View>
                   </View>
-                  <Text style={styles.resultAmount}>{item.amount}</Text>
                 </View>
-              ))}
-            </View>
-          )}
 
-          {mode === 'search-filter' && (
-            <View style={styles.filterPanel}>
-              <View style={styles.filterHeader}>
-                <Text style={styles.filterTitle}>Filter Search</Text>
-                <Text style={styles.clearAll}>Clear All</Text>
+                <View style={styles.filterBlock}>
+                  <View style={styles.inlineHeader}>
+                    <Text style={styles.filterLabel}>Categories</Text>
+                    <Text style={styles.filterMeta}>3 selected</Text>
+                  </View>
+                  <View style={styles.resultChips}>
+                    {categoryCards.map((item) => (
+                      <View key={item.label} style={styles.filterChip}>
+                        <Text style={styles.filterChipText}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.filterBlock}>
+                  <View style={styles.inlineHeader}>
+                    <Text style={styles.filterLabel}>Amount</Text>
+                    <Text style={styles.filterMeta}>$0 - $500</Text>
+                  </View>
+                  <View style={styles.sliderTrack}>
+                    <View style={styles.sliderValue} />
+                    <View style={styles.sliderThumb} />
+                  </View>
+                </View>
+
+                <Pressable style={styles.primaryAction}>
+                  <Text style={styles.primaryActionText}>Apply filter (23)</Text>
+                  <MaterialIcons name="tune" size={16} color={colors.card} />
+                </Pressable>
               </View>
-              <Text style={styles.filterDesc}>
-                Narrow down your results to find specific transaction based on amount, date, category, and more.
-              </Text>
+            ) : null}
 
-              <View style={styles.filterBlock}>
-                <View style={styles.inlineTitleRow}>
-                  <Text style={styles.filterLabel}>Date Range</Text>
-                  <Text style={styles.clearAll}>Clear All</Text>
+            {searchPreview === 'empty' ? (
+              <View style={styles.emptyCard}>
+                <View style={styles.emptyIconWrap}>
+                  <MaterialIcons name="search-off" size={42} color={colors.primaryDark} />
                 </View>
-                <View style={styles.dateRow}>
-                  <View style={styles.dateInput}><Text style={styles.dateText}>08/08/2028</Text></View>
-                  <View style={styles.dateInput}><Text style={styles.dateText}>08/08/2029</Text></View>
+                <Text style={styles.emptyTitle}>No results found</Text>
+                <Text style={styles.emptyBody}>
+                  Try a broader merchant name, a wider date range, or search by category instead.
+                </Text>
+                <View style={styles.resultChips}>
+                  {categoryCards.map((item) => (
+                    <View key={item.label} style={styles.filterChip}>
+                      <Text style={styles.filterChipText}>{item.label}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
-
-              <View style={styles.filterBlock}>
-                <View style={styles.inlineTitleRow}>
-                  <Text style={styles.filterLabel}>Search Category</Text>
-                  <Text style={styles.clearAll}>Clear All</Text>
-                </View>
-                <View style={styles.chipsWrap}>{chips.map((item) => <View key={item} style={styles.filterChip}><Text style={styles.filterChipText}>{item}</Text></View>)}</View>
-              </View>
-
-              <View style={styles.filterBlock}>
-                <View style={styles.inlineTitleRow}>
-                  <Text style={styles.filterLabel}>Search Amount</Text>
-                  <Text style={styles.usd}>USD</Text>
-                </View>
-                <View style={styles.sliderTrack}>
-                  <View style={styles.sliderValue} />
-                  <View style={styles.sliderThumb} />
-                </View>
-                <View style={styles.sliderMeta}>
-                  <Text style={styles.dateText}>0</Text>
-                  <Text style={styles.dateText}>25</Text>
-                </View>
-              </View>
-
-              <Pressable style={styles.primaryAction}>
-                <Text style={styles.primaryActionText}>Apply Filter (23)</Text>
-                <MaterialIcons name="tune" size={14} color={colors.card} />
-              </Pressable>
-            </View>
-          )}
-        </View>
+            ) : null}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -363,480 +579,580 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: colors.backgroundSoft,
     },
     content: {
-      paddingHorizontal: 14,
-      paddingBottom: 110,
-      gap: 12,
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 120,
+      gap: 16,
+    },
+    pageHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 14,
+    },
+    pageHeaderCopy: {
+      flex: 1,
     },
     pageTitle: {
-      fontSize: 30,
-      fontWeight: '900',
-      letterSpacing: -0.5,
+      fontSize: 28,
+      fontWeight: '800',
+      letterSpacing: -0.4,
       color: colors.text,
-      marginTop: 4,
     },
-    modeRow: {
-      gap: 8,
-      paddingRight: 8,
+    pageBody: {
+      marginTop: 8,
+      fontSize: Typography.body,
+      lineHeight: 21,
+      color: hexToRgba(colors.text, 0.6),
     },
-    modeChip: {
-      borderWidth: 1,
-      borderRadius: 999,
-      height: 30,
-      paddingHorizontal: 12,
+    pageHeaderAction: {
+      width: 48,
+      height: 48,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
-    modeChipText: {
-      fontSize: 11,
-      fontWeight: '700',
+    heroCard: {
+      borderRadius: 26,
+      padding: 22,
+      gap: 16,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.16,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 6,
     },
-    phone: {
+    heroEyebrow: {
+      fontSize: 12,
+      fontWeight: '800',
+      letterSpacing: 1.1,
+    },
+    heroTitle: {
+      fontSize: 22,
+      lineHeight: 30,
+      fontWeight: '800',
+    },
+    heroStatsRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    heroStat: {
+      flex: 1,
+      borderRadius: 18,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    heroStatValue: {
+      fontSize: 22,
+      fontWeight: '800',
+    },
+    heroStatLabel: {
+      marginTop: 4,
+      fontSize: Typography.body,
+    },
+    switchCard: {
       borderRadius: 22,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
-      overflow: 'hidden',
-      paddingHorizontal: 10,
-      paddingTop: 10,
-      paddingBottom: 14,
-      minHeight: 600,
+      padding: 16,
+      gap: 12,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
     },
-    headerRow: {
-      height: 28,
+    surfaceSwitch: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: 10,
     },
-    headerTitle: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    searchTopRow: {
-      height: 28,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    searchTitle: {
-      fontSize: 32,
-      lineHeight: 36,
-      fontWeight: '800',
-      color: colors.text,
-      marginTop: 8,
-    },
-    avatar: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.primaryDark,
-    },
-    toggleRow: {
-      marginTop: 10,
-      height: 28,
-      borderRadius: 999,
-      backgroundColor: colors.primaryLight,
-      flexDirection: 'row',
-      padding: 2,
-      gap: 2,
-    },
-    togglePill: {
+    surfaceButton: {
       flex: 1,
-      borderRadius: 999,
+      minHeight: 46,
+      borderRadius: 18,
+      borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    togglePillActive: {
-      backgroundColor: colors.card,
-    },
-    toggleText: {
-      color: hexToRgba(colors.text, 0.48),
-      fontSize: 10,
-      fontWeight: '700',
-    },
-    toggleTextActive: {
-      color: colors.text,
-      fontSize: 10,
-      fontWeight: '700',
-    },
-    section: {
-      marginTop: 10,
+      flexDirection: 'row',
       gap: 8,
     },
-    sectionLabel: {
-      fontSize: 13,
+    surfaceButtonText: {
+      fontSize: Typography.body,
       fontWeight: '700',
-      color: hexToRgba(colors.text, 0.72),
+    },
+    previewRow: {
+      gap: 8,
+      paddingRight: 8,
+    },
+    previewChip: {
+      borderRadius: 999,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    previewChipText: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+    },
+    surfaceCard: {
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      padding: 18,
+      gap: 14,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
+    surfaceCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    surfaceHeaderCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    surfaceCardTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    surfaceCardBody: {
+      marginTop: 8,
+      fontSize: Typography.body,
+      lineHeight: 21,
+      color: hexToRgba(colors.text, 0.58),
+    },
+    statusRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      alignSelf: 'flex-start',
+      maxWidth: '100%',
+    },
+    statusPill: {
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    statusPillText: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+    },
+    sectionStack: {
+      gap: 10,
+    },
+    inlineHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    inlineLink: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+      color: colors.primaryDark,
     },
     notificationCard: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      borderRadius: 14,
-      padding: 10,
-      gap: 6,
-    },
-    mt8: {
-      marginTop: 8,
-    },
-    notificationRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    notificationTitleWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      flex: 1,
-      paddingRight: 8,
-    },
-    notificationTitle: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    notificationTime: {
-      fontSize: 9,
-      fontWeight: '600',
-      color: hexToRgba(colors.text, 0.42),
-    },
-    notificationBody: {
-      fontSize: 11,
-      lineHeight: 16,
-      color: hexToRgba(colors.text, 0.66),
-    },
-    actionGhost: {
-      height: 28,
-      borderRadius: 999,
-      alignSelf: 'flex-start',
-      borderWidth: 1,
-      borderColor: hexToRgba(colors.primaryDark, 0.3),
-      backgroundColor: hexToRgba(colors.primaryDark, 0.08),
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 10,
-      flexDirection: 'row',
-      gap: 6,
-    },
-    actionGhostText: {
-      color: colors.primaryDark,
-      fontSize: 10,
-      fontWeight: '700',
-    },
-    emptyWrap: {
-      flex: 1,
-      minHeight: 420,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 18,
-    },
-    emptyArt: {
-      width: 92,
-      height: 92,
-      borderRadius: 24,
-      backgroundColor: hexToRgba(colors.primaryDark, 0.1),
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-    },
-    emptyCircle: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      backgroundColor: hexToRgba(colors.error, 0.12),
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-    },
-    emptyTitle: {
-      fontSize: 34,
-      lineHeight: 38,
-      fontWeight: '800',
-      color: colors.text,
-      textAlign: 'center',
-    },
-    emptyDesc: {
-      marginTop: 10,
-      textAlign: 'center',
-      fontSize: 12,
-      lineHeight: 18,
-      color: hexToRgba(colors.text, 0.62),
-    },
-    refreshChip: {
-      marginTop: 14,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: 10,
-      height: 24,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-    },
-    refreshText: {
-      fontSize: 10,
-      fontWeight: '600',
-      color: hexToRgba(colors.text, 0.55),
-    },
-    searchBar: {
-      marginTop: 12,
-      height: 34,
-      borderRadius: 17,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.primaryLight,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 10,
-      gap: 6,
-    },
-    searchBarFocused: {
-      borderColor: hexToRgba(colors.primaryDark, 0.55),
-      backgroundColor: colors.card,
-    },
-    searchInput: {
-      flex: 1,
-      fontSize: 12,
-      color: colors.text,
-      paddingVertical: 0,
-    },
-    inlineTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    seeAll: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: colors.primaryDark,
-    },
-    chipsWrap: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 6,
-    },
-    chipsWrapCenter: {
-      marginTop: 10,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: 6,
-    },
-    filterChip: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      borderRadius: 999,
-      height: 28,
-      paddingHorizontal: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    filterChipText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: hexToRgba(colors.text, 0.68),
-    },
-    suggestCard: {
-      marginTop: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 12,
-      backgroundColor: colors.card,
-      overflow: 'hidden',
-    },
-    suggestItem: {
-      minHeight: 32,
-      textAlignVertical: 'center',
-      lineHeight: 32,
-      paddingHorizontal: 10,
-      fontSize: 14,
-      color: hexToRgba(colors.text, 0.8),
-      includeFontPadding: false,
-    },
-    suggestDivider: {
-      borderBottomWidth: 1,
-      borderBottomColor: hexToRgba(colors.text, 0.08),
-    },
-    loaderWrap: {
-      minHeight: 360,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    resultsHeader: {
-      marginTop: 6,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    resultsCount: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    sortText: {
-      fontSize: 10,
-      fontWeight: '600',
-      color: hexToRgba(colors.text, 0.55),
-    },
-    resultCard: {
-      marginTop: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 12,
-      backgroundColor: colors.card,
-      padding: 10,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    resultLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      flex: 1,
-      paddingRight: 8,
-    },
-    logoBubble: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: hexToRgba(colors.primaryDark, 0.12),
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    resultMerchant: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    resultNote: {
-      fontSize: 10,
-      color: hexToRgba(colors.text, 0.58),
-      marginTop: 1,
-    },
-    resultDate: {
-      fontSize: 9,
-      color: hexToRgba(colors.text, 0.44),
-      marginTop: 2,
-    },
-    resultAmount: {
-      fontSize: 12,
-      fontWeight: '800',
-      color: colors.text,
-    },
-    filterPanel: {
-      marginTop: 12,
       borderRadius: 20,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
-      paddingHorizontal: 10,
-      paddingTop: 10,
-      paddingBottom: 12,
+      padding: 16,
+      gap: 12,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
+    },
+    notificationTopRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
       gap: 10,
     },
-    filterHeader: {
+    notificationLeading: {
+      flex: 1,
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+      gap: 12,
     },
-    filterTitle: {
-      fontSize: 20,
-      lineHeight: 24,
-      fontWeight: '800',
+    notificationIconWrap: {
+      width: 42,
+      height: 42,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: hexToRgba(colors.primaryDark, 0.1),
+    },
+    notificationCopy: {
+      flex: 1,
+    },
+    notificationTitle: {
+      fontSize: Typography.body,
+      fontWeight: '700',
       color: colors.text,
     },
-    clearAll: {
-      fontSize: 10,
+    notificationBody: {
+      marginTop: 6,
+      fontSize: Typography.body,
+      lineHeight: 20,
+      color: hexToRgba(colors.text, 0.6),
+    },
+    notificationTime: {
+      fontSize: Typography.body,
+      fontWeight: '600',
+      color: hexToRgba(colors.text, 0.42),
+    },
+    inlineAction: {
+      alignSelf: 'flex-start',
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: hexToRgba(colors.primaryDark, 0.08),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    inlineActionText: {
+      fontSize: Typography.body,
       fontWeight: '700',
       color: colors.primaryDark,
     },
-    filterDesc: {
-      fontSize: 11,
-      lineHeight: 16,
-      color: hexToRgba(colors.text, 0.58),
-    },
-    filterBlock: {
-      gap: 6,
-    },
-    filterLabel: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    dateRow: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    dateInput: {
-      flex: 1,
-      height: 32,
+    emptyCard: {
+      borderRadius: 24,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 999,
-      paddingHorizontal: 10,
+      backgroundColor: colors.card,
+      paddingHorizontal: 22,
+      paddingVertical: 30,
+      alignItems: 'center',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
+    emptyIconWrap: {
+      width: 88,
+      height: 88,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: hexToRgba(colors.primaryDark, 0.08),
+    },
+    emptyTitle: {
+      marginTop: 18,
+      fontSize: 26,
+      lineHeight: 32,
+      fontWeight: '800',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    emptyBody: {
+      marginTop: 10,
+      fontSize: Typography.body,
+      lineHeight: 21,
+      color: hexToRgba(colors.text, 0.58),
+      textAlign: 'center',
+    },
+    searchBar: {
+      minHeight: 56,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    searchBarFocused: {
+      backgroundColor: colors.card,
+      borderColor: hexToRgba(colors.primaryDark, 0.4),
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: Typography.body,
+      color: colors.text,
+      paddingVertical: 0,
+    },
+    searchFilterButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: hexToRgba(colors.primaryDark, 0.08),
+    },
+    categoryGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    categoryCard: {
+      width: '47%',
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      paddingHorizontal: 14,
+      paddingVertical: 16,
+      gap: 10,
+    },
+    categoryIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.primaryLight,
     },
-    dateText: {
-      fontSize: 10,
-      fontWeight: '600',
-      color: hexToRgba(colors.text, 0.55),
-    },
-    usd: {
-      fontSize: 10,
+    categoryCardText: {
+      fontSize: Typography.body,
       fontWeight: '700',
-      color: hexToRgba(colors.text, 0.55),
+      color: colors.text,
+    },
+    searchHistoryList: {
+      gap: 2,
+    },
+    historyRow: {
+      minHeight: 50,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    historyLeading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+      paddingRight: 8,
+    },
+    historyText: {
+      fontSize: Typography.body,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    rowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: hexToRgba(colors.text, 0.08),
+    },
+    suggestionList: {
+      marginTop: 4,
+      gap: 2,
+    },
+    suggestRow: {
+      minHeight: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    suggestText: {
+      fontSize: Typography.body,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    loaderCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      minHeight: 280,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
+    loaderTitle: {
+      marginTop: 18,
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    loaderBody: {
+      marginTop: 8,
+      fontSize: Typography.body,
+      lineHeight: 21,
+      color: hexToRgba(colors.text, 0.58),
+      textAlign: 'center',
+    },
+    resultChips: {
+      marginTop: 2,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    filterChip: {
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: colors.backgroundSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    filterChipText: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+      color: hexToRgba(colors.text, 0.68),
+    },
+    resultCard: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
+    },
+    resultLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingRight: 8,
+    },
+    resultIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: hexToRgba(colors.primaryDark, 0.1),
+    },
+    resultCopy: {
+      flex: 1,
+    },
+    resultMerchant: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    resultNote: {
+      marginTop: 4,
+      fontSize: Typography.body,
+      color: hexToRgba(colors.text, 0.58),
+    },
+    resultDate: {
+      marginTop: 4,
+      fontSize: Typography.body,
+      color: hexToRgba(colors.text, 0.42),
+    },
+    resultAmount: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    filterPanel: {
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      padding: 18,
+      gap: 16,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
+    filterBlock: {
+      gap: 10,
+    },
+    filterLabel: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    filterMeta: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+      color: hexToRgba(colors.text, 0.52),
+    },
+    dateRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    dateInput: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.backgroundSoft,
+      paddingHorizontal: 14,
+      justifyContent: 'center',
+    },
+    dateText: {
+      fontSize: Typography.body,
+      fontWeight: '600',
+      color: hexToRgba(colors.text, 0.56),
     },
     sliderTrack: {
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: hexToRgba(colors.text, 0.16),
-      marginTop: 6,
+      height: 8,
+      borderRadius: 999,
+      backgroundColor: hexToRgba(colors.text, 0.12),
       position: 'relative',
+      overflow: 'visible',
     },
     sliderValue: {
       position: 'absolute',
       left: 0,
       top: 0,
       bottom: 0,
-      width: '26%',
+      width: '58%',
+      borderRadius: 999,
       backgroundColor: colors.primaryDark,
-      borderRadius: 2,
     },
     sliderThumb: {
       position: 'absolute',
       top: -6,
-      left: '24%',
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      borderWidth: 2,
+      left: '56%',
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 3,
       borderColor: colors.primaryDark,
       backgroundColor: colors.card,
     },
-    sliderMeta: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: 8,
-    },
     primaryAction: {
-      marginTop: 4,
-      height: 42,
+      minHeight: 48,
       borderRadius: 999,
       backgroundColor: colors.primaryDark,
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      flexDirection: 'row',
-      gap: 6,
+      gap: 8,
     },
     primaryActionText: {
-      fontSize: 12,
+      fontSize: Typography.body,
       fontWeight: '700',
       color: colors.card,
     },

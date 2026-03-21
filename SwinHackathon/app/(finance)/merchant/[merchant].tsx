@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function MerchantDetailScreen() {
   const { merchant } = useLocalSearchParams<{ merchant: string }>();
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   summaryRow: {
     marginTop: 20,
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   label: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   summaryValue: {
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   chartTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chartBars: {
@@ -171,19 +172,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   historyTitle: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   historyMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   historyAmount: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 22,
   },
 });

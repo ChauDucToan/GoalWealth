@@ -1,3 +1,4 @@
+import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { StockTrendChart } from '@/components/finance/StockTrendChart';
 import {
@@ -12,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 function formatSignedPercent(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -326,18 +328,16 @@ export default function InsightsScreen() {
               {formatCurrency(item.spent)}
             </Text>
           </View>
+        ))}
 
-          <View style={styles.badge}>
-            <MaterialIcons name="warning-amber" size={14} color={colors.error} />
-            <Text style={styles.badgeText}>{selectedPreset.code}</Text>
-          </View>
-
-      <ThemeButton
-        title="Open investment center"
-        onPress={() => router.push('/(finance)/investments')}
-        colorBackground={colors.primaryDark}
-        colorText={colors.card}
-      />
+        <ThemeButton
+          title="Open investment center"
+          onPress={() => router.push('/(finance)/investments')}
+          colorBackground={colors.primaryDark}
+          colorText={colors.card}
+          style={styles.investmentButton}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -355,9 +355,14 @@ const styles = StyleSheet.create({
   heroCard: {
     borderRadius: 26,
     padding: 20,
+    shadowColor: 'rgba(15,23,42,0.12)',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
@@ -371,6 +376,11 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     padding: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -383,7 +393,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionLink: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   portfolioHeader: {
@@ -399,7 +409,7 @@ const styles = StyleSheet.create({
   },
   portfolioMeta: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   portfolioBadge: {
@@ -422,10 +432,10 @@ const styles = StyleSheet.create({
   },
   featuredName: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   featuredChange: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chartWrap: {
@@ -461,23 +471,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   watchSymbol: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   watchName: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   watchRight: {
     alignItems: 'flex-end',
   },
   watchPrice: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   watchChange: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chartRow: {
@@ -496,15 +506,20 @@ const styles = StyleSheet.create({
   },
   chartLabel: {
     marginTop: 10,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   activityDetailCard: {
     marginTop: 18,
     borderRadius: 18,
     padding: 14,
+    shadowColor: 'rgba(15,23,42,0.08)',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   activityDetailLabel: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -522,17 +537,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activityBadgeText: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   activityDetailBody: {
     marginTop: 10,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   activityDetailFooter: {
     marginTop: 10,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   categoryRow: {
@@ -554,11 +569,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryName: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   categoryValue: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
+  },
+  investmentButton: {
+    marginTop: 20,
+    width: '100%',
   },
 });

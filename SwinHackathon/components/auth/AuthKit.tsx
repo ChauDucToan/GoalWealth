@@ -3,6 +3,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React from 'react';
+import { Typography } from '@/constants/theme';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
     textAlign: 'center',
     paddingHorizontal: 12,
@@ -581,7 +582,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rememberText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '500',
   },
   strengthWrap: {
@@ -598,12 +599,12 @@ const styles = StyleSheet.create({
   },
   strengthLabel: {
     marginTop: 8,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   supportText: {
     marginTop: 18,
-    fontSize: 12,
+    fontSize: Typography.body,
     lineHeight: 18,
     textAlign: 'center',
   },

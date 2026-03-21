@@ -1,26 +1,26 @@
 // constants/Colors.ts
 export const Colors = {
     light: {
-        text: '#0A1E3F',
-        textLight: '#E5F3FF',
-        textSecondary: '#F0F8FF',
+        text: '#10243E',
+        textLight: '#F7FBFF',
+        textSecondary: '#667A94',
         background: '#289bf6',
-        backgroundSoft: '#E6F4FF',
-        darkBackground: '#0c3a7b',
+        backgroundSoft: '#F8FAFC',
+        darkBackground: '#173554',
         card: '#FFFFFF',
-        border: '#BCE0FD',
-        bottomBarBackground: '#D6EFFF',
+        border: '#E6EDF3',
+        bottomBarBackground: '#F8FAFC',
         primary: '#289bf6',
-        primaryLight: '#E5F3FF',
-        primaryDark: '#1573fe',
-        secondary: '#82C3FF',
+        primaryLight: '#F6F9FD',
+        primaryDark: '#1A73E8',
+        secondary: '#AABDD6',
         
         
         
-        success: '#22C55E',
-        warning: '#FACC15',
-        error: '#EF4444',
-        shadow: 'rgba(0,0,0,0.1)',
+        success: '#6A927A',
+        warning: '#B2955A',
+        error: '#B98486',
+        shadow: 'rgba(15,23,42,0.08)',
     },
     dark: {
         text: '#F0F8FF',
@@ -44,6 +44,9 @@ export const Colors = {
     }
 };
 
-
+export const Typography = {
+    body: 14,
+};
 
 export type ColorTheme = typeof Colors.light;
+export type AppTypography = typeof Typography;

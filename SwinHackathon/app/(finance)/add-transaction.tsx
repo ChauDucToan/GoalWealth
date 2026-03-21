@@ -9,6 +9,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 type DraftFieldRow = {
   key: string;
@@ -299,14 +300,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'capitalize',
   },
   amountLabel: {
     marginTop: 18,
     alignSelf: 'center',
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -361,11 +362,11 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   fieldLabel: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   fieldValue: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   switchTrack: {

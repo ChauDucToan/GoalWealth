@@ -23,6 +23,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -926,7 +927,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   eyebrow: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -957,6 +958,11 @@ const styles = StyleSheet.create({
     marginTop: 22,
     borderRadius: 30,
     padding: 20,
+    shadowColor: 'rgba(15,23,42,0.12)',
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
   },
   rowBetween: {
     flexDirection: 'row',
@@ -964,7 +970,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   balanceLabel: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   balanceValue: {
@@ -981,7 +987,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   balanceChipText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   metricRow: {
@@ -993,9 +999,14 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 18,
     padding: 14,
+    shadowColor: 'rgba(15,23,42,0.08)',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   metricValue: {
@@ -1010,11 +1021,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   chartTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chartMeta: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   sparklineWrap: {
@@ -1033,16 +1044,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   sparklineLabel: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   activityDetailCard: {
     marginTop: 18,
     borderRadius: 18,
     padding: 14,
+    shadowColor: 'rgba(15,23,42,0.08)',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   activityDetailLabel: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -1060,17 +1076,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activityBadgeText: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   activityDetailBody: {
     marginTop: 10,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   activityDetailFooter: {
     marginTop: 10,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   body: {
@@ -1091,7 +1107,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionLink: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   horizontalList: {
@@ -1101,6 +1117,11 @@ const styles = StyleSheet.create({
   accountsPanel: {
     borderRadius: 24,
     paddingHorizontal: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   accountRow: {
     minHeight: 66,
@@ -1125,7 +1146,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   accountLabel: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   accountBalance: {
@@ -1133,12 +1154,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   accountMask: {
-    fontSize: 12,
+    fontSize: Typography.body,
     marginTop: 4,
   },
   accountChange: {
     marginTop: 4,
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   actionGrid: {
@@ -1150,6 +1171,11 @@ const styles = StyleSheet.create({
     width: '47%',
     borderRadius: 22,
     padding: 16,
+    shadowColor: 'rgba(15,23,42,0.08)',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   actionIconWrap: {
     width: 42,
@@ -1165,7 +1191,7 @@ const styles = StyleSheet.create({
   },
   actionSubtitle: {
     marginTop: 6,
-    fontSize: 12,
+    fontSize: Typography.body,
     lineHeight: 18,
   },
   rowGap: {
@@ -1176,6 +1202,11 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 22,
     padding: 16,
+    shadowColor: 'rgba(15,23,42,0.08)',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   highlightIcon: {
     width: 40,
@@ -1186,7 +1217,7 @@ const styles = StyleSheet.create({
   },
   highlightTitle: {
     marginTop: 14,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   highlightValue: {
@@ -1196,11 +1227,16 @@ const styles = StyleSheet.create({
   },
   highlightMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   card: {
     borderRadius: 24,
     padding: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   categoryRow: {
     marginTop: 16,
@@ -1223,15 +1259,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   categoryMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   categoryPercent: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   progressTrack: {
@@ -1247,6 +1283,11 @@ const styles = StyleSheet.create({
     width: 214,
     borderRadius: 24,
     padding: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   goalIcon: {
     width: 42,
@@ -1256,7 +1297,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   goalDue: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   goalTitle: {
@@ -1271,15 +1312,20 @@ const styles = StyleSheet.create({
   },
   goalMeta: {
     marginTop: 6,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   savingsCard: {
     flex: 1,
     borderRadius: 24,
     padding: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   savingsEyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
@@ -1291,7 +1337,7 @@ const styles = StyleSheet.create({
   },
   savingsMeta: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
   },
   savingsTrack: {
     marginTop: 20,
@@ -1306,13 +1352,23 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     padding: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   investmentCard: {
     borderRadius: 24,
     padding: 18,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   investmentEyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -1324,7 +1380,7 @@ const styles = StyleSheet.create({
   },
   investmentMeta: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   investmentBadge: {
@@ -1349,11 +1405,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   investmentChipSymbol: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   investmentChipChange: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   investmentActionRow: {
@@ -1369,7 +1425,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   billMeta: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   billRow: {
@@ -1389,15 +1445,15 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   billName: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   billDue: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   billAmount: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   merchantRow: {
@@ -1418,17 +1474,22 @@ const styles = StyleSheet.create({
   },
   merchantLabel: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   merchantCount: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   resourceCard: {
     width: 224,
     borderRadius: 22,
     padding: 16,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   resourceBadge: {
     width: 40,
@@ -1439,7 +1500,7 @@ const styles = StyleSheet.create({
   },
   resourceSource: {
     marginTop: 16,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.9,
@@ -1452,7 +1513,7 @@ const styles = StyleSheet.create({
   },
   resourceCaption: {
     marginTop: 14,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   assistantCard: {
@@ -1462,6 +1523,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
   assistantIcon: {
     width: 46,
@@ -1474,12 +1540,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   assistantTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   assistantBody: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   transactionRow: {
@@ -1499,34 +1565,39 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   transactionMerchant: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   transactionMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   transactionAmountWrap: {
     alignItems: 'flex-end',
   },
   transactionAmount: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   transactionStatus: {
     marginTop: 4,
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   insightCard: {
     borderRadius: 26,
     padding: 20,
+    shadowColor: 'rgba(15,23,42,0.12)',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
   },
   insightTextWrap: {
     gap: 8,
   },
   insightEyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.1,
@@ -1537,7 +1608,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   insightBody: {
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   insightButton: {

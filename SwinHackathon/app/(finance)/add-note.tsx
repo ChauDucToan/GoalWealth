@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function AddNoteScreen() {
   const { transactionDraft, updateTransactionDraft } = useFinance();
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     padding: 14,
-    fontSize: 15,
+    fontSize: Typography.body,
     textAlignVertical: 'top',
   },
   button: {

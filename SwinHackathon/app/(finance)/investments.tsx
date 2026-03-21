@@ -14,6 +14,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 function formatSignedPercent(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   heroEyebrow: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
   },
   heroMeta: {
     marginTop: 6,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   heroIcon: {
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   defaultBadgeText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   heroChartWrap: {
@@ -455,7 +456,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   summaryLabel: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   summaryValue: {
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionLink: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   holdingCard: {
@@ -495,23 +496,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stockSymbol: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   stockName: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: Typography.body,
   },
   stockValueWrap: {
     alignItems: 'flex-end',
   },
   stockPrice: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   stockMeta: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   watchlistWrap: {
@@ -541,11 +542,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   watchDefaultText: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   watchSymbol: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   watchPrice: {
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   watchChange: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   positionRow: {
@@ -572,6 +573,6 @@ const styles = StyleSheet.create({
   },
   positionMeta: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: Typography.body,
   },
 });

@@ -1,5 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme } from '@/constants/theme';
+import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useMemo, useState } from 'react';
@@ -24,8 +24,9 @@ type ActiveAchievement = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   tone: ThemeTone;
   progress: number;
-  done: number;
-  goal: number;
+  progressLabel: string;
+  goalLabel: string;
+  reward: string;
 };
 
 type LeaderboardEntry = {
@@ -57,40 +58,44 @@ const activeList: ActiveAchievement[] = [
     name: 'Budget Boss',
     hint: 'Create your first budget and take control of your finances',
     icon: 'workspace-premium',
-    tone: 'success',
-    progress: 0,
-    done: 0,
-    goal: 1000,
+    tone: 'primaryDark',
+    progress: 0.68,
+    progressLabel: '$680 of $1,000 saved',
+    goalLabel: '$320 left this month',
+    reward: 'Unlock Budget Boss Level 4',
   },
   {
     id: 'a-2',
     name: 'Debt Slayer',
     hint: 'Pay off your first debt one step closer to financial freedom',
     icon: 'price-check',
-    tone: 'warning',
-    progress: 0,
-    done: 0,
-    goal: 1000,
+    tone: 'primaryDark',
+    progress: 0.42,
+    progressLabel: '$420 of $1,000 repaid',
+    goalLabel: '$580 left on target',
+    reward: 'Unlock debt planner bonuses',
   },
   {
     id: 'a-3',
     name: 'Savings Superstar',
     hint: 'Save $500 in your emergency fund',
     icon: 'auto-awesome',
-    tone: 'secondary',
-    progress: 0,
-    done: 0,
-    goal: 500,
+    tone: 'primaryDark',
+    progress: 0.78,
+    progressLabel: '$390 of $500 funded',
+    goalLabel: '$110 left to complete',
+    reward: 'Unlock a savings streak frame',
   },
   {
     id: 'a-4',
     name: 'Goal Getter',
     hint: 'Complete a month without exceeding your spending limit',
     icon: 'flag',
-    tone: 'error',
-    progress: 0,
-    done: 0,
-    goal: 1,
+    tone: 'primaryDark',
+    progress: 0.56,
+    progressLabel: '17 of 30 days on track',
+    goalLabel: '13 more days to lock it in',
+    reward: 'Unlock goal celebration perks',
   },
 ];
 
@@ -144,8 +149,8 @@ export default function AchievementsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedSegment, setSelectedSegment] = useState<(typeof segments)[number]>('Badges');
-  const unlockedCount = useMemo(() => badges.filter((item) => item.unlocked).length, []);
   const tone = (key: ThemeTone) => colors[key];
+  const unlockedCount = badges.filter((item) => item.unlocked).length;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -174,41 +179,55 @@ export default function AchievementsScreen() {
             );
           })}
         </View>
-
-        {/* <View style={styles.countWrap}>
-          <Text style={styles.countNumber}>{unlockedCount}</Text>
-          <Text style={styles.countLabel}>Achievements Unlocked</Text>
-        </View> */}
+        
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryMetric}>
+            <Text style={styles.summaryValue}>{unlockedCount}</Text>
+            <Text style={styles.summaryLabel}>Unlocked</Text>
+          </View>
+          <View style={styles.summaryMetricDivider} />
+          <View style={styles.summaryMetric}>
+            <Text style={styles.summaryValue}>{activeList.length}</Text>
+            <Text style={styles.summaryLabel}>Active</Text>
+          </View>
+          <View style={styles.summaryMetricDivider} />
+          <View style={styles.summaryMetric}>
+            <Text style={styles.summaryValue}>4.8K</Text>
+            <Text style={styles.summaryLabel}>Monthly pts</Text>
+          </View>
+        </View>
 
         {selectedSegment === 'Badges' ? (
           <>
-            <View style={styles.badgeGrid}>
-              {badges.map((item) => (
-                <View key={item.id} style={styles.badgeCard}>
-                  <View
-                    style={[
-                      styles.badgeHex,
-                      {
-                        backgroundColor: item.unlocked
-                          ? hexToRgba(tone(item.tone), 0.14)
-                          : hexToRgba(colors.text, 0.06),
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={item.icon}
-                      size={22}
-                      color={item.unlocked ? tone(item.tone) : hexToRgba(colors.text, 0.42)}
-                    />
+            <View style={styles.badgeGridCard}>
+              <View style={styles.badgeGrid}>
+                {badges.map((item) => (
+                  <View key={item.id} style={styles.badgeCard}>
+                    <View
+                      style={[
+                        styles.badgeHex,
+                        {
+                          backgroundColor: item.unlocked
+                            ? hexToRgba(tone(item.tone), 0.14)
+                            : hexToRgba(colors.text, 0.06),
+                        },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name={item.icon}
+                        size={22}
+                        color={item.unlocked ? tone(item.tone) : hexToRgba(colors.text, 0.42)}
+                      />
+                    </View>
+                    <Text style={[styles.badgeName, !item.unlocked && styles.badgeNameMuted]}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.badgeLevel, !item.unlocked && styles.badgeLevelMuted]}>
+                      {item.level}
+                    </Text>
                   </View>
-                  <Text style={[styles.badgeName, !item.unlocked && styles.badgeNameMuted]}>
-                    {item.title}
-                  </Text>
-                  <Text style={[styles.badgeLevel, !item.unlocked && styles.badgeLevelMuted]}>
-                    {item.level}
-                  </Text>
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
 
             <View style={styles.activeHeader}>
@@ -219,31 +238,45 @@ export default function AchievementsScreen() {
             </View>
 
             <View style={styles.activeList}>
-              {activeList.map((item, index) => (
-                <View key={item.id} style={[styles.activeRow, index !== activeList.length - 1 && styles.rowDivider]}>
-                  <View style={[styles.activeIconWrap, { backgroundColor: hexToRgba(tone(item.tone), 0.14) }]}>
-                    <MaterialIcons name={item.icon} size={20} color={tone(item.tone)} />
-                  </View>
-                  <View style={styles.activeBody}>
-                    <Text style={styles.activeName}>{item.name}</Text>
-                    <Text style={styles.activeHint}>{item.hint}</Text>
-                    <View style={styles.progressMetaRow}>
-                      <Text style={styles.progressMeta}>
-                        ${item.done} / ${item.goal}
+              {activeList.map((item) => (
+                <View key={item.id} style={styles.activeCard}>
+                  <View style={styles.activeCardTop}>
+                    <View style={[styles.activeIconWrap, { backgroundColor: hexToRgba(tone(item.tone), 0.14) }]}>
+                      <MaterialIcons name={item.icon} size={20} color={tone(item.tone)} />
+                    </View>
+
+                    <View style={styles.activeBody}>
+                      <Text style={styles.activeName}>{item.name}</Text>
+                      <Text style={styles.activeHint}>{item.hint}</Text>
+                    </View>
+
+                    <View style={[styles.progressBadge, { backgroundColor: hexToRgba(tone(item.tone), 0.1) }]}>
+                      <Text style={[styles.progressBadgeText, { color: tone(item.tone) }]}>
+                        {Math.round(item.progress * 100)}%
                       </Text>
-                      <Text style={styles.progressMeta}>{Math.round(item.progress * 100)}%</Text>
                     </View>
-                    <View style={styles.progressTrack}>
-                      <View
-                        style={[
-                          styles.progressValue,
-                          {
-                            width: `${item.progress * 100}%`,
-                            backgroundColor: tone(item.tone),
-                          },
-                        ]}
-                      />
-                    </View>
+                  </View>
+
+                  <View style={styles.progressMetaRow}>
+                    <Text style={styles.progressMeta}>{item.progressLabel}</Text>
+                    <Text style={styles.progressMeta}>{item.goalLabel}</Text>
+                  </View>
+
+                  <View style={styles.progressTrack}>
+                    <View
+                      style={[
+                        styles.progressValue,
+                        {
+                          width: `${item.progress * 100}%`,
+                          backgroundColor: tone(item.tone),
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.activeFooter}>
+                    <Text style={styles.activeFooterText}>{item.reward}</Text>
+                    <MaterialIcons name="north-east" size={18} color={hexToRgba(colors.text, 0.32)} />
                   </View>
                 </View>
               ))}
@@ -253,13 +286,15 @@ export default function AchievementsScreen() {
 
         {selectedSegment === 'Leaderboard' ? (
           <>
-            <View style={styles.leadHero}>
-              <View style={styles.leadAvatar}>
-                <MaterialIcons name="person" size={26} color={colors.text} />
+            <View style={styles.leadHeroCard}>
+              <View style={styles.leadHero}>
+                <View style={styles.leadAvatar}>
+                  <MaterialIcons name="person" size={26} color={colors.text} />
+                </View>
+                <Text style={styles.leadScore}>4,841pt</Text>
+                <Text style={styles.leadRole}>Frugal Expert</Text>
+                <Text style={styles.leadRank}>#42 ranked</Text>
               </View>
-              <Text style={styles.leadScore}>4,841pt</Text>
-              <Text style={styles.leadRole}>Frugal Expert</Text>
-              <Text style={styles.leadRank}>#42 ranked</Text>
             </View>
 
             <View style={styles.activeHeader}>
@@ -336,40 +371,46 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: colors.backgroundSoft,
     },
     content: {
-      paddingHorizontal: 14,
+      paddingHorizontal: 20,
+      paddingTop: 10,
       paddingBottom: 110,
-      gap: 14,
+      gap: 18,
     },
     headerRow: {
-      height: 40,
+      height: 48,
       marginTop: 2,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
     headerIconButton: {
-      width: 32,
-      height: 32,
+      width: 42,
+      height: 42,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     headerTitle: {
-      fontSize: 16,
+      fontSize: 28,
       color: colors.text,
       fontWeight: '800',
+      letterSpacing: -0.4,
     },
     segmentWrap: {
-      borderRadius: 14,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.bottomBarBackground,
-      padding: 3,
+      padding: 4,
       flexDirection: 'row',
     },
     segmentButton: {
       flex: 1,
-      height: 28,
-      borderRadius: 10,
+      height: 34,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -377,7 +418,7 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: colors.card,
     },
     segmentText: {
-      fontSize: 11,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.5),
       fontWeight: '600',
     },
@@ -400,16 +441,66 @@ function createStyles(colors: ColorTheme) {
       color: hexToRgba(colors.text, 0.68),
       fontWeight: '500',
     },
+    summaryCard: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
+    summaryMetric: {
+      flex: 1,
+      minHeight: 74,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    summaryMetricDivider: {
+      width: 1,
+      backgroundColor: hexToRgba(colors.text, 0.08),
+    },
+    summaryValue: {
+      fontSize: 24,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    summaryLabel: {
+      marginTop: 4,
+      fontSize: Typography.body,
+      fontWeight: '600',
+      color: hexToRgba(colors.text, 0.56),
+    },
+    badgeGridCard: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      paddingVertical: 14,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
+    },
     badgeGrid: {
+      paddingHorizontal: 2,
       flexDirection: 'row',
       flexWrap: 'wrap',
-      marginHorizontal: -4,
+      marginHorizontal: -6,
     },
     badgeCard: {
       width: '33.333%',
       alignItems: 'center',
-      marginBottom: 14,
-      paddingHorizontal: 4,
+      marginBottom: 16,
+      paddingHorizontal: 6,
     },
     badgeHex: {
       width: 56,
@@ -422,7 +513,7 @@ function createStyles(colors: ColorTheme) {
     },
     badgeName: {
       marginTop: 6,
-      fontSize: 10,
+      fontSize: Typography.body,
       color: colors.text,
       fontWeight: '700',
       textAlign: 'center',
@@ -432,7 +523,7 @@ function createStyles(colors: ColorTheme) {
     },
     badgeLevel: {
       marginTop: 2,
-      fontSize: 9,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.5),
     },
     badgeLevelMuted: {
@@ -445,35 +536,45 @@ function createStyles(colors: ColorTheme) {
       justifyContent: 'space-between',
     },
     activeTitle: {
-      fontSize: 13,
+      fontSize: 18,
       color: colors.text,
-      fontWeight: '700',
+      fontWeight: '800',
     },
     seeAll: {
-      fontSize: 11,
+      fontSize: Typography.body,
       fontWeight: '700',
-      color: colors.success,
+      color: colors.primaryDark,
     },
     activeList: {
+      gap: 12,
+    },
+    activeCard: {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
-      borderRadius: 16,
-      overflow: 'hidden',
+      borderRadius: 24,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      gap: 14,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
     },
-    activeRow: {
-      padding: 10,
+    activeCardTop: {
       flexDirection: 'row',
-      gap: 10,
+      alignItems: 'flex-start',
+      gap: 12,
     },
     rowDivider: {
       borderBottomWidth: 1,
       borderBottomColor: hexToRgba(colors.text, 0.08),
     },
     activeIconWrap: {
-      width: 34,
-      height: 34,
-      borderRadius: 11,
+      width: 42,
+      height: 42,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 2,
@@ -482,40 +583,80 @@ function createStyles(colors: ColorTheme) {
       flex: 1,
     },
     activeName: {
-      fontSize: 12,
+      fontSize: 16,
       color: colors.text,
-      fontWeight: '700',
+      fontWeight: '800',
     },
     activeHint: {
-      marginTop: 2,
-      fontSize: 10,
+      marginTop: 4,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.58),
-      lineHeight: 14,
+      lineHeight: 21,
     },
     progressMetaRow: {
-      marginTop: 6,
+      marginTop: 2,
       flexDirection: 'row',
       justifyContent: 'space-between',
+      gap: 10,
     },
     progressMeta: {
-      fontSize: 9,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.5),
       fontWeight: '600',
+      flex: 1,
     },
     progressTrack: {
-      marginTop: 4,
-      height: 4,
-      borderRadius: 3,
+      marginTop: 2,
+      height: 8,
+      borderRadius: 999,
       backgroundColor: hexToRgba(colors.text, 0.1),
       overflow: 'hidden',
     },
     progressValue: {
       height: '100%',
-      borderRadius: 3,
+      borderRadius: 999,
+    },
+    progressBadge: {
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      alignSelf: 'flex-start',
+    },
+    progressBadgeText: {
+      fontSize: Typography.body,
+      fontWeight: '700',
+    },
+    activeFooter: {
+      marginTop: 4,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: hexToRgba(colors.text, 0.06),
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    activeFooterText: {
+      flex: 1,
+      fontSize: Typography.body,
+      color: hexToRgba(colors.text, 0.5),
+      fontWeight: '600',
     },
     leadHero: {
       alignItems: 'center',
       paddingVertical: 10,
+    },
+    leadHeroCard: {
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      paddingVertical: 12,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
     },
     leadAvatar: {
       width: 48,
@@ -534,19 +675,19 @@ function createStyles(colors: ColorTheme) {
     },
     leadRole: {
       marginTop: 2,
-      fontSize: 12,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.66),
       fontWeight: '600',
     },
     leadRank: {
       marginTop: 1,
-      fontSize: 10,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.5),
       fontWeight: '600',
     },
     leadRow: {
-      minHeight: 58,
-      paddingHorizontal: 10,
+      minHeight: 64,
+      paddingHorizontal: 14,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -581,7 +722,7 @@ function createStyles(colors: ColorTheme) {
     },
     statsSubTitle: {
       textAlign: 'center',
-      fontSize: 12,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.58),
       marginTop: 4,
       marginBottom: 2,
@@ -590,13 +731,13 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 14,
+      borderRadius: 18,
       backgroundColor: colors.card,
       overflow: 'hidden',
     },
     quickItem: {
       flex: 1,
-      minHeight: 62,
+      minHeight: 74,
       alignItems: 'center',
       justifyContent: 'center',
       borderRightWidth: 1,
@@ -612,31 +753,31 @@ function createStyles(colors: ColorTheme) {
     },
     quickLabel: {
       marginTop: 2,
-      fontSize: 10,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.55),
       fontWeight: '600',
     },
     statsSection: {
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 14,
+      borderRadius: 18,
       backgroundColor: colors.card,
       overflow: 'hidden',
     },
     statsSectionTitle: {
-      height: 34,
-      paddingHorizontal: 12,
+      height: 40,
+      paddingHorizontal: 16,
       textAlignVertical: 'center',
-      fontSize: 12,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.72),
       fontWeight: '700',
       backgroundColor: colors.primaryLight,
       includeFontPadding: false,
-      lineHeight: 34,
+      lineHeight: 40,
     },
     statsRow: {
-      minHeight: 34,
-      paddingHorizontal: 12,
+      minHeight: 42,
+      paddingHorizontal: 16,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -646,12 +787,12 @@ function createStyles(colors: ColorTheme) {
       borderBottomColor: hexToRgba(colors.text, 0.08),
     },
     statsLabel: {
-      fontSize: 11,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.6),
       fontWeight: '500',
     },
     statsValue: {
-      fontSize: 11,
+      fontSize: Typography.body,
       color: colors.text,
       fontWeight: '700',
     },

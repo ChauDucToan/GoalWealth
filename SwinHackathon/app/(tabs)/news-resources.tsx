@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Typography } from '@/constants/theme';
 
 export default function NewsResourcesScreen() {
   const { colors } = useTheme();
@@ -76,9 +77,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 12,
+    shadowColor: 'rgba(15,23,42,0.1)',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   heroTitle: { fontSize: 22, lineHeight: 26, fontWeight: '800' },
-  heroSub: { marginTop: 6, fontSize: 12, lineHeight: 17 },
+  heroSub: { marginTop: 6, fontSize: Typography.body, lineHeight: 17 },
   heroButton: {
     marginTop: 12,
     height: 34,
@@ -90,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 5,
   },
-  heroButtonText: { fontSize: 11, fontWeight: '700' },
+  heroButtonText: { fontSize: Typography.body, fontWeight: '700' },
   actionsRow: { flexDirection: 'row', gap: 8 },
   actionCard: {
     flex: 1,
@@ -101,8 +107,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 6,
+    shadowColor: 'rgba(15,23,42,0.08)',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
-  actionText: { fontSize: 12, fontWeight: '700' },
+  actionText: { fontSize: Typography.body, fontWeight: '700' },
   coverWrap: { marginTop: 6, height: 140, borderRadius: 14, overflow: 'hidden' },
   coverImage: { width: '100%', height: '100%' },
   coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.28)' },
@@ -112,7 +123,7 @@ const styles = StyleSheet.create({
     right: 10,
     bottom: 8,
     color: '#fff',
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 17,
     fontWeight: '700',
   },

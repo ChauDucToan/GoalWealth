@@ -12,6 +12,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function BuyStockScreen() {
   const { colors } = useTheme();
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   symbolChipText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   quoteCard: {
@@ -267,7 +268,7 @@ const styles = StyleSheet.create({
   },
   stockName: {
     marginTop: 4,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   stockPrice: {
     fontSize: 20,
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
   },
   stockChange: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   metaRow: {
@@ -286,16 +287,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   metaLabel: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   metaValue: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   inputLabel: {
     marginTop: 14,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   input: {
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   quickChipText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   totalCard: {
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
   },
   totalHint: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   confirmButton: {

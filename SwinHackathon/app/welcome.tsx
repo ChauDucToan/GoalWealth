@@ -1,12 +1,13 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme } from '@/constants/theme';
+import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   FlatList,
   ListRenderItemInfo,
   Pressable,
@@ -125,7 +126,7 @@ function BudgetIllustration({ colors }: { colors: ColorTheme }) {
               >
                 <MaterialIcons name="settings" size={15} color={colors.primaryDark} />
               </View>
-              <View>
+              <View style={styles.ledgerCopy}>
                 <Text style={[styles.ledgerTitle, { color: colors.text }]}>
                   Your budget this month
                 </Text>
@@ -253,11 +254,14 @@ function GoalCard({
       ]}
     >
       <View style={styles.rowBetween}>
-        <View style={styles.rowGap}>
+        <View style={[styles.rowGap, styles.goalHeaderTextWrap]}>
           <MaterialIcons name={icon} size={17} color={hexToRgba(colors.text, 0.44)} />
           <Text style={[styles.goalTitle, { color: colors.text }]}>{title}</Text>
         </View>
-        <Text style={[styles.goalPercent, { color: hexToRgba(colors.text, 0.54) }]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.goalPercent, { color: hexToRgba(colors.text, 0.54) }]}
+        >
           {rightLabel}
         </Text>
       </View>
@@ -274,11 +278,17 @@ function GoalCard({
           ]}
         />
       </View>
-      <View style={[styles.rowBetween, { marginTop: 8 }]}>
-        <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.46) }]}>
+      <View style={[styles.rowBetween, styles.goalFooterRow, { marginTop: 8 }]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.goalMeta, styles.goalMetaLeft, { color: hexToRgba(colors.text, 0.46) }]}
+        >
           {footerLeft}
         </Text>
-        <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.46) }]}>
+        <Text
+          numberOfLines={1}
+          style={[styles.goalMeta, styles.goalMetaRight, { color: hexToRgba(colors.text, 0.46) }]}
+        >
           {footerRight}
         </Text>
       </View>
@@ -509,15 +519,25 @@ function HomeIndicator({ colors }: { colors: ColorTheme }) {
 export default function WelcomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const listRef = useRef<FlatList<Slide>>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const isCompactHeight = height < 860;
+  const isShortHeight = height < 760;
+  const illustrationViewportHeight = isShortHeight ? 228 : isCompactHeight ? 270 : 336;
+  const illustrationScaleFactor = isShortHeight ? 0.76 : isCompactHeight ? 0.88 : 1;
+  const headlineFontSize = isShortHeight ? 22 : isCompactHeight ? 24 : 26;
+  const headlineLineHeight = isShortHeight ? 29 : isCompactHeight ? 32 : 34;
+  const bodyMaxWidth = isShortHeight ? 302 : 322;
+  const headlineMaxWidth = isShortHeight ? 304 : 328;
+  const featureListMaxWidth = isShortHeight ? 304 : 316;
 
   const slides = useMemo<Slide[]>(
     () => [
       {
         id: 'intro',
-        title: 'Your Smart Personal Finance AI Companion UI Kit',
+        title: 'Your Smart Personal\nFinance AI Companion\nUI Kit',
         description: '',
         backgroundColor: colors.card,
         renderIllustration: (themeColors) => <BrandIllustration colors={themeColors} />,
@@ -589,18 +609,162 @@ export default function WelcomeScreen() {
     goToSlide(currentIndex + 1);
   };
 
-  const renderSlide = ({ item }: ListRenderItemInfo<Slide>) => {
+  const renderSlide = ({ item, index }: ListRenderItemInfo<Slide>) => {
     const introSlide = item.id === 'intro';
+    const earlySlide = introSlide || item.id === 'budget' || item.id === 'assistant';
+    const slideIllustrationHeight = introSlide
+      ? isShortHeight
+        ? 188
+        : isCompactHeight
+        ? 224
+        : 272
+      : illustrationViewportHeight;
+    const slideIllustrationScaleFactor = introSlide
+      ? isShortHeight
+        ? 0.64
+        : isCompactHeight
+        ? 0.78
+        : 0.88
+      : earlySlide
+        ? isShortHeight
+          ? 0.72
+          : isCompactHeight
+            ? 0.84
+            : 0.94
+        : illustrationScaleFactor;
+    const slideHeadlineFontSize = introSlide
+      ? isShortHeight
+        ? 20
+        : isCompactHeight
+          ? 22
+          : 24
+      : headlineFontSize;
+    const slideHeadlineLineHeight = introSlide
+      ? isShortHeight
+        ? 26
+        : isCompactHeight
+          ? 29
+          : 31
+      : headlineLineHeight;
+    const slideHeadlineMaxWidth = introSlide
+      ? isShortHeight
+        ? 292
+        : isCompactHeight
+          ? 304
+          : 316
+      : headlineMaxWidth;
+    const slideTextTopMargin = introSlide
+      ? isShortHeight
+        ? 0
+        : isCompactHeight
+          ? 4
+          : 8
+      : isShortHeight
+        ? 2
+        : isCompactHeight
+          ? 8
+          : 12;
+    const slideFeatureGap = introSlide
+      ? isShortHeight
+        ? 8
+        : isCompactHeight
+          ? 10
+          : 12
+      : isShortHeight
+        ? 10
+        : 14;
+    const slideFeatureMarginTop = introSlide
+      ? isShortHeight
+        ? 14
+        : isCompactHeight
+          ? 18
+          : 22
+      : isShortHeight
+        ? 18
+        : isCompactHeight
+          ? 24
+          : 32;
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const illustrationOpacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.45, 1, 0.45],
+      extrapolate: 'clamp',
+    });
+    const illustrationTranslateY = scrollX.interpolate({
+      inputRange,
+      outputRange: [26, 0, 26],
+      extrapolate: 'clamp',
+    });
+    const illustrationScale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.92, 1, 0.92],
+      extrapolate: 'clamp',
+    });
+    const textOpacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.3, 1, 0.3],
+      extrapolate: 'clamp',
+    });
+    const textTranslateY = scrollX.interpolate({
+      inputRange,
+      outputRange: [18, 0, 18],
+      extrapolate: 'clamp',
+    });
 
     return (
       <View style={[styles.slide, { width }]}>
-        <View style={styles.slideInner}>
-          <View style={styles.topSpace}>{item.renderIllustration(colors)}</View>
+        <View style={[styles.slideInner, { paddingTop: isShortHeight ? 8 : 0 }]}>
+          <Animated.View
+            style={[
+              styles.topSpace,
+              {
+                height: slideIllustrationHeight,
+                opacity: illustrationOpacity,
+                transform: [
+                  { translateY: illustrationTranslateY },
+                  { scale: illustrationScale },
+                  { scale: slideIllustrationScaleFactor },
+                ],
+              },
+            ]}
+          >
+            {item.renderIllustration(colors)}
+          </Animated.View>
 
-          <View style={styles.textBlock}>
-            <Text style={[styles.headline, { color: colors.text }]}>{item.title}</Text>
+          <Animated.View
+            style={[
+              styles.textBlock,
+              {
+                marginTop: slideTextTopMargin,
+                opacity: textOpacity,
+                transform: [{ translateY: textTranslateY }],
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.headline,
+                {
+                  color: colors.text,
+                  maxWidth: slideHeadlineMaxWidth,
+                  fontSize: slideHeadlineFontSize,
+                  lineHeight: slideHeadlineLineHeight,
+                },
+              ]}
+            >
+              {item.title}
+            </Text>
             {introSlide ? (
-              <View style={styles.featureList}>
+              <View
+                style={[
+                  styles.featureList,
+                  {
+                    maxWidth: featureListMaxWidth,
+                    marginTop: slideFeatureMarginTop,
+                    gap: slideFeatureGap,
+                  },
+                ]}
+              >
                 {[
                   'Smart Goal Tracking',
                   'Subscription Management',
@@ -629,11 +793,21 @@ export default function WelcomeScreen() {
                 ))}
               </View>
             ) : (
-              <Text style={[styles.body, { color: hexToRgba(colors.text, 0.52) }]}>
+              <Text
+                style={[
+                  styles.body,
+                  {
+                    color: hexToRgba(colors.text, 0.52),
+                    maxWidth: bodyMaxWidth,
+                    marginTop: isShortHeight ? 10 : 14,
+                    lineHeight: isShortHeight ? 21 : 23,
+                  },
+                ]}
+              >
                 {item.description}
               </Text>
             )}
-          </View>
+          </Animated.View>
         </View>
       </View>
     );
@@ -646,7 +820,7 @@ export default function WelcomeScreen() {
         { backgroundColor: currentSlide.backgroundColor },
       ]}
     >
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         data={slides}
         renderItem={renderSlide}
@@ -657,6 +831,11 @@ export default function WelcomeScreen() {
         bounces={false}
         key={width}
         style={styles.carousel}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
         onMomentumScrollEnd={(event) => {
           const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
           setCurrentIndex(nextIndex);
@@ -745,37 +924,41 @@ const styles = StyleSheet.create({
   slideInner: {
     flex: 1,
     paddingHorizontal: 28,
+    overflow: 'hidden',
   },
   topSpace: {
-    minHeight: 336,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
   textBlock: {
-    marginTop: 12,
+    width: '100%',
     alignItems: 'center',
+    flexShrink: 1,
   },
   headline: {
-    fontSize: 28,
-    lineHeight: 38,
+    width: '100%',
+    paddingHorizontal: 8,
+    alignSelf: 'center',
     fontWeight: '800',
     textAlign: 'center',
+    flexShrink: 1,
   },
   body: {
-    marginTop: 14,
-    fontSize: 15,
-    lineHeight: 23,
+    width: '100%',
+    fontSize: Typography.body,
     textAlign: 'center',
     paddingHorizontal: 14,
   },
   featureList: {
-    marginTop: 32,
-    gap: 14,
+    width: '100%',
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    width: '100%',
   },
   featureIconWrap: {
     width: 20,
@@ -787,10 +970,12 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,
+    flexShrink: 1,
   },
   footer: {
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: 10,
   },
   dotRow: {
     marginBottom: 20,
@@ -823,6 +1008,7 @@ const styles = StyleSheet.create({
   },
   secondarySlot: {
     minHeight: 72,
+    justifyContent: 'flex-start',
   },
   secondaryButton: {
     width: '100%',
@@ -844,6 +1030,7 @@ const styles = StyleSheet.create({
   },
   brandIllustration: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
   brandBadge: {
     width: 116,
@@ -894,6 +1081,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  ledgerCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   smallRoundBadge: {
     width: 32,
@@ -903,13 +1096,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ledgerTitle: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
+    flexShrink: 1,
   },
   ledgerMeta: {
     marginTop: 2,
-    fontSize: 10,
+    fontSize: Typography.body,
     fontWeight: '600',
+    flexShrink: 1,
   },
   progressTrack: {
     height: 7,
@@ -924,14 +1119,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 10,
   },
   budgetLineLabel: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '600',
+    flex: 1,
+    flexShrink: 1,
   },
   budgetLineValue: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '800',
+    textAlign: 'right',
   },
   chatBubbleRight: {
     position: 'absolute',
@@ -971,16 +1170,22 @@ const styles = StyleSheet.create({
   },
   chatPrompt: {
     flex: 1,
-    fontSize: 11,
-    lineHeight: 15,
+    flexShrink: 1,
+    fontSize: Typography.body,
+    lineHeight: 19,
     fontWeight: '700',
     marginRight: 10,
   },
   chatReply: {
     marginTop: 8,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: Typography.body,
+    lineHeight: 20,
     fontWeight: '700',
+    flexShrink: 1,
+  },
+  goalHeaderTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   goalCard: {
     width: 220,
@@ -993,16 +1198,28 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   goalTitle: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
+    flexShrink: 1,
   },
   goalPercent: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
+    marginLeft: 10,
+  },
+  goalFooterRow: {
+    gap: 10,
   },
   goalMeta: {
-    fontSize: 10,
+    fontSize: Typography.body,
     fontWeight: '600',
+  },
+  goalMetaLeft: {
+    flex: 1,
+  },
+  goalMetaRight: {
+    flex: 1,
+    textAlign: 'right',
   },
   savingsRow: {
     flexDirection: 'row',
@@ -1018,7 +1235,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   savingsMonth: {
-    fontSize: 10,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   savingsAmount: {
@@ -1028,7 +1245,7 @@ const styles = StyleSheet.create({
   },
   savingsDelta: {
     marginTop: 4,
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   savingsFill: {
@@ -1064,7 +1281,7 @@ const styles = StyleSheet.create({
   },
   graphBubble: {
     position: 'absolute',
-    minWidth: 62,
+    minWidth: 70,
     height: 46,
     borderRadius: 23,
     borderWidth: 1,
@@ -1074,7 +1291,7 @@ const styles = StyleSheet.create({
   },
   graphBubbleTiny: {
     position: 'absolute',
-    minWidth: 42,
+    minWidth: 48,
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
@@ -1083,11 +1300,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   graphBubbleText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   graphBubbleTinyText: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
 });

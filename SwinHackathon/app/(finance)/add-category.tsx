@@ -11,6 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function AddCategoryScreen() {
   const { addCategory } = useFinance();
@@ -115,7 +116,7 @@ export default function AddCategoryScreen() {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   input: {
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 15,
+    fontSize: Typography.body,
   },
   optionRow: {
     marginTop: 14,
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   previewText: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   button: {

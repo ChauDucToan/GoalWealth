@@ -1,5 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme } from '@/constants/theme';
+import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -77,6 +77,12 @@ const sections: MenuSection[] = [
   },
 ];
 
+const overviewMetrics = [
+  { id: 'accounts', label: 'Accounts', value: '4' },
+  { id: 'goals', label: 'Goals', value: '5 active' },
+  { id: 'alerts', label: 'Alerts', value: '3 today' },
+];
+
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -120,6 +126,7 @@ export default function ProfileScreen() {
                 <MaterialIcons name="person" size={34} color={hexToRgba(colors.text, 0.72)} />
               </View>
               <View style={styles.userNameWrap}>
+                <Text style={styles.userLabel}>Account Holder</Text>
                 <Text style={styles.userName}>Jane Doe Watson</Text>
                 <Text style={styles.userMeta}>Premium Member</Text>
               </View>
@@ -134,6 +141,21 @@ export default function ProfileScreen() {
             <View style={styles.streakBadge}>
               <MaterialIcons name="local-fire-department" size={18} color={colors.warning} />
             </View>
+          </View>
+
+          <View style={styles.metricsRow}>
+            {overviewMetrics.map((item, index) => (
+              <View
+                key={item.id}
+                style={[
+                  styles.metricCard,
+                  index !== overviewMetrics.length - 1 ? styles.metricCardDivider : undefined,
+                ]}
+              >
+                <Text style={styles.metricValue}>{item.value}</Text>
+                <Text style={styles.metricLabel}>{item.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
@@ -212,10 +234,10 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: colors.backgroundSoft,
     },
     content: {
-      paddingHorizontal: 16,
-      paddingTop: 10,
+      paddingHorizontal: 20,
+      paddingTop: 12,
       paddingBottom: 120,
-      gap: 14,
+      gap: 16,
     },
     headerRow: {
       flexDirection: 'row',
@@ -240,16 +262,21 @@ function createStyles(colors: ColorTheme) {
       borderColor: colors.border,
     },
     profileCard: {
-      borderRadius: 16,
+      borderRadius: 20,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.12,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 5,
     },
     cover: {
       height: 134,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
       justifyContent: 'flex-end',
     },
     coverImage: {
@@ -257,8 +284,8 @@ function createStyles(colors: ColorTheme) {
     },
     profileHead: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
+      alignItems: 'flex-end',
+      gap: 12,
     },
     avatar: {
       width: 60,
@@ -271,42 +298,89 @@ function createStyles(colors: ColorTheme) {
       borderColor: colors.card,
     },
     userNameWrap: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      backgroundColor: hexToRgba(colors.card, 0.88),
+      flex: 1,
+      minWidth: 0,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 18,
+      backgroundColor: hexToRgba(colors.card, 0.92),
+      borderWidth: 1,
+      borderColor: hexToRgba(colors.text, 0.08),
+    },
+    userLabel: {
+      fontSize: 12,
+      color: hexToRgba(colors.text, 0.48),
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
     },
     userName: {
-      fontSize: 14,
+      marginTop: 2,
+      fontSize: 16,
       color: colors.text,
-      fontWeight: '700',
+      fontWeight: '800',
     },
     userMeta: {
-      fontSize: 11,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.6),
       marginTop: 2,
     },
     streakBox: {
-      margin: 10,
-      marginTop: 12,
-      borderRadius: 12,
+      margin: 14,
+      marginTop: 14,
+      borderRadius: 16,
       backgroundColor: hexToRgba(colors.primaryDark, 0.12),
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
       borderWidth: 1,
       borderColor: hexToRgba(colors.primaryDark, 0.3),
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
+    metricsRow: {
+      marginHorizontal: 14,
+      marginBottom: 14,
+      borderRadius: 16,
+      overflow: 'hidden',
+      flexDirection: 'row',
+      backgroundColor: colors.backgroundSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    metricCard: {
+      flex: 1,
+      minHeight: 72,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 12,
+    },
+    metricCardDivider: {
+      borderRightWidth: 1,
+      borderRightColor: hexToRgba(colors.text, 0.08),
+    },
+    metricValue: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    metricLabel: {
+      marginTop: 4,
+      fontSize: Typography.body,
+      fontWeight: '600',
+      color: hexToRgba(colors.text, 0.56),
+      textAlign: 'center',
+    },
     streakTitle: {
-      fontSize: 13,
+      fontSize: Typography.body,
       fontWeight: '700',
       color: colors.text,
     },
     streakSubTitle: {
       marginTop: 2,
-      fontSize: 11,
+      fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.6),
     },
     streakBadge: {
@@ -320,22 +394,27 @@ function createStyles(colors: ColorTheme) {
     sectionLabel: {
       marginTop: 2,
       marginBottom: 4,
-      fontSize: 11,
+      fontSize: Typography.body,
       letterSpacing: 0.2,
       textTransform: 'uppercase',
       color: hexToRgba(colors.text, 0.55),
       fontWeight: '700',
     },
     sectionCard: {
-      borderRadius: 14,
+      borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
       overflow: 'hidden',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
     },
     itemRow: {
-      minHeight: 51,
-      paddingHorizontal: 12,
+      minHeight: 58,
+      paddingHorizontal: 16,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -347,7 +426,7 @@ function createStyles(colors: ColorTheme) {
     itemLeading: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 12,
     },
     itemIconWrap: {
       width: 24,
@@ -361,12 +440,12 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: hexToRgba(colors.error, 0.14),
     },
     itemLabel: {
-      fontSize: 13,
+      fontSize: Typography.body,
       color: colors.text,
       fontWeight: '500',
     },
     dangerText: {
-      fontSize: 13,
+      fontSize: Typography.body,
       color: colors.error,
       fontWeight: '600',
     },

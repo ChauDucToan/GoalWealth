@@ -3,6 +3,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export function SupportBubble() {
   const { colors } = useTheme();
@@ -62,12 +63,12 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       gap: 8,
     },
     chatTitle: {
-      fontSize: 12,
+      fontSize: Typography.body,
       fontWeight: '800',
       color: colors.text,
     },
     chatText: {
-      fontSize: 11,
+      fontSize: Typography.body,
       lineHeight: 16,
       color: hexToRgba(colors.text, 0.66),
     },
@@ -85,7 +86,7 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     },
     input: {
       flex: 1,
-      fontSize: 11,
+      fontSize: Typography.body,
       color: colors.text,
       paddingVertical: 0,
     },

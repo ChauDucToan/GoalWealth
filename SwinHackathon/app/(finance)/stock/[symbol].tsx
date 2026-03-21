@@ -14,6 +14,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 function formatSignedPercent(value: number) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 22,
   },
   heroCard: {
@@ -299,12 +300,12 @@ const styles = StyleSheet.create({
   },
   heroChange: {
     marginTop: 8,
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   heroSector: {
     marginTop: 6,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   heroChart: {
     marginTop: 18,
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rangeChipText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   buttonRow: {
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   statValue: {
@@ -364,16 +365,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   positionLabel: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   positionValue: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   aboutText: {
     marginTop: 12,
-    fontSize: 15,
+    fontSize: Typography.body,
     lineHeight: 23,
   },
 });

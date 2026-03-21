@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function TransactionsSearchScreen() {
   const { transactions } = useFinance();
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   emptyState: {
     alignItems: 'center',
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   },
   emptyBody: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 22,
     textAlign: 'center',
   },
@@ -162,15 +163,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowTitle: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   rowMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   rowAmount: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
 });

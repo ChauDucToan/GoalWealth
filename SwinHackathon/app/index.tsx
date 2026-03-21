@@ -2,6 +2,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Typography } from '@/constants/theme';
 import {
   Animated,
   Easing,
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
   },
   loadingLabel: {
     marginTop: 14,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '800',
     letterSpacing: 1.8,
   },

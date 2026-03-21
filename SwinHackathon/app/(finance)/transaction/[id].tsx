@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 type DetailField = {
   label: string;
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   metaTop: {
     marginTop: 14,
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   merchant: {
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   inlineBadgeText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   fieldList: {
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   fieldRight: {
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   fieldValue: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   secondaryButton: {
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionLink: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   relatedRow: {
@@ -294,19 +295,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   relatedTitle: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   relatedMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   relatedAmount: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   muted: {
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 22,
   },
 });

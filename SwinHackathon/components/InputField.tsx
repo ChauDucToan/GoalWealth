@@ -1,6 +1,7 @@
 import { useTheme } from '@/hooks/use-theme-colors';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
+import { Typography } from '@/constants/theme';
 import {
     Pressable,
     StyleSheet,
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: 8,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   inputRow: {
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
     padding: 0,
   },
   eyeIcon: {
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     marginTop: 8,
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
 });

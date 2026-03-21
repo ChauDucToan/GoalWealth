@@ -9,6 +9,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function SendMoneyScreen() {
   const { addTransaction, transactionDraft, updateTransactionDraft } = useFinance();
@@ -218,7 +219,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   recipientList: {
     marginTop: 18,
@@ -243,16 +244,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recipientName: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   recipientMeta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   label: {
     marginTop: 18,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   input: {
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 15,
+    fontSize: Typography.body,
   },
   helper: {
     marginTop: 18,
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   button: {

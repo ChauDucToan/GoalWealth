@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const options = ['Do not ignore', 'Ignore from Budgets', 'Ignore from Everything'];
 
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rowText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   button: {

@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export function AssistantConversation({
   messages,
@@ -485,7 +486,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   userText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 20,
     fontWeight: '600',
   },
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   assistantText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   cardShell: {
@@ -519,21 +520,21 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   meta: {
-    fontSize: 11,
+    fontSize: Typography.body,
     marginLeft: 6,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   cardCaption: {
     marginTop: 8,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   cardBody: {
     marginTop: 10,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   budgetRow: {
@@ -561,7 +562,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   ringMeta: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   budgetStats: {
@@ -584,11 +585,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   inlineLabel: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   inlineValue: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   summaryPill: {
@@ -599,7 +600,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   summaryPillText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   listGroup: {
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   listMeta: {
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   alertBox: {
     marginTop: 14,
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   alertText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chipWrap: {
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionChipText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   calendarGrid: {
@@ -655,7 +656,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   calendarText: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   rowBetween: {
@@ -665,7 +666,7 @@ const styles = StyleSheet.create({
   },
   quoteBody: {
     marginTop: 12,
-    fontSize: 15,
+    fontSize: Typography.body,
     lineHeight: 22,
     fontWeight: '600',
   },
@@ -685,7 +686,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   chartLabel: {
-    fontSize: 11,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   mediaGrid: {
@@ -741,7 +742,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fileBadgeText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   actionDeck: {
@@ -763,7 +764,7 @@ const styles = StyleSheet.create({
   },
   actionDeckLabel: {
     marginTop: 12,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   emptyCard: {
@@ -786,7 +787,7 @@ const styles = StyleSheet.create({
   },
   emptyBody: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 22,
     textAlign: 'center',
   },

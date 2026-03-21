@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const extractedFields = [
   { label: 'Merchant', value: 'FreshMart Grocery' },
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     marginTop: 8,
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   sectionTitle: {
@@ -273,11 +274,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: Typography.body,
   },
   fieldValue: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
     textAlign: 'right',
   },
@@ -292,7 +293,7 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   buttonRow: {
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   skipText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },

@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function CategoriesScreen() {
   const { categories } = useFinance();
@@ -82,12 +83,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   name: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   meta: {
     marginTop: 4,
-    fontSize: 12,
+    fontSize: Typography.body,
   },
   button: {
     marginTop: 18,

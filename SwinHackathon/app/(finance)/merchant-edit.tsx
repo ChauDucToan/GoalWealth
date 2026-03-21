@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function MerchantEditScreen() {
   const { merchant } = useLocalSearchParams<{ merchant: string }>();
@@ -57,7 +58,7 @@ export default function MerchantEditScreen() {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   input: {
@@ -66,11 +67,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 15,
+    fontSize: Typography.body,
   },
   helper: {
     marginTop: 12,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 20,
   },
   button: {

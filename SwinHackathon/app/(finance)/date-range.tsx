@@ -5,6 +5,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const dates = ['Apr 23', 'Apr 24', 'Today', 'Apr 26', 'Apr 27'];
 const hours = ['04', '05', '06', '07', '08'];
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   optionText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   button: {

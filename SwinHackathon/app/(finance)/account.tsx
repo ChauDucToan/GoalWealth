@@ -9,6 +9,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function AccountScreen() {
   const { colors } = useTheme();
@@ -107,7 +108,7 @@ const styles = StyleSheet.create({
   change: {
     marginTop: 8,
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chartCard: {
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   chartLabel: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   chartBars: {
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   summaryValue: {
@@ -174,11 +175,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowText: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   rowAmount: {
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   button: {

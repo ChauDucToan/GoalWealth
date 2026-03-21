@@ -5,6 +5,7 @@ import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import { Typography } from '@/constants/theme';
 import {
   Pressable,
   ScrollView,
@@ -384,14 +385,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   tabChipText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   planCard: {
     borderWidth: 0,
   },
   planEyebrow: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '800',
     letterSpacing: 1.1,
   },
@@ -402,7 +403,7 @@ const styles = StyleSheet.create({
   },
   planBody: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   planButtons: {
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
     marginBottom: 8,
   },
@@ -436,11 +437,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
-    fontSize: 14,
+    fontSize: Typography.body,
   },
   subheading: {
     marginTop: 18,
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '800',
   },
   choiceWrap: {
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   choiceText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   textArea: {
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
     textAlignVertical: 'top',
   },
@@ -483,12 +484,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   toggleLabel: {
-    fontSize: 15,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   toggleHelper: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
     lineHeight: 19,
   },
   privacyButtons: {

@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 export default function ResetMemoryScreen() {
   const { colors } = useTheme();
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   },
   warningBody: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
     textAlign: 'center',
   },
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
   },
   listText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '600',
   },
   buttonRow: {

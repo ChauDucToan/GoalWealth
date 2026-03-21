@@ -6,7 +6,8 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { contentFeed } from './_data';
+import { contentFeed } from '@/components/news-resources/content-data';
+import { Typography } from '@/constants/theme';
 
 export default function NewsWorkshopsScreen() {
   const { colors } = useTheme();
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginTop: 6,
   },
-  searchInput: { flex: 1, fontSize: 12, paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: Typography.body, paddingVertical: 0 },
   feedRow: {
     marginTop: 2,
     borderRadius: 12,
@@ -96,6 +97,6 @@ const styles = StyleSheet.create({
   },
   thumb: { width: 76, height: 54, borderRadius: 8 },
   body: { flex: 1 },
-  title: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  title: { fontSize: Typography.body, lineHeight: 16, fontWeight: '700' },
   meta: { marginTop: 3, fontSize: 10 },
 });

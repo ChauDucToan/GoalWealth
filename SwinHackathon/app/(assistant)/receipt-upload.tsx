@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Typography } from '@/constants/theme';
 
 const recentReceipts = [
   { id: 'r1', title: 'FreshMart Grocery', amount: '$88.00', icon: 'shopping-bag' },
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroBadgeText: {
-    fontSize: 12,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   heroTitle: {
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
   },
   heroBody: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   heroActions: {
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: Typography.body,
     lineHeight: 21,
   },
   sourceGrid: {
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sourceText: {
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -234,12 +235,12 @@ const styles = StyleSheet.create({
   },
   receiptTitle: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
   receiptAmount: {
     marginTop: 6,
-    fontSize: 13,
+    fontSize: Typography.body,
     fontWeight: '700',
   },
 });
