@@ -149,7 +149,7 @@ export default function Index() {
         phaseSchedule.splash + phaseSchedule.progress + phaseSchedule.photo
       ),
       setTimeout(
-        () => router.replace('/(auth)/signIn'),
+        () => router.replace('/welcome'),
         phaseSchedule.splash +
           phaseSchedule.progress +
           phaseSchedule.photo +

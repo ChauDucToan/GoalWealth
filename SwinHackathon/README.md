@@ -1,36 +1,39 @@
 # GoalWealth / SwinHackathon
 
-Ứng dụng mobile frontend viết bằng `Expo + React Native + Expo Router`, đang được dựng dựa trên bộ UI kit Finpal và đã được đổi sang palette riêng trong [`constants/theme.ts`](./constants/theme.ts).
+Frontend mobile app viết bằng `Expo + React Native + Expo Router`, đang được dựng theo bộ UI kit Finpal nhưng đã đổi sang palette riêng trong [`constants/theme.ts`](./constants/theme.ts).
 
-Document này mô tả trạng thái hiện tại của project để bạn có thể nắm nhanh:
-- app đang có gì
-- route nào đang chạy
-- file nào chịu trách nhiệm phần nào
-- cơ chế test tạm hiện tại
-- cấu trúc thư mục
+Tài liệu này mô tả trạng thái hiện tại của project:
+- app đang có những flow nào
+- route nào đang chịu trách nhiệm phần nào
+- cấu trúc thư mục hiện tại
+- mock data và state đang nằm ở đâu
+- cơ chế test tạm để đi từ auth vào home
+
+Guide riêng cho phần cổ phiếu:
+- [`INVESTMENTS_GUIDE.md`](./INVESTMENTS_GUIDE.md)
+
+Guide riêng cho phần AI assistant:
+- [`AI_ASSISTANT_GUIDE.md`](./AI_ASSISTANT_GUIDE.md)
 
 ## 1. Tổng quan hiện tại
 
-Project hiện có 3 phần chính:
+Project hiện có 5 lớp flow chính:
 
-1. `Splash / Loading flow`
-   File: [`app/index.tsx`](./app/index.tsx)
+1. `Splash / Loading`
+2. `Welcome / Onboarding`
+3. `Authentication`
+4. `Main app + Finance subflows`
+5. `AI Assistant`
 
-2. `Authentication flow`
-   Files trong [`app/(auth)`](./app/%28auth%29)
+Luồng chạy hiện tại:
 
-3. `Main app flow`
-   Files trong [`app/(tabs)`](./app/%28tabs%29)
-
-Luồng hiện tại của app:
-
-`index` -> splash/loading -> `signIn` -> `home`
+`index` -> `welcome` -> `signIn` -> `/(tabs)/home`
 
 Lưu ý:
-- Hiện tại `sign in` đang có `test bypass`, nên bấm đăng nhập sẽ vào thẳng `home`.
-- Chưa có backend thật.
-- Chưa có auth thật.
-- Dữ liệu `home / transactions` đang là mock data.
+- `signIn` vẫn đang bật test bypass để vào thẳng `home`
+- chưa có backend thật
+- chưa có auth thật
+- toàn bộ `home / transactions / finance subflows` đang chạy bằng mock data nhưng đã có shared state
 
 ## 2. Tech Stack
 
@@ -39,15 +42,21 @@ Lưu ý:
 - `Expo Router`
 - `TypeScript`
 - `@expo/vector-icons`
-- `React Navigation` thông qua `expo-router`
+- `React Context` cho theme và finance state
 
-Scripts hiện có trong [`package.json`](./package.json):
+Scripts trong [`package.json`](./package.json):
 
-- `npm run start`: chạy dev server
-- `npm run android`: mở app trên Android
-- `npm run ios`: mở app trên iOS
-- `npm run web`: mở app trên web
-- `npm run lint`: chạy eslint
+- `npm run start`
+- `npm run android`
+- `npm run ios`
+- `npm run web`
+- `npm run lint`
+
+Typecheck đang dùng:
+
+```bash
+npx tsc --noEmit
+```
 
 ## 3. Cấu trúc thư mục
 
@@ -56,319 +65,507 @@ SwinHackathon/
 ├── app/
 │   ├── _layout.tsx
 │   ├── index.tsx
+│   ├── welcome.tsx
 │   ├── (auth)/
 │   │   ├── _layout.tsx
 │   │   ├── signIn.tsx
 │   │   ├── signUp.tsx
 │   │   ├── forgetPassword.tsx
 │   │   └── passwordResent.tsx
-│   └── (tabs)/
+│   ├── (tabs)/
+│   │   ├── _layout.tsx
+│   │   ├── home.tsx
+│   │   ├── transactions.tsx
+│   │   ├── insights.tsx
+│   │   ├── assistant.tsx
+│   │   └── profile.tsx
+│   ├── (assistant)/
+│   │   ├── _layout.tsx
+│   │   ├── chat/
+│   │   │   └── [scenario].tsx
+│   │   ├── voice.tsx
+│   │   ├── receipt-upload.tsx
+│   │   ├── receipt-scan.tsx
+│   │   ├── settings.tsx
+│   │   ├── reset-memory.tsx
+│   │   ├── out-of-tokens.tsx
+│   │   └── upgrade.tsx
+│   └── (finance)/
 │       ├── _layout.tsx
-│       ├── home.tsx
-│       ├── transactions.tsx
-│       ├── insights.tsx
-│       └── profile.tsx
+│       ├── account.tsx
+│       ├── add-category.tsx
+│       ├── add-note.tsx
+│       ├── add-transaction.tsx
+│       ├── categories.tsx
+│       ├── buy-stock.tsx
+│       ├── date-range.tsx
+│       ├── ignore-transaction.tsx
+│       ├── merchant-edit.tsx
+│       ├── send-money.tsx
+│       ├── select-category.tsx
+│       ├── select-type.tsx
+│       ├── sending.tsx
+│       ├── set-recurring.tsx
+│       ├── sort-transactions.tsx
+│       ├── split-transaction.tsx
+│       ├── stock/
+│       │   └── [symbol].tsx
+│       ├── transaction/
+│       │   └── [id].tsx
+│       ├── investments.tsx
+│       ├── merchant/
+│       │   └── [merchant].tsx
+│       ├── transactions-filters.tsx
+│       ├── transactions-search.tsx
+│       └── transfer-result.tsx
 ├── assets/
 │   └── images/
-│       ├── loading-budget-photo.png
-│       ├── icon.png
-│       ├── splash-icon.png
-│       └── các asset Expo mặc định khác
 ├── components/
 │   ├── InputField.tsx
 │   ├── ThemeButton.tsx
 │   ├── UnorderedList.tsx
 │   ├── auth/
 │   │   └── AuthKit.tsx
+│   ├── assistant/
+│   │   ├── AssistantScaffold.tsx
+│   │   ├── AssistantWidgets.tsx
+│   │   └── mock-data.ts
+│   ├── finance/
+│   │   ├── FinanceScaffold.tsx
+│   │   ├── MarketDisplayControls.tsx
+│   │   ├── StockTrendChart.tsx
+│   │   └── finance-utils.ts
 │   └── home/
 │       └── mock-data.ts
 ├── constants/
 │   └── theme.ts
 ├── context/
+│   ├── financeContext.tsx
 │   └── themeContext.ts
 ├── hooks/
+│   ├── use-finance.tsx
 │   └── use-theme-colors.tsx
 ├── finpal_ AI Finance Assistant App UI Kit (Community)/
 │   ├── Authentication.png
 │   ├── Splash & Loading Screen.png
 │   ├── Welcome Screen.png
-│   ├── 🔒 Home & Transactions.png
-│   └── các PNG reference khác từ Figma/UI kit
+│   ├── Home & Transactions.png
+│   └── các PNG reference khác
 ├── app.json
+├── AI_ASSISTANT_GUIDE.md
+├── INVESTMENTS_GUIDE.md
 ├── package.json
 ├── tsconfig.json
 ├── eslint.config.js
 └── README.md
 ```
 
-## 4. Giải thích từng phần
+## 4. App Architecture
 
-### 4.1 `app/`
+### 4.1 `app/_layout.tsx`
 
-Đây là nơi định nghĩa route bằng `expo-router`.
+Root stack của app.
 
-#### `app/_layout.tsx`
-
-Root layout của app:
-- bọc toàn bộ app bằng `ThemeProvider`
-- khai báo các route group chính:
+Hiện tại file này:
+- bọc app bằng `ThemeProvider`
+- bọc tiếp bằng `FinanceProvider`
+- khai báo 4 route group chính:
   - `index`
+  - `welcome`
   - `(auth)`
   - `(tabs)`
+  - `(finance)`
 
-#### `app/index.tsx`
+### 4.2 `ThemeProvider`
 
-Màn mở app hiện tại.
+Nguồn:
+- [`context/themeContext.ts`](./context/themeContext.ts)
+- [`hooks/use-theme-colors.tsx`](./hooks/use-theme-colors.tsx)
 
-Chức năng:
-- chạy splash/loading theo nhiều phase
-- dùng màu từ theme hiện tại
-- dùng ảnh crop [`assets/images/loading-budget-photo.png`](./assets/images/loading-budget-photo.png) cho phase loading giữa
-- sau khi loading xong thì tự chuyển sang `/(auth)/signIn`
+Chịu trách nhiệm:
+- cấp màu theme cho toàn app
+- expose `useTheme()`
 
-#### `app/(auth)/`
+Lưu ý:
+- hiện tại cả dark và light đều đang trả về `Colors.light`
+- app thực tế vẫn đang chạy bằng theme sáng
 
-Nhóm route xác thực.
+### 4.3 `FinanceProvider`
 
-Gồm:
-- `signIn.tsx`
-- `signUp.tsx`
-- `forgetPassword.tsx`
-- `passwordResent.tsx`
+Nguồn:
+- [`context/financeContext.tsx`](./context/financeContext.tsx)
+- [`hooks/use-finance.tsx`](./hooks/use-finance.tsx)
 
-Auth UI được dựng lại từ `Authentication.png`.
+Đây là phần refactor mới cho finance flow.
 
-#### `app/(tabs)/`
+Nó giữ shared state cho:
+- `transactions`
+- `categories`
+- `stocks`
+- `stockHoldings`
+- `watchlistSymbols`
+- `defaultStockSymbol`
+- `displayCurrency`
+- `displayUnit`
+- `transactionDraft`
 
-Nhóm route chính sau khi vào app.
+Và expose các action:
+- `addTransaction`
+- `markTransactionCompleted`
+- `addCategory`
+- `renameMerchant`
+- `buyStock`
+- `toggleStockWatch`
+- `setDefaultStockSymbol`
+- `setDisplayCurrency`
+- `setDisplayUnit`
+- `updateTransactionDraft`
+- `resetTransactionDraft`
+- `getTransactionById`
+- `getTransactionsByMerchant`
+- `getStockBySymbol`
+- `getHoldingBySymbol`
 
-Gồm:
-- `home.tsx`
-- `transactions.tsx`
-- `insights.tsx`
-- `profile.tsx`
+Ý nghĩa:
+- các màn trong `home`
+- `transactions`
+- và toàn bộ group `/(finance)`
 
-`app/(tabs)/_layout.tsx` chịu trách nhiệm dựng bottom tab bar.
+đều đang đọc/ghi cùng một nguồn data mock, không còn tách rời theo từng màn nữa.
 
-### 4.2 `components/`
+### 4.4 `AssistantProvider`
 
-#### `components/InputField.tsx`
+Nguồn:
+- [`context/assistantContext.tsx`](./context/assistantContext.tsx)
+- [`hooks/use-assistant.tsx`](./hooks/use-assistant.tsx)
 
-Input dùng chung cho auth.
+Chịu trách nhiệm:
+- giữ `assistantSettings`
+- giữ `conversation`
+- giữ `activeScenarioId`
+- giữ `hasSeenAssistantIntro`
 
-Có hỗ trợ:
-- label
-- icon
-- toggle password
-- trạng thái `default / error / success`
-- helper text
+Và expose action cho:
+- đổi scenario demo
+- gửi message test
+- đổi settings
+- reset memory
 
-#### `components/ThemeButton.tsx`
+## 5. Các nhóm route
 
-Button dùng chung.
+### 5.1 `app/index.tsx`
 
-Có hỗ trợ:
-- màu nền
-- màu chữ
-- style ngoài
-- textStyle
-- disabled
+Splash / loading flow.
 
-#### `components/auth/AuthKit.tsx`
-
-Bộ component/foundation dùng riêng cho auth:
-- `AuthScaffold`
-- `RobotIllustration`
-- `ShieldIllustration`
-- `PasswordResetIllustration`
-- `RememberMe`
-- `PasswordStrengthMeter`
-- `AuthSupportText`
-- `AuthPrimaryButton`
-- `hexToRgba`
-
-File này giúp các màn auth có layout và visual thống nhất.
-
-#### `components/home/mock-data.ts`
-
-Mock data cho home module.
-
-Bao gồm:
-- overview stats
-- quick actions
-- budget categories
-- transaction list
-- spending insights
-- profile action items
-
-Hiện tại chưa có API thật, nên `home` và `transactions` đang đọc dữ liệu từ đây.
-
-### 4.3 `constants/`
-
-#### `constants/theme.ts`
-
-Đây là file màu chủ đạo của project.
-
-Palette hiện tại đang thiên xanh:
-- `primary`
-- `primaryDark`
-- `primaryLight`
-- `backgroundSoft`
-- `card`
-- `border`
-- `success / warning / error`
-
-Các màn mới đều đang cố bám palette này.
-
-### 4.4 `hooks/` và `context/`
-
-#### `context/themeContext.ts`
-
-Tạo `ThemeContext` mặc định.
-
-#### `hooks/use-theme-colors.tsx`
-
-Expose:
-- `ThemeProvider`
-- `useTheme()`
-
-Lưu ý quan trọng:
-- file này có kiểm tra `useColorScheme()`
-- nhưng hiện tại cả dark và light đều đang trả về `Colors.light`
-
-Tức là:
-- app đang chạy thực tế bằng theme sáng
-- chưa thực sự bật dark mode
-
-Nếu sau này muốn hỗ trợ dark mode thật, đây là chỗ cần sửa đầu tiên.
-
-## 5. Luồng màn hình hiện tại
-
-### 5.1 Splash / Loading
-
-Nguồn: [`app/index.tsx`](./app/index.tsx)
-
-Flow:
-- splash nền xanh
+Các phase hiện tại:
+- splash màu chủ đạo
 - loading phần trăm
 - loading với ảnh full-screen
-- loading message
-- chuyển sang `signIn`
+- loading text
+- chuyển sang [`welcome.tsx`](./app/welcome.tsx)
 
-### 5.2 Authentication
+### 5.2 `app/welcome.tsx`
 
-Nguồn: [`app/(auth)`](./app/%28auth%29)
+Onboarding / welcome flow dựng lại từ `Welcome Screen.png`.
 
-Các màn đang có:
-- `signIn`
-- `signUp`
-- `forgetPassword`
-- `passwordResent`
+Đã có:
+- intro slide
+- các slide feature
+- footer cố định
+- `Get Started`
+- `Sign In`
 
-Các state UI đã có:
-- password error
-- password strength bar
-- email invalid state
-- remember me
-- outlined secondary button
+### 5.3 `app/(auth)`
 
-### 5.3 Main App
+Auth flow dựng từ `Authentication.png`.
 
-Nguồn: [`app/(tabs)`](./app/%28tabs%29)
+Gồm:
+- [`signIn.tsx`](./app/%28auth%29/signIn.tsx)
+- [`signUp.tsx`](./app/%28auth%29/signUp.tsx)
+- [`forgetPassword.tsx`](./app/%28auth%29/forgetPassword.tsx)
+- [`passwordResent.tsx`](./app/%28auth%29/passwordResent.tsx)
 
-Các tab đang có:
-- `home`
-- `transactions`
-- `insights`
-- `profile`
+### 5.4 `app/(tabs)`
 
-#### `home.tsx`
+Main tab flow sau khi vào app.
 
-Đang có:
+Gồm:
+- [`home.tsx`](./app/%28tabs%29/home.tsx)
+- [`transactions.tsx`](./app/%28tabs%29/transactions.tsx)
+- [`insights.tsx`](./app/%28tabs%29/insights.tsx)
+- [`assistant.tsx`](./app/%28tabs%29/assistant.tsx)
+- [`profile.tsx`](./app/%28tabs%29/profile.tsx)
+
+Hiện tại:
+- `home` đã có thêm card `Investments`
+- `insights` đã được mở rộng thành màn `spending + investments`
+- `default stock` do user chọn sẽ được ưu tiên hiển thị ở các màn này
+- `assistant` là inbox riêng cho nhiều AI conversation threads
+
+### 5.5 `app/(assistant)`
+
+Đây là stack cho toàn bộ AI assistant subflow.
+
+Các màn hiện có:
+- [`chat/[scenario].tsx`](./app/%28assistant%29/chat/%5Bscenario%5D.tsx)
+- [`voice.tsx`](./app/%28assistant%29/voice.tsx)
+- [`receipt-upload.tsx`](./app/%28assistant%29/receipt-upload.tsx)
+- [`receipt-scan.tsx`](./app/%28assistant%29/receipt-scan.tsx)
+- [`settings.tsx`](./app/%28assistant%29/settings.tsx)
+- [`reset-memory.tsx`](./app/%28assistant%29/reset-memory.tsx)
+- [`out-of-tokens.tsx`](./app/%28assistant%29/out-of-tokens.tsx)
+- [`upgrade.tsx`](./app/%28assistant%29/upgrade.tsx)
+
+### 5.6 `app/(finance)`
+
+Đây là stack mới để tách các finance subflow ra khỏi `transactions.tsx` thay vì dồn hết vào modal.
+
+Các màn hiện có:
+- [`account.tsx`](./app/%28finance%29/account.tsx)
+- [`add-note.tsx`](./app/%28finance%29/add-note.tsx)
+- [`add-transaction.tsx`](./app/%28finance%29/add-transaction.tsx)
+- [`buy-stock.tsx`](./app/%28finance%29/buy-stock.tsx)
+- [`investments.tsx`](./app/%28finance%29/investments.tsx)
+- [`send-money.tsx`](./app/%28finance%29/send-money.tsx)
+- [`sending.tsx`](./app/%28finance%29/sending.tsx)
+- [`transfer-result.tsx`](./app/%28finance%29/transfer-result.tsx)
+- [`stock/[symbol].tsx`](./app/%28finance%29/stock/%5Bsymbol%5D.tsx)
+- [`transaction/[id].tsx`](./app/%28finance%29/transaction/%5Bid%5D.tsx)
+- [`split-transaction.tsx`](./app/%28finance%29/split-transaction.tsx)
+- [`ignore-transaction.tsx`](./app/%28finance%29/ignore-transaction.tsx)
+- [`merchant/[merchant].tsx`](./app/%28finance%29/merchant/%5Bmerchant%5D.tsx)
+- [`merchant-edit.tsx`](./app/%28finance%29/merchant-edit.tsx)
+- [`transactions-search.tsx`](./app/%28finance%29/transactions-search.tsx)
+- [`transactions-filters.tsx`](./app/%28finance%29/transactions-filters.tsx)
+- [`sort-transactions.tsx`](./app/%28finance%29/sort-transactions.tsx)
+- [`date-range.tsx`](./app/%28finance%29/date-range.tsx)
+- [`categories.tsx`](./app/%28finance%29/categories.tsx)
+- [`add-category.tsx`](./app/%28finance%29/add-category.tsx)
+- [`select-category.tsx`](./app/%28finance%29/select-category.tsx)
+- [`select-type.tsx`](./app/%28finance%29/select-type.tsx)
+- [`set-recurring.tsx`](./app/%28finance%29/set-recurring.tsx)
+
+Đây là phần bám trực tiếp hơn vào board `Home & Transactions.png`.
+
+## 6. Trạng thái từng màn chính
+
+### 6.1 Home
+
+Nguồn: [`app/(tabs)/home.tsx`](./app/%28tabs%29/home.tsx)
+
+Hiện có:
 - hero balance section
+- account snapshot list
 - quick actions
+- activity highlights
 - budget highlights
+- goals
+- savings target
+- upcoming bills
+- investment snapshot + watchlist chips
+- merchant activity
+- news & resources
+- finpal tip card
 - recent transactions
-- insights CTA
 
-#### `transactions.tsx`
+Đã nối sang finance screens mới:
+- account detail
+- merchant detail
+- transaction detail
+- send money
+- add transaction
+- categories
 
-Đang có:
+### 6.2 Transactions
+
+Nguồn: [`app/(tabs)/transactions.tsx`](./app/%28tabs%29/transactions.tsx)
+
+Sau refactor, màn này là transaction dashboard/list.
+
+Hiện có:
+- search bar mở ra search screen riêng
 - summary cards
-- filter chip
-- grouped transaction list
-- transaction detail bottom sheet
-- modal add transaction để test tạm
-
-#### `insights.tsx`
-
-Màn insight placeholder nhưng có UI thật:
-- weekly activity chart
+- quick finance actions
+- merchant chips
+- quick filter chips
+- buttons sang `filters / sort / date`
 - top categories
-- CTA button
+- grouped transaction list
 
-#### `profile.tsx`
+Không còn nhồi nhiều modal lớn trong file này nữa.
 
-Màn profile placeholder nhưng có UI thật:
-- profile card
-- menu list
-- nút back về sign in
+### 6.3 Insights
 
-## 6. Cơ chế test tạm hiện tại
+Nguồn: [`app/(tabs)/insights.tsx`](./app/%28tabs%29/insights.tsx)
 
-Hiện tại ở [`app/(auth)/signIn.tsx`](./app/%28auth%29/signIn.tsx) có:
+Hiện có:
+- portfolio snapshot
+- featured stock chart
+- watchlist list
+- spending activity chart
+- top categories
+- CTA sang investment center
+
+### 6.4 Assistant
+
+Nguồn:
+- [`app/(tabs)/assistant.tsx`](./app/%28tabs%29/assistant.tsx)
+
+Hiện có:
+- 2 intro slide cho assistant
+- hero card cho `Finpal AI`
+- danh sách nhiều assistant threads
+- `settings` ở góc trên cùng bên phải
+- `upgrade` nằm ở inbox assistant
+- mở từng thread sang màn chat riêng
+
+Nối sang subflow:
+- chat thread riêng
+- voice assistant
+- receipt upload
+- receipt scan
+- chat settings
+- clear chatbot data
+- out-of-token state
+- upgrade state
+
+### 6.5 Finance Subflows
+
+Các state đã có để test UI:
+- add transaction
+- add note
+- type picker
+- category picker
+- recurring picker
+- transfer form
+- transfer recipient picker
+- sending state
+- transfer success
+- transfer failed
+- transaction detail
+- split payment
+- ignore transaction
+- merchant detail
+- merchant rename
+- transaction search
+- empty search result
+- advanced filters
+- sort state
+- date selection state
+- category list
+- add category
+- account detail
+- investments overview
+- stock detail
+- buy stock flow
+
+## 7. Mock Data và UI Foundation
+
+### 7.1 `components/home/mock-data.ts`
+
+Chứa:
+- type definitions cho finance models
+- overview stats
+- wallet accounts
+- goals
+- bills
+- stock quotes
+- stock holdings seed
+- stock watchlist seed
+- resource cards
+- activity highlights
+- merchant highlights
+- recipients
+- recurring options
+- sort options
+- category icon/color options
+- transaction seeds
+
+### 7.2 `components/finance/FinanceScaffold.tsx`
+
+Foundation mới cho finance routes.
+
+Chứa:
+- `FinanceScreen`
+- `FinanceCard`
+- `StockTrendChart`
+
+Mục tiêu:
+- thống nhất spacing/header/card giữa các finance screen
+- giảm lặp code khi thêm màn theo board
+
+### 7.3 `components/assistant/*`
+
+Assistant foundation mới.
+
+Chứa:
+- `AssistantScaffold.tsx`
+- `AssistantWidgets.tsx`
+- `mock-data.ts`
+
+Mục tiêu:
+- thống nhất scaffold và card shell cho assistant screens
+- gom renderer cho conversation card types
+- giữ toàn bộ demo scenario ở một chỗ
+
+### 7.4 `components/finance/finance-utils.ts`
+
+Helper dùng chung:
+- `formatCurrency`
+- `formatCompactCurrency`
+- `groupTransactionsByDate`
+- `makeReference`
+
+## 8. Cơ chế test tạm hiện tại
+
+Ở [`app/(auth)/signIn.tsx`](./app/%28auth%29/signIn.tsx):
 
 ```ts
 const ENABLE_HOME_TEST_BYPASS = true;
 ```
 
 Ý nghĩa:
-- khi bấm sign in, app sẽ `router.replace('/(tabs)/home')`
-- không kiểm tra auth thật
-- mục đích là để test flow home nhanh trong giai đoạn build UI
+- bấm sign in sẽ vào thẳng `/(tabs)/home`
+- không check auth thật
+- dùng để test UI nhanh
 
-Muốn tắt cơ chế này:
-
-1. mở [`app/(auth)/signIn.tsx`](./app/%28auth%29/signIn.tsx)
-2. đổi:
+Muốn tắt:
 
 ```ts
 const ENABLE_HOME_TEST_BYPASS = false;
 ```
 
-Sau đó bạn có thể thay `handleSubmit()` bằng auth logic thật.
+## 9. Design Reference
 
-## 7. Design reference đang nằm ở đâu
-
-Thư mục:
+Thư mục reference:
 
 [`finpal_ AI Finance Assistant App UI Kit (Community)`](./finpal_%20AI%20Finance%20Assistant%20App%20UI%20Kit%20%28Community%29)
 
-Đây là nơi chứa các PNG export từ Figma/UI kit để dựng frontend.
-
-Những file đã được dùng trực tiếp để code hiện tại:
+Những file đang được bám nhiều nhất:
 - `Authentication.png`
 - `Splash & Loading Screen.png`
-- `🔒 Home & Transactions.png`
+- `Welcome Screen.png`
+- `Home & Transactions.png`
+- `🔒 AI Finance Assisstant.png`
 
-## 8. Dữ liệu thật hay giả
+## 10. Dữ liệu thật hay giả
 
-Trạng thái hiện tại:
-
+Hiện tại:
 - `Auth`: giả
-- `Home`: giả
-- `Transactions`: giả
-- `Insights`: giả
+- `Home`: giả nhưng có shared state
+- `Transactions`: giả nhưng có shared state
+- `Finance subflows`: giả nhưng có shared state
+- `Insights`: giả nhưng đã nối với stock/investment mock data
+- `Assistant`: giả nhưng đã có shared state + nhiều state UI
 - `Profile`: giả
 
-Tất cả đang là frontend prototype chạy được, chưa có:
-- API integration
-- state management global
+Chưa có:
+- API thật
 - persistent storage
-- user session thật
-- database
+- auth/session thật
+- backend integration
 
-## 9. Cách chạy project
+## 11. Cách chạy project
 
 ### Cài dependencies
 
@@ -388,13 +585,7 @@ npm run start
 npm run android
 ```
 
-Hoặc nếu emulator đã mở sẵn, có thể chạy:
-
-```bash
-npx expo start
-```
-
-rồi bấm `a`.
+Hoặc mở Expo dev server rồi bấm `a`.
 
 ### Kiểm tra code
 
@@ -403,50 +594,39 @@ npm run lint
 npx tsc --noEmit
 ```
 
-## 10. Những gì đã ổn
+## 12. Tình trạng hiện tại
 
-- Có routing rõ ràng bằng `expo-router`
-- Có auth UI tương đối đồng bộ
-- Có loading flow riêng
-- Có main app flow để demo
-- Có data mock đủ để test UI
-- `lint` và `typecheck` đang sạch
+Đã ổn:
+- routing rõ ràng hơn
+- auth / welcome / splash có flow đầy đủ
+- home và transactions đã dùng chung finance state
+- assistant đã có tab riêng + subflow riêng
+- nhóm subflow trong board `Home & Transactions` đã được tách thành stack riêng
+- lint và typecheck sạch
 
-## 11. Những gì chưa có hoặc nên làm tiếp
-
+Chưa có hoặc nên làm tiếp:
 - auth thật
-- API thật cho home/transactions
-- lưu state và session
+- persistence cho finance state
+- persistence cho assistant state
+- API thật cho transactions/home
+- AI backend thật
+- edit/delete transaction thật
+- split payment logic thật
+- merchant/category CRUD đầy đủ
 - dark mode thật
-- search/filter thật trong transactions
-- edit/delete transaction
-- profile settings thật
-- onboarding / welcome screen riêng
-- tách thêm component cho home module để code gọn hơn
-
-## 12. Gợi ý mở rộng tiếp theo
-
-Nếu tiếp tục phát triển project này, thứ tự hợp lý là:
-
-1. Tạo `services/` hoặc `lib/` để chuẩn bị API layer
-2. Tạo `types/` riêng cho model dữ liệu
-3. Tách `home.tsx` và `transactions.tsx` thành nhiều component nhỏ
-4. Bỏ `test bypass` và thay bằng login flow thật
-5. Thêm persistence như AsyncStorage hoặc backend session
-6. Hoàn thiện thêm các board còn lại từ UI kit
+- tách `home.tsx` thành nhiều component nhỏ hơn
 
 ## 13. Tóm tắt ngắn
 
-Đây là một frontend prototype cho app tài chính cá nhân:
-- có splash/loading
-- có auth flow
-- có home/tabs flow
-- dùng theme xanh riêng
-- đang ưu tiên dựng UI trước
-- chưa nối backend
+Project hiện là một frontend prototype chạy được với:
+- splash/loading
+- onboarding
+- auth flow
+- tab flow
+- finance stack riêng cho các subflow chi tiết
+- shared mock state cho transaction/category
 
-Nếu cần, bước tiếp theo mình có thể viết tiếp:
-- `ARCHITECTURE.md`
-- `ROUTING.md`
-- `API_PLAN.md`
-- hoặc tài liệu tiếng Việt chi tiết hơn cho từng màn hình.
+Nếu cần, bước tiếp theo hợp lý là:
+- thêm persistence
+- nối API
+- hoặc tiếp tục dựng các board còn lại từ UI kit.
