@@ -9,7 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
-./SwinHackathon/package-lock.json
+/SwinHackathon/package-lock.json
 
 .idea
-./SwinHackathon/finpal_ AI Finance Assistant App UI Kit (Community)
+/SwinHackathon/finpal_ AI Finance Assistant App UI Kit (Community)/
