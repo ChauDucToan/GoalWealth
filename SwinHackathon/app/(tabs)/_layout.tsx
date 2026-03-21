@@ -41,6 +41,30 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="achievements"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="emoji-events" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="news-resources"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="newspaper" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="search-notifications"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="search" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="insights"
         options={{
           tabBarIcon: ({ color, size }) => (

@@ -10,7 +10,9 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useMemo, useState } from 'react';
 import {
+  Animated,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,6 +37,41 @@ export default function TransactionsScreen() {
   const [draftAmount, setDraftAmount] = useState('');
   const [draftMerchant, setDraftMerchant] = useState('');
   const [draftCategory, setDraftCategory] = useState(budgetCategories[0].name);
+  const addSheetTranslateY = useState(new Animated.Value(0))[0];
+
+  const addSheetPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          gesture.dy > 8 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+        onPanResponderMove: (_, gesture) => {
+          if (gesture.dy > 0) {
+            addSheetTranslateY.setValue(gesture.dy);
+          }
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dy > 120 || gesture.vy > 1.1) {
+            Animated.timing(addSheetTranslateY, {
+              toValue: 420,
+              duration: 170,
+              useNativeDriver: true,
+            }).start(() => {
+              addSheetTranslateY.setValue(0);
+              setShowAddModal(false);
+            });
+            return;
+          }
+
+          Animated.spring(addSheetTranslateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            speed: 22,
+            bounciness: 0,
+          }).start();
+        },
+      }),
+    [addSheetTranslateY],
+  );
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((item) => {
@@ -241,7 +278,6 @@ export default function TransactionsScreen() {
         onPress={() => setShowAddModal(true)}
       >
         <MaterialIcons name="add" size={24} color={colors.card} />
-        <Text style={[styles.fabText, { color: colors.card }]}>Add transaction</Text>
       </Pressable>
 
       <Modal
@@ -255,7 +291,9 @@ export default function TransactionsScreen() {
           {selectedTransaction ? (
             <View style={[styles.sheet, { backgroundColor: colors.card }]}>
               <View style={[styles.handle, { backgroundColor: hexToRgba(colors.text, 0.16) }]} />
-              <Text style={[styles.sheetTitle, { color: colors.text }]}>Transaction Detail</Text>
+              <Text style={[styles.sheetTitle, styles.sheetTitleSpaced, { color: colors.text }]}>
+                Transaction Detail
+              </Text>
 
               <View
                 style={[
@@ -341,109 +379,131 @@ export default function TransactionsScreen() {
       >
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalBackdrop} onPress={() => setShowAddModal(false)} />
-          <View style={[styles.sheet, { backgroundColor: colors.card }]}>
-            <View style={[styles.handle, { backgroundColor: hexToRgba(colors.text, 0.16) }]} />
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>Add Transaction</Text>
-
-            <View style={styles.segmentRow}>
-              {(['expense', 'income'] as const).map((item) => {
-                const selected = draftType === item;
-                return (
-                  <Pressable
-                    key={item}
-                    style={[
-                      styles.segmentButton,
-                      {
-                        backgroundColor: selected ? colors.primaryDark : colors.backgroundSoft,
-                      },
-                    ]}
-                    onPress={() => setDraftType(item)}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        { color: selected ? colors.card : colors.text },
-                      ]}
-                    >
-                      {item === 'expense' ? 'Expense' : 'Income'}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+          <Animated.View
+            style={[
+              styles.sheet,
+              {
+                backgroundColor: colors.card,
+                transform: [{ translateY: addSheetTranslateY }],
+              },
+            ]}
+          >
+            <View {...addSheetPanResponder.panHandlers}>
+              <View style={[styles.handle, { backgroundColor: hexToRgba(colors.text, 0.16) }]} />
+              <View style={styles.sheetHeaderRow}>
+                <View style={styles.sheetHeaderSpacer} />
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>Add Transaction</Text>
+                <Pressable style={styles.sheetCloseButton} onPress={() => setShowAddModal(false)}>
+                  <MaterialIcons name="close" size={18} color={hexToRgba(colors.text, 0.7)} />
+                </Pressable>
+              </View>
             </View>
 
-            <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Amount</Text>
-              <TextInput
-                value={draftAmount}
-                onChangeText={setDraftAmount}
-                keyboardType="numeric"
-                placeholder="0.00"
-                placeholderTextColor={hexToRgba(colors.text, 0.34)}
-                style={[
-                  styles.fieldInput,
-                  {
-                    backgroundColor: colors.backgroundSoft,
-                    color: colors.text,
-                    borderColor: hexToRgba(colors.primaryDark, 0.08),
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Merchant</Text>
-              <TextInput
-                value={draftMerchant}
-                onChangeText={setDraftMerchant}
-                placeholder="Merchant name"
-                placeholderTextColor={hexToRgba(colors.text, 0.34)}
-                style={[
-                  styles.fieldInput,
-                  {
-                    backgroundColor: colors.backgroundSoft,
-                    color: colors.text,
-                    borderColor: hexToRgba(colors.primaryDark, 0.08),
-                  },
-                ]}
-              />
-            </View>
-
-            <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Category</Text>
-              <View style={styles.categoryWrap}>
-                {budgetCategories.map((item) => {
-                  const selected = draftCategory === item.name;
+            <ScrollView
+              style={styles.addSheetScroll}
+              contentContainerStyle={styles.addSheetScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.segmentRow}>
+                {(['expense', 'income'] as const).map((item) => {
+                  const selected = draftType === item;
                   return (
                     <Pressable
-                      key={item.id}
+                      key={item}
                       style={[
-                        styles.categoryChip,
+                        styles.segmentButton,
                         {
-                          backgroundColor: selected ? hexToRgba(item.accent, 0.18) : colors.backgroundSoft,
-                          borderColor: selected ? item.accent : 'transparent',
+                          backgroundColor: selected ? colors.primaryDark : colors.backgroundSoft,
                         },
                       ]}
-                      onPress={() => setDraftCategory(item.name)}
+                      onPress={() => setDraftType(item)}
                     >
-                      <MaterialIcons name={item.icon} size={16} color={item.accent} />
-                      <Text style={[styles.categoryChipText, { color: colors.text }]}>
-                        {item.name}
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          { color: selected ? colors.card : colors.text },
+                        ]}
+                      >
+                        {item === 'expense' ? 'Expense' : 'Income'}
                       </Text>
                     </Pressable>
                   );
                 })}
               </View>
-            </View>
 
-            <ThemeButton
-              title="Save Transaction"
-              onPress={handleSaveTransaction}
-              colorBackground={colors.primaryDark}
-              colorText={colors.card}
-              style={styles.sheetButton}
-            />
-          </View>
+              <View style={styles.fieldWrap}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Amount</Text>
+                <TextInput
+                  value={draftAmount}
+                  onChangeText={setDraftAmount}
+                  keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                  style={[
+                    styles.fieldInput,
+                    {
+                      backgroundColor: colors.backgroundSoft,
+                      color: colors.text,
+                      borderColor: hexToRgba(colors.primaryDark, 0.08),
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.fieldWrap}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Merchant</Text>
+                <TextInput
+                  value={draftMerchant}
+                  onChangeText={setDraftMerchant}
+                  placeholder="Merchant name"
+                  placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                  style={[
+                    styles.fieldInput,
+                    {
+                      backgroundColor: colors.backgroundSoft,
+                      color: colors.text,
+                      borderColor: hexToRgba(colors.primaryDark, 0.08),
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.fieldWrap}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Category</Text>
+                <View style={styles.categoryWrap}>
+                  {budgetCategories.map((item) => {
+                    const selected = draftCategory === item.name;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        style={[
+                          styles.categoryChip,
+                          {
+                            backgroundColor: selected ? hexToRgba(item.accent, 0.18) : colors.backgroundSoft,
+                            borderColor: selected ? item.accent : 'transparent',
+                          },
+                        ]}
+                        onPress={() => setDraftCategory(item.name)}
+                      >
+                        <MaterialIcons name={item.icon} size={16} color={item.accent} />
+                        <Text style={[styles.categoryChipText, { color: colors.text }]}>
+                          {item.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <ThemeButton
+                title="Save Transaction"
+                onPress={handleSaveTransaction}
+                colorBackground={colors.primaryDark}
+                colorText={colors.card}
+                style={styles.sheetButton}
+              />
+            </ScrollView>
+          </Animated.View>
         </View>
       </Modal>
     </>
@@ -576,21 +636,12 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 96,
-    flexDirection: 'row',
+    bottom: 24,
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  fabText: {
-    fontSize: 13,
-    fontWeight: '800',
+    justifyContent: 'center',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   modalOverlay: {
     flex: 1,
@@ -614,10 +665,36 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   sheetTitle: {
-    marginTop: 18,
     fontSize: 22,
     fontWeight: '800',
     textAlign: 'center',
+  },
+  sheetTitleSpaced: {
+    marginTop: 18,
+  },
+  sheetHeaderRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetHeaderSpacer: {
+    width: 34,
+    height: 34,
+  },
+  sheetCloseButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addSheetScroll: {
+    marginTop: 6,
+    maxHeight: 520,
+  },
+  addSheetScrollContent: {
+    paddingBottom: 8,
   },
   detailIcon: {
     alignSelf: 'center',

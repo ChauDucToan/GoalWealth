@@ -1,0 +1,69 @@
+import { hexToRgba } from '@/components/auth/AuthKit';
+import { SupportBubble } from '@/components/news/SupportBubble';
+import { useTheme } from '@/hooks/use-theme-colors';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+export default function WorkshopDetailScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
+
+  return (
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerRow}>
+          <Pressable style={styles.headerIconButton} onPress={() => router.back()}>
+            <MaterialIcons name="chevron-left" size={22} color={hexToRgba(colors.text, 0.6)} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Workshop Detail</Text>
+          <Pressable style={styles.headerIconButton} onPress={() => router.push('/news-resources-instructor')}>
+            <MaterialIcons name="person-outline" size={18} color={hexToRgba(colors.text, 0.55)} />
+          </Pressable>
+        </View>
+        <Image source={require('../../assets/images/loading-budget-photo.png')} style={styles.hero} />
+        <Text style={[styles.title, { color: colors.text }]}>Mastering Personal Finance in 100 Days, Asia</Text>
+        <Text style={[styles.body, { color: hexToRgba(colors.text, 0.68) }]}>
+          A practical workshop to help you establish clear habits in budgeting, debt management, and investing.
+        </Text>
+        {['Anyone new to personal finance', 'Working professionals', 'Small business owners'].map((item) => (
+          <View key={item} style={styles.row}>
+            <MaterialIcons name="check-circle" size={14} color={colors.primaryDark} />
+            <Text style={[styles.rowText, { color: hexToRgba(colors.text, 0.74) }]}>{item}</Text>
+          </View>
+        ))}
+        <View style={styles.priceRow}>
+          <Text style={[styles.price, { color: colors.success }]}>$39.99</Text>
+          <Pressable style={[styles.ctaSmall, { backgroundColor: colors.primaryDark }]}>
+            <Text style={[styles.ctaText, { color: colors.card }]}>Register</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+      <SupportBubble />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  content: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 110, gap: 8 },
+  headerRow: { marginTop: 2, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerIconButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: { fontSize: 16, fontWeight: '800' },
+  hero: { width: '100%', height: 180, borderRadius: 12 },
+  title: { marginTop: 8, fontSize: 22, lineHeight: 26, fontWeight: '800' },
+  body: { fontSize: 12, lineHeight: 18 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowText: { fontSize: 11 },
+  priceRow: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  price: { fontSize: 24, fontWeight: '800' },
+  ctaSmall: { height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  ctaText: { fontSize: 12, fontWeight: '700' },
+});
