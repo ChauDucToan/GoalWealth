@@ -49,6 +49,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="assistant"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="smart-toy" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           tabBarIcon: ({ color, size }) => (
