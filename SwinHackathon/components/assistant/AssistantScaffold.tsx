@@ -1,4 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -30,30 +31,58 @@ export function AssistantScreen({
   scroll?: boolean;
 }) {
   const { colors } = useTheme();
+  const { scale, verticalScale, scaleFont } = useResponsive();
   const router = useRouter();
   const body = (
-    <View style={[styles.content, contentStyle]}>
+    <View
+      style={[
+        styles.content,
+        {
+          paddingTop: verticalScale(60, 0.76),
+          paddingHorizontal: scale(18, 0.78),
+        },
+        contentStyle,
+      ]}
+    >
       <View style={styles.headerRow}>
         <Pressable
           style={[
             styles.backButton,
-            { backgroundColor: colors.card, borderColor: hexToRgba(colors.primaryDark, 0.08) },
+            {
+              backgroundColor: colors.card,
+              borderColor: hexToRgba(colors.primaryDark, 0.08),
+              width: scale(44, 0.78),
+              height: scale(44, 0.78),
+              borderRadius: scale(15, 0.72),
+            },
           ]}
           onPress={() => router.back()}
         >
-          <MaterialIcons name="arrow-back" size={24} color={colors.text} />
+          <MaterialIcons name="arrow-back" size={scale(24, 0.72)} color={colors.text} />
         </Pressable>
 
         <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.title, { color: colors.text, fontSize: scaleFont(24, 0.74) }]}>
+            {title}
+          </Text>
           {subtitle ? (
-            <Text style={[styles.subtitle, { color: hexToRgba(colors.text, 0.56) }]}>
+            <Text
+              style={[
+                styles.subtitle,
+                {
+                  color: hexToRgba(colors.text, 0.56),
+                  marginTop: verticalScale(5, 0.6),
+                  fontSize: scaleFont(Typography.body, 0.78),
+                  lineHeight: verticalScale(21, 0.7),
+                },
+              ]}
+            >
               {subtitle}
             </Text>
           ) : null}
         </View>
 
-        <View style={styles.rightAccessory}>{rightAccessory}</View>
+        <View style={[styles.rightAccessory, { minWidth: scale(44, 0.78) }]}>{rightAccessory}</View>
       </View>
 
       {children}
@@ -83,6 +112,7 @@ export function AssistantCard({
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
+  const { scale } = useResponsive();
 
   return (
     <View
@@ -92,6 +122,8 @@ export function AssistantCard({
           backgroundColor: colors.card,
           borderColor: hexToRgba(colors.primaryDark, 0.06),
           shadowColor: colors.shadow,
+          borderRadius: scale(24, 0.75),
+          padding: scale(18, 0.75),
         },
         style,
       ]}
@@ -109,8 +141,6 @@ const styles = StyleSheet.create({
     paddingBottom: 44,
   },
   content: {
-    paddingTop: 60,
-    paddingHorizontal: 18,
   },
   headerRow: {
     flexDirection: 'row',
@@ -118,9 +148,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -129,21 +156,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
     fontWeight: '800',
   },
-  subtitle: {
-    marginTop: 5,
-    fontSize: Typography.body,
-    lineHeight: 21,
-  },
+  subtitle: {},
   rightAccessory: {
-    minWidth: 44,
     alignItems: 'flex-end',
   },
   card: {
-    borderRadius: 24,
-    padding: 18,
     borderWidth: 1,
     shadowOpacity: 0.12,
     shadowRadius: 20,

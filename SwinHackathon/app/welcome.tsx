@@ -11,10 +11,12 @@ import {
   FlatList,
   ListRenderItemInfo,
   Pressable,
+  StyleProp,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
+  ViewStyle,
 } from 'react-native';
 
 type Slide = {
@@ -56,6 +58,53 @@ function AccentShape({
       color={colorMap[tint]}
       style={{ position: 'absolute', top, left, right, bottom }}
     />
+  );
+}
+
+function PhoneShell({
+  colors,
+  children,
+  shellStyle,
+  innerStyle,
+}: {
+  colors: ColorTheme;
+  children: React.ReactNode;
+  shellStyle?: StyleProp<ViewStyle>;
+  innerStyle?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={styles.phoneShellWrap}>
+      <View
+        style={[
+          styles.phoneLeg,
+          styles.phoneLegLeft,
+          { backgroundColor: hexToRgba(colors.primaryDark, 0.24) },
+        ]}
+      />
+      <View
+        style={[
+          styles.phoneLeg,
+          styles.phoneLegRight,
+          { backgroundColor: hexToRgba(colors.primaryDark, 0.24) },
+        ]}
+      />
+
+      <View
+        style={[
+          styles.phoneShell,
+          { borderColor: hexToRgba(colors.primaryDark, 0.18) },
+          shellStyle,
+        ]}
+      >
+        <View
+          style={[
+            styles.phoneNotch,
+            { backgroundColor: colors.primaryLight },
+          ]}
+        />
+        <View style={[styles.phoneShellInner, innerStyle]}>{children}</View>
+      </View>
+    </View>
   );
 }
 
@@ -103,10 +152,10 @@ function BudgetLine({
 function BudgetIllustration({ colors }: { colors: ColorTheme }) {
   return (
     <View style={styles.illustrationStage}>
-      <AccentShape colors={colors} top={20} right={24} icon="stars" tint="warning" />
-      <AccentShape colors={colors} top={126} left={16} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={24} right={26} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={154} left={18} icon="stars" tint="warning" />
 
-      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+      <PhoneShell colors={colors} shellStyle={styles.budgetShell}>
         <View
           style={[
             styles.ledgerCard,
@@ -165,7 +214,7 @@ function BudgetIllustration({ colors }: { colors: ColorTheme }) {
             value="$99 of $150"
           />
         </View>
-      </View>
+      </PhoneShell>
     </View>
   );
 }
@@ -173,11 +222,11 @@ function BudgetIllustration({ colors }: { colors: ColorTheme }) {
 function AssistantIllustration({ colors }: { colors: ColorTheme }) {
   return (
     <View style={styles.illustrationStage}>
-      <AccentShape colors={colors} top={18} left={14} icon="stars" tint="warning" />
-      <AccentShape colors={colors} top={162} right={16} icon="stars" tint="warning" />
-      <AccentShape colors={colors} top={108} left={6} icon="change-history" tint="secondary" />
+      <AccentShape colors={colors} top={28} left={18} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={162} right={18} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={116} left={10} icon="change-history" tint="secondary" />
 
-      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+      <PhoneShell colors={colors} shellStyle={styles.assistantShell}>
         <View
           style={[
             styles.chatBubbleRight,
@@ -221,7 +270,7 @@ function AssistantIllustration({ colors }: { colors: ColorTheme }) {
             Based on history & habits, your total spending in January 2025 is $1,541.15.
           </Text>
         </View>
-      </View>
+      </PhoneShell>
     </View>
   );
 }
@@ -299,10 +348,10 @@ function GoalCard({
 function GoalsIllustration({ colors }: { colors: ColorTheme }) {
   return (
     <View style={styles.illustrationStage}>
-      <AccentShape colors={colors} top={18} left={18} icon="blur-circular" tint="secondary" />
-      <AccentShape colors={colors} top={164} right={20} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={24} left={20} icon="blur-circular" tint="secondary" />
+      <AccentShape colors={colors} top={166} right={22} icon="stars" tint="warning" />
 
-      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+      <PhoneShell colors={colors} shellStyle={styles.goalsShell} innerStyle={styles.goalStack}>
         <GoalCard
           colors={colors}
           title="Trip to Paris"
@@ -321,7 +370,7 @@ function GoalsIllustration({ colors }: { colors: ColorTheme }) {
           footerRight="2y 188d left"
           icon="school"
         />
-      </View>
+      </PhoneShell>
     </View>
   );
 }
@@ -372,10 +421,10 @@ function SavingsCard({
 function SavingsIllustration({ colors }: { colors: ColorTheme }) {
   return (
     <View style={styles.illustrationStage}>
-      <AccentShape colors={colors} top={14} left={24} icon="close" tint="secondary" />
-      <AccentShape colors={colors} top={164} right={26} icon="lens" tint="background" />
+      <AccentShape colors={colors} top={16} left={26} icon="close" tint="secondary" />
+      <AccentShape colors={colors} top={170} right={28} icon="lens" tint="background" />
 
-      <View style={[styles.cardFrame, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
+      <PhoneShell colors={colors} shellStyle={styles.savingsShell}>
         <View style={styles.savingsRow}>
           <SavingsCard
             colors={colors}
@@ -392,7 +441,7 @@ function SavingsIllustration({ colors }: { colors: ColorTheme }) {
             tone="negative"
           />
         </View>
-      </View>
+      </PhoneShell>
     </View>
   );
 }
@@ -445,8 +494,8 @@ function GraphBubble({
 function SubscriptionsIllustration({ colors }: { colors: ColorTheme }) {
   return (
     <View style={styles.illustrationStage}>
-      <AccentShape colors={colors} top={74} right={12} icon="stars" tint="warning" />
-      <AccentShape colors={colors} top={174} left={34} icon="stars" tint="error" />
+      <AccentShape colors={colors} top={78} right={12} icon="stars" tint="warning" />
+      <AccentShape colors={colors} top={184} left={34} icon="stars" tint="error" />
 
       <View style={[styles.graphWrap, { borderColor: hexToRgba(colors.primaryDark, 0.18) }]}>
         <View
@@ -461,43 +510,43 @@ function SubscriptionsIllustration({ colors }: { colors: ColorTheme }) {
         <GraphBubble
           colors={colors}
           label="NETFLIX"
-          top={48}
-          left={18}
+          top={54}
+          left={8}
           textColor="#E11D48"
         />
         <GraphBubble
           colors={colors}
           label="Pay"
-          top={24}
-          right={18}
+          top={20}
+          right={8}
           textColor="#1E40AF"
         />
         <GraphBubble
           colors={colors}
           label="Star"
-          bottom={40}
-          left={22}
+          bottom={48}
+          left={6}
           textColor="#16A34A"
         />
         <GraphBubble
           colors={colors}
           label="Coke"
-          bottom={34}
-          right={22}
+          bottom={48}
+          right={6}
           textColor="#EF4444"
         />
         <GraphBubble
           colors={colors}
           label="$15"
-          top={18}
-          left={82}
+          top={14}
+          left={96}
           tiny
         />
         <GraphBubble
           colors={colors}
           label="$50"
-          bottom={22}
-          right={78}
+          bottom={20}
+          right={92}
           tiny
         />
       </View>
@@ -525,7 +574,7 @@ export default function WelcomeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const isCompactHeight = height < 860;
   const isShortHeight = height < 760;
-  const illustrationViewportHeight = isShortHeight ? 228 : isCompactHeight ? 270 : 336;
+  const illustrationViewportHeight = isShortHeight ? 236 : isCompactHeight ? 286 : 356;
   const illustrationScaleFactor = isShortHeight ? 0.76 : isCompactHeight ? 0.88 : 1;
   const headlineFontSize = isShortHeight ? 22 : isCompactHeight ? 24 : 26;
   const headlineLineHeight = isShortHeight ? 29 : isCompactHeight ? 32 : 34;
@@ -627,10 +676,10 @@ export default function WelcomeScreen() {
         : 0.88
       : earlySlide
         ? isShortHeight
-          ? 0.72
+          ? 0.78
           : isCompactHeight
-            ? 0.84
-            : 0.94
+            ? 0.9
+            : 1.02
         : illustrationScaleFactor;
     const slideHeadlineFontSize = introSlide
       ? isShortHeight
@@ -1051,22 +1100,75 @@ const styles = StyleSheet.create({
   },
   illustrationStage: {
     width: '100%',
-    height: 308,
+    height: 324,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'visible',
   },
-  cardFrame: {
-    width: 250,
-    height: 214,
-    borderRadius: 34,
+  phoneShellWrap: {
+    width: 300,
+    height: 282,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+  },
+  phoneLeg: {
+    position: 'absolute',
+    bottom: 0,
+    width: 4,
+    height: 56,
+    borderRadius: 999,
+  },
+  phoneLegLeft: {
+    left: 66,
+  },
+  phoneLegRight: {
+    right: 66,
+  },
+  phoneShell: {
+    width: 286,
+    height: 228,
+    borderRadius: 40,
     borderWidth: 5,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+  },
+  phoneNotch: {
+    position: 'absolute',
+    top: -1,
+    width: 74,
+    height: 18,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  phoneShellInner: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  budgetShell: {
+    justifyContent: 'flex-start',
+    paddingTop: 26,
+  },
+  assistantShell: {
+    justifyContent: 'center',
+  },
+  goalsShell: {
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  savingsShell: {
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  goalStack: {
+    gap: 12,
   },
   ledgerCard: {
-    width: 218,
-    borderRadius: 24,
-    padding: 16,
+    width: 248,
+    borderRadius: 26,
+    padding: 18,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 20,
@@ -1134,12 +1236,12 @@ const styles = StyleSheet.create({
   },
   chatBubbleRight: {
     position: 'absolute',
-    top: 36,
-    left: 34,
-    right: 10,
-    borderRadius: 22,
-    paddingVertical: 13,
-    paddingHorizontal: 15,
+    top: 28,
+    left: 18,
+    right: 8,
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1150,12 +1252,12 @@ const styles = StyleSheet.create({
   },
   chatBubbleLeft: {
     position: 'absolute',
-    left: 18,
-    right: 20,
-    bottom: 24,
-    borderRadius: 22,
-    paddingVertical: 15,
-    paddingHorizontal: 15,
+    left: 10,
+    right: 12,
+    bottom: 18,
+    borderRadius: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -1188,10 +1290,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   goalCard: {
-    width: 220,
-    borderRadius: 20,
-    padding: 14,
-    marginVertical: 6,
+    width: 252,
+    borderRadius: 22,
+    padding: 15,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -1223,12 +1324,13 @@ const styles = StyleSheet.create({
   },
   savingsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   savingsCard: {
-    width: 104,
-    borderRadius: 22,
-    padding: 14,
+    width: 120,
+    minHeight: 158,
+    borderRadius: 24,
+    padding: 15,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 18,
@@ -1250,7 +1352,7 @@ const styles = StyleSheet.create({
   },
   savingsFill: {
     marginTop: 12,
-    height: 82,
+    height: 88,
     borderRadius: 14,
     justifyContent: 'flex-end',
     padding: 6,
@@ -1261,17 +1363,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   graphWrap: {
-    width: 258,
-    height: 218,
-    borderRadius: 34,
+    width: 300,
+    height: 250,
+    borderRadius: 40,
     borderWidth: 5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   graphCenter: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 108,
+    height: 108,
+    borderRadius: 54,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 14 },

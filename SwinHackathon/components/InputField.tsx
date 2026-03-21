@@ -1,4 +1,5 @@
 import { useTheme } from '@/hooks/use-theme-colors';
+import { useResponsive } from '@/hooks/use-responsive';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Typography } from '@/constants/theme';
@@ -66,6 +67,7 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
     ref
   ) => {
     const { colors } = useTheme();
+    const { scale, verticalScale, scaleFont } = useResponsive();
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const effectiveSecureTextEntry = isPassword ? !isPasswordVisible : secureTextEntry;
@@ -85,12 +87,30 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
 
     return (
       <View style={[styles.container, containerStyle]}>
-        <Text style={[styles.label, { color: colors.text }, labelStyle]}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: colors.text,
+              marginBottom: verticalScale(8, 0.6),
+              fontSize: scaleFont(Typography.body, 0.8),
+            },
+            labelStyle,
+          ]}
+        >
+          {label}
+        </Text>
 
         <View
           style={[
             styles.inputRow,
-            { borderColor, backgroundColor },
+            {
+              borderColor,
+              backgroundColor,
+              minHeight: verticalScale(48, 0.75),
+              paddingHorizontal: scale(14, 0.78),
+              paddingVertical: verticalScale(12, 0.75),
+            },
             iconContainerStyle,
           ]}
         >
@@ -98,9 +118,9 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
             (iconName ? (
               <MaterialIcons
                 name={iconName}
-                size={20}
+                size={scale(20, 0.7)}
                 color={hexToRgba(colors.text, 0.66)}
-                style={styles.icon}
+                style={[styles.icon, { marginRight: scale(8, 0.7) }]}
               />
             ) : null)}
 
@@ -108,7 +128,7 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
             ref={ref}
             style={[
               styles.input,
-              { color: colors.text },
+              { color: colors.text, fontSize: scaleFont(Typography.body, 0.82) },
               inputStyle,
             ]}
             placeholderTextColor={placeholderTextColor ?? hexToRgba(colors.text, 0.4)}
@@ -123,7 +143,7 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
             >
               <MaterialIcons
                 name={isPasswordVisible ? 'visibility' : 'visibility-off'}
-                size={20}
+                size={scale(20, 0.7)}
                 color={hexToRgba(colors.text, 0.48)}
               />
             </Pressable>
@@ -131,7 +151,17 @@ export const InputField = React.forwardRef<TextInput, InputFieldProps>(
         </View>
 
         {helperText ? (
-          <Text style={[styles.helperText, { color: helperColor }, helperTextStyle]}>
+          <Text
+            style={[
+              styles.helperText,
+              {
+                color: helperColor,
+                marginTop: verticalScale(8, 0.6),
+                fontSize: scaleFont(Typography.body, 0.75),
+              },
+              helperTextStyle,
+            ]}
+          >
             {helperText}
           </Text>
         ) : null}
@@ -145,8 +175,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    marginBottom: 8,
-    fontSize: Typography.body,
     fontWeight: '700',
   },
   inputRow: {
@@ -154,16 +182,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 999,
-    minHeight: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
   },
   icon: {
     marginRight: 8,
   },
   input: {
     flex: 1,
-    fontSize: Typography.body,
     padding: 0,
   },
   eyeIcon: {
@@ -171,8 +195,6 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   helperText: {
-    marginTop: 8,
-    fontSize: Typography.body,
     fontWeight: '600',
   },
 });

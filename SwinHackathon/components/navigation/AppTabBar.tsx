@@ -1,5 +1,6 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { Typography } from '@/constants/theme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -39,6 +40,7 @@ const routeMeta: Record<
 
 export function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
+  const { scale, verticalScale, scaleFont } = useResponsive();
   const insets = useSafeAreaInsets();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const currentRouteName = state.routes[state.index]?.name as TabRouteName;
@@ -88,12 +90,15 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
             {
               backgroundColor: active ? colors.primaryLight : colors.card,
               borderColor: active ? hexToRgba(colors.primaryDark, 0.16) : colors.border,
+              width: scale(46, 0.76),
+              height: scale(46, 0.76),
+              borderRadius: scale(23, 0.72),
             },
           ]}
         >
           <MaterialIcons
             name={meta.icon}
-            size={24}
+            size={scale(24, 0.72)}
             color={active ? colors.primaryDark : hexToRgba(colors.text, 0.4)}
           />
         </View>
@@ -102,7 +107,16 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
   };
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View
+      style={[
+        styles.wrapper,
+        {
+          paddingBottom: Math.max(insets.bottom, verticalScale(8, 0.7)),
+          paddingHorizontal: scale(18, 0.8),
+          paddingTop: verticalScale(8, 0.72),
+        },
+      ]}
+    >
       {isMoreOpen ? (
         <View
           style={[
@@ -111,7 +125,11 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
               backgroundColor: colors.card,
               borderColor: hexToRgba(colors.primaryDark, 0.08),
               shadowColor: colors.shadow,
-              bottom: Math.max(insets.bottom, 8) + 92,
+              bottom: Math.max(insets.bottom, verticalScale(8, 0.7)) + verticalScale(92, 0.72),
+              left: scale(18, 0.8),
+              right: scale(18, 0.8),
+              borderRadius: scale(24, 0.74),
+              padding: scale(12, 0.76),
             },
           ]}
         >
@@ -128,18 +146,26 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
                   {
                     backgroundColor: colors.card,
                     borderColor: active ? hexToRgba(colors.primaryDark, 0.18) : colors.border,
+                    borderRadius: scale(18, 0.72),
+                    paddingHorizontal: scale(12, 0.78),
+                    paddingVertical: verticalScale(12, 0.76),
                   },
                 ]}
               >
                 <View
                   style={[
                     styles.moreIconShell,
-                    { backgroundColor: active ? colors.primaryLight : colors.backgroundSoft },
+                    {
+                      backgroundColor: active ? colors.primaryLight : colors.backgroundSoft,
+                      width: scale(38, 0.72),
+                      height: scale(38, 0.72),
+                      borderRadius: scale(14, 0.72),
+                    },
                   ]}
                 >
                   <MaterialIcons
                     name={meta.icon}
-                    size={20}
+                    size={scale(20, 0.72)}
                     color={active ? colors.primaryDark : hexToRgba(colors.text, 0.5)}
                   />
                 </View>
@@ -147,7 +173,10 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
                   numberOfLines={1}
                   style={[
                     styles.moreLabel,
-                    { color: active ? colors.primaryDark : colors.text },
+                    {
+                      color: active ? colors.primaryDark : colors.text,
+                      fontSize: scaleFont(Typography.body, 0.78),
+                    },
                   ]}
                 >
                   {meta.label}
@@ -165,6 +194,10 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
             backgroundColor: colors.card,
             borderColor: hexToRgba(colors.primaryDark, 0.08),
             shadowColor: colors.shadow,
+            minHeight: verticalScale(76, 0.76),
+            borderRadius: scale(30, 0.72),
+            paddingHorizontal: scale(18, 0.78),
+            paddingVertical: verticalScale(10, 0.76),
           },
         ]}
       >
@@ -172,7 +205,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
           {primaryTabs.slice(0, 2).map(renderPrimaryTab)}
         </View>
 
-        <View style={styles.centerSpacer} />
+        <View style={[styles.centerSpacer, { width: scale(78, 0.76) }]} />
 
         <View style={styles.sideGroup}>
           {primaryTabs.slice(2).map(renderPrimaryTab)}
@@ -181,7 +214,10 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
 
       <View
         pointerEvents="box-none"
-        style={[styles.centerFloatWrap, { bottom: Math.max(insets.bottom, 8) + 18 }]}
+        style={[
+          styles.centerFloatWrap,
+          { bottom: Math.max(insets.bottom, verticalScale(8, 0.7)) + verticalScale(18, 0.72) },
+        ]}
       >
         <Pressable
           style={[
@@ -190,6 +226,9 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
               backgroundColor: isMoreOpen || isOverflowActive ? colors.primaryDark : colors.card,
               borderColor: hexToRgba(colors.primaryDark, 0.12),
               shadowColor: colors.shadow,
+              width: scale(64, 0.76),
+              height: scale(64, 0.76),
+              borderRadius: scale(32, 0.72),
             },
           ]}
           onPress={() => setIsMoreOpen((current) => !current)}
@@ -197,7 +236,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
         >
           <MaterialIcons
             name="apps"
-            size={26}
+            size={scale(26, 0.72)}
             color={isMoreOpen || isOverflowActive ? colors.card : colors.primaryDark}
           />
         </Pressable>
@@ -214,17 +253,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'transparent',
     overflow: 'visible',
-    paddingHorizontal: 18,
-    paddingTop: 8,
   },
   morePanel: {
     position: 'absolute',
-    left: 18,
-    right: 18,
     zIndex: 20,
-    borderRadius: 24,
     borderWidth: 1,
-    padding: 12,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
@@ -236,31 +269,20 @@ const styles = StyleSheet.create({
   moreItem: {
     width: '47%',
     borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   moreIconShell: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   moreLabel: {
     flex: 1,
-    fontSize: Typography.body,
     fontWeight: '700',
   },
   bar: {
-    minHeight: 76,
-    borderRadius: 30,
     borderWidth: 1,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -280,16 +302,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconShell: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
-  centerSpacer: {
-    width: 78,
-  },
+  centerSpacer: {},
   centerFloatWrap: {
     position: 'absolute',
     left: 0,
@@ -298,9 +315,6 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   centerButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

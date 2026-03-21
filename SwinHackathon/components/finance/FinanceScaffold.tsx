@@ -1,4 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -30,30 +31,58 @@ export function FinanceScreen({
   scroll?: boolean;
 }) {
   const { colors } = useTheme();
+  const { scale, verticalScale, scaleFont } = useResponsive();
   const router = useRouter();
   const body = (
-    <View style={[styles.content, contentStyle]}>
+    <View
+      style={[
+        styles.content,
+        {
+          paddingTop: verticalScale(60, 0.76),
+          paddingHorizontal: scale(18, 0.78),
+        },
+        contentStyle,
+      ]}
+    >
       <View style={styles.headerRow}>
         <Pressable
           style={[
             styles.backButton,
-            { backgroundColor: colors.card, borderColor: hexToRgba(colors.primaryDark, 0.08) },
+            {
+              backgroundColor: colors.card,
+              borderColor: hexToRgba(colors.primaryDark, 0.08),
+              width: scale(38, 0.78),
+              height: scale(38, 0.78),
+              borderRadius: scale(13, 0.72),
+            },
           ]}
           onPress={() => router.back()}
         >
-          <MaterialIcons name="arrow-back" size={22} color={colors.text} />
+          <MaterialIcons name="arrow-back" size={scale(22, 0.72)} color={colors.text} />
         </Pressable>
 
         <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.title, { color: colors.text, fontSize: scaleFont(24, 0.74) }]}>
+            {title}
+          </Text>
           {subtitle ? (
-            <Text style={[styles.subtitle, { color: hexToRgba(colors.text, 0.56) }]}>
+            <Text
+              style={[
+                styles.subtitle,
+                {
+                  color: hexToRgba(colors.text, 0.56),
+                  marginTop: verticalScale(5, 0.6),
+                  fontSize: scaleFont(Typography.body, 0.78),
+                  lineHeight: verticalScale(21, 0.7),
+                },
+              ]}
+            >
               {subtitle}
             </Text>
           ) : null}
         </View>
 
-        <View style={styles.rightAccessory}>{rightAccessory}</View>
+        <View style={[styles.rightAccessory, { minWidth: scale(38, 0.78) }]}>{rightAccessory}</View>
       </View>
 
       {children}
@@ -83,8 +112,23 @@ export function FinanceCard({
   style?: StyleProp<ViewStyle>;
 }) {
   const { colors } = useTheme();
+  const { scale } = useResponsive();
 
-  return <View style={[styles.card, { backgroundColor: colors.card }, style]}>{children}</View>;
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderRadius: scale(22, 0.75),
+          padding: scale(16, 0.75),
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -95,8 +139,6 @@ const styles = StyleSheet.create({
     paddingBottom: 44,
   },
   content: {
-    paddingTop: 60,
-    paddingHorizontal: 18,
   },
   headerRow: {
     flexDirection: 'row',
@@ -104,9 +146,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -115,20 +154,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
     fontWeight: '800',
   },
-  subtitle: {
-    marginTop: 5,
-    fontSize: Typography.body,
-    lineHeight: 21,
-  },
+  subtitle: {},
   rightAccessory: {
-    minWidth: 38,
     alignItems: 'flex-end',
   },
-  card: {
-    borderRadius: 22,
-    padding: 16,
-  },
+  card: {},
 });
