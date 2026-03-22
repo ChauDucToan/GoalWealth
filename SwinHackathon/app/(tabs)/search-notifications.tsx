@@ -1,4 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -185,7 +186,13 @@ export default function SearchNotificationsScreen() {
               ? 'Stay ahead of every alert without drowning in noise.'
               : 'Find any transaction, merchant or pattern in seconds.'}
           </Text>
-          <View style={styles.heroStatsRow}>
+          <ResponsiveGrid
+            minItemWidth={140}
+            horizontalPadding={42}
+            gap={10}
+            maxColumns={2}
+            style={styles.heroStatsGrid}
+          >
             <View style={[styles.heroStat, { backgroundColor: hexToRgba(colors.card, 0.14) }]}>
               <Text style={[styles.heroStatValue, { color: colors.card }]}>
                 {surface === 'notifications' ? '04' : '2168'}
@@ -202,7 +209,7 @@ export default function SearchNotificationsScreen() {
                 {surface === 'notifications' ? 'Need action' : 'Smart suggestions'}
               </Text>
             </View>
-          </View>
+          </ResponsiveGrid>
         </View>
 
         <View style={styles.switchCard}>
@@ -357,7 +364,7 @@ export default function SearchNotificationsScreen() {
           <>
             <View style={styles.surfaceCard}>
               <View style={styles.surfaceCardHeader}>
-                <View>
+                <View style={styles.surfaceHeaderCopy}>
                   <Text style={styles.surfaceCardTitle}>Search Workspace</Text>
                   <Text style={styles.surfaceCardBody}>
                     Search by merchant, note, date or category without leaving the page.
@@ -387,7 +394,13 @@ export default function SearchNotificationsScreen() {
                     <Text style={styles.sectionTitle}>Popular categories</Text>
                     <Text style={styles.inlineLink}>See all</Text>
                   </View>
-                  <View style={styles.categoryGrid}>
+                  <ResponsiveGrid
+                    minItemWidth={136}
+                    horizontalPadding={38}
+                    gap={10}
+                    maxColumns={2}
+                    style={styles.sectionGrid}
+                  >
                     {categoryCards.map((item) => (
                       <Pressable key={item.label} style={styles.categoryCard}>
                         <View style={styles.categoryIconWrap}>
@@ -396,7 +409,7 @@ export default function SearchNotificationsScreen() {
                         <Text style={styles.categoryCardText}>{item.label}</Text>
                       </Pressable>
                     ))}
-                  </View>
+                  </ResponsiveGrid>
                 </View>
 
                 <View style={styles.surfaceCard}>
@@ -587,6 +600,7 @@ function createStyles(colors: ColorTheme) {
     pageHeader: {
       flexDirection: 'row',
       alignItems: 'flex-start',
+      flexWrap: 'wrap',
       gap: 14,
     },
     pageHeaderCopy: {
@@ -613,6 +627,7 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
+      alignSelf: 'flex-start',
     },
     heroCard: {
       borderRadius: 26,
@@ -634,12 +649,10 @@ function createStyles(colors: ColorTheme) {
       lineHeight: 30,
       fontWeight: '800',
     },
-    heroStatsRow: {
-      flexDirection: 'row',
-      gap: 10,
+    heroStatsGrid: {
     },
     heroStat: {
-      flex: 1,
+      width: '100%',
       borderRadius: 18,
       paddingHorizontal: 14,
       paddingVertical: 12,
@@ -667,10 +680,13 @@ function createStyles(colors: ColorTheme) {
     },
     surfaceSwitch: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 10,
     },
     surfaceButton: {
       flex: 1,
+      flexBasis: 140,
+      minWidth: 0,
       minHeight: 46,
       borderRadius: 18,
       borderWidth: 1,
@@ -756,6 +772,7 @@ function createStyles(colors: ColorTheme) {
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 12,
+      flexWrap: 'wrap',
     },
     sectionTitle: {
       fontSize: 18,
@@ -791,6 +808,7 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: 12,
+      minWidth: 0,
     },
     notificationIconWrap: {
       width: 42,
@@ -802,17 +820,20 @@ function createStyles(colors: ColorTheme) {
     },
     notificationCopy: {
       flex: 1,
+      minWidth: 0,
     },
     notificationTitle: {
       fontSize: Typography.body,
       fontWeight: '700',
       color: colors.text,
+      flexShrink: 1,
     },
     notificationBody: {
       marginTop: 6,
       fontSize: Typography.body,
       lineHeight: 20,
       color: hexToRgba(colors.text, 0.6),
+      flexShrink: 1,
     },
     notificationTime: {
       fontSize: Typography.body,
@@ -900,13 +921,11 @@ function createStyles(colors: ColorTheme) {
       justifyContent: 'center',
       backgroundColor: hexToRgba(colors.primaryDark, 0.08),
     },
-    categoryGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
+    sectionGrid: {
+      marginTop: 2,
     },
     categoryCard: {
-      width: '47%',
+      width: '100%',
       borderRadius: 18,
       borderWidth: 1,
       borderColor: colors.border,
@@ -948,6 +967,7 @@ function createStyles(colors: ColorTheme) {
       fontSize: Typography.body,
       color: colors.text,
       fontWeight: '600',
+      flexShrink: 1,
     },
     rowDivider: {
       borderBottomWidth: 1,
@@ -967,6 +987,8 @@ function createStyles(colors: ColorTheme) {
       fontSize: Typography.body,
       color: colors.text,
       fontWeight: '600',
+      flex: 1,
+      minWidth: 0,
     },
     loaderCard: {
       borderRadius: 24,
@@ -1023,7 +1045,7 @@ function createStyles(colors: ColorTheme) {
       backgroundColor: colors.card,
       padding: 16,
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
       gap: 12,
       shadowColor: colors.shadow,
@@ -1038,6 +1060,7 @@ function createStyles(colors: ColorTheme) {
       alignItems: 'center',
       gap: 12,
       paddingRight: 8,
+      minWidth: 0,
     },
     resultIconWrap: {
       width: 44,
@@ -1049,21 +1072,25 @@ function createStyles(colors: ColorTheme) {
     },
     resultCopy: {
       flex: 1,
+      minWidth: 0,
     },
     resultMerchant: {
       fontSize: Typography.body,
       fontWeight: '700',
       color: colors.text,
+      flexShrink: 1,
     },
     resultNote: {
       marginTop: 4,
       fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.58),
+      flexShrink: 1,
     },
     resultDate: {
       marginTop: 4,
       fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.42),
+      flexShrink: 1,
     },
     resultAmount: {
       fontSize: 16,
@@ -1098,6 +1125,7 @@ function createStyles(colors: ColorTheme) {
     },
     dateRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: 10,
     },
     dateInput: {

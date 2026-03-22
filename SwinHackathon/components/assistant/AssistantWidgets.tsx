@@ -540,6 +540,7 @@ const styles = StyleSheet.create({
   budgetRow: {
     marginTop: 14,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 14,
   },
   ringWrap: {
@@ -567,17 +568,21 @@ const styles = StyleSheet.create({
   },
   budgetStats: {
     flex: 1,
+    minWidth: 150,
     gap: 10,
   },
   budgetStatRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: 10,
   },
   budgetStatLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
   },
   dot: {
     width: 8,
@@ -587,10 +592,12 @@ const styles = StyleSheet.create({
   inlineLabel: {
     fontSize: Typography.body,
     fontWeight: '600',
+    flexShrink: 1,
   },
   inlineValue: {
     fontSize: Typography.body,
     fontWeight: '700',
+    textAlign: 'right',
   },
   summaryPill: {
     marginTop: 14,
@@ -609,12 +616,14 @@ const styles = StyleSheet.create({
   },
   listRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
   },
   listMeta: {
     fontSize: Typography.body,
+    flex: 1,
+    minWidth: 0,
   },
   alertBox: {
     marginTop: 14,
@@ -661,8 +670,9 @@ const styles = StyleSheet.create({
   },
   rowBetween: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: 10,
   },
   quoteBody: {
     marginTop: 12,
@@ -696,7 +706,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   mediaTile: {
-    width: '47%',
+    flexBasis: 140,
+    flexGrow: 1,
     height: 68,
     borderRadius: 16,
     alignItems: 'center',
@@ -739,11 +750,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   fileBadgeText: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   actionDeck: {
     flexDirection: 'row',
@@ -751,7 +764,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   actionDeckCard: {
-    width: '47%',
+    flexBasis: 140,
+    flexGrow: 1,
     borderRadius: 20,
     padding: 14,
   },

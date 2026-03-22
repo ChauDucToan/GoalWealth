@@ -339,14 +339,19 @@ const styles = StyleSheet.create({
   },
   searchText: {
     fontSize: Typography.body,
+    flex: 1,
+    minWidth: 0,
   },
   summaryRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   summaryCard: {
     flex: 1,
+    flexBasis: 96,
+    minWidth: 0,
     borderRadius: 18,
     padding: 14,
     shadowOpacity: 0.12,
@@ -366,10 +371,13 @@ const styles = StyleSheet.create({
   actionRow: {
     marginTop: 16,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   actionButton: {
     flex: 1,
+    flexBasis: 100,
+    minWidth: 0,
   },
   merchantRow: {
     marginTop: 16,
@@ -410,10 +418,13 @@ const styles = StyleSheet.create({
   utilityRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   utilityButton: {
     flex: 1,
+    flexBasis: 100,
+    minWidth: 0,
   },
   categoryPanel: {
     marginTop: 18,
@@ -426,8 +437,10 @@ const styles = StyleSheet.create({
   },
   panelHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   panelTitle: {
     fontSize: 16,
@@ -476,8 +489,9 @@ const styles = StyleSheet.create({
   },
   transactionRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 12,
+    gap: 12,
   },
   transactionIcon: {
     width: 46,
@@ -488,18 +502,22 @@ const styles = StyleSheet.create({
   },
   transactionTextWrap: {
     flex: 1,
-    marginLeft: 12,
+    minWidth: 0,
   },
   transactionMerchant: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   transactionMeta: {
     marginTop: 4,
     fontSize: Typography.body,
+    flexShrink: 1,
   },
   amountWrap: {
     alignItems: 'flex-end',
+    minWidth: 0,
+    marginLeft: 8,
   },
   transactionAmount: {
     fontSize: Typography.body,

@@ -1,4 +1,5 @@
 import { ThemeButton } from '@/components/ThemeButton';
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { AssistantCard, AssistantScreen } from '@/components/assistant/AssistantScaffold';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { useAssistant } from '@/hooks/use-assistant';
@@ -76,7 +77,13 @@ export default function ReceiptUploadScreen() {
 
         <AssistantCard>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Import source</Text>
-          <View style={styles.sourceGrid}>
+          <ResponsiveGrid
+            minItemWidth={104}
+            horizontalPadding={36}
+            gap={10}
+            maxColumns={3}
+            style={styles.cardGrid}
+          >
             {importSources.map((item) => (
               <Pressable
                 key={item.label}
@@ -97,7 +104,7 @@ export default function ReceiptUploadScreen() {
                 <Text style={[styles.sourceText, { color: colors.text }]}>{item.label}</Text>
               </Pressable>
             ))}
-          </View>
+          </ResponsiveGrid>
         </AssistantCard>
 
         <AssistantCard>
@@ -106,7 +113,13 @@ export default function ReceiptUploadScreen() {
             Demo tiles to mirror the uploaded history state from the design board.
           </Text>
 
-          <View style={styles.receiptGrid}>
+          <ResponsiveGrid
+            minItemWidth={140}
+            horizontalPadding={36}
+            gap={10}
+            maxColumns={2}
+            style={styles.cardGrid}
+          >
             {recentReceipts.map((item) => (
               <Pressable
                 key={item.id}
@@ -131,7 +144,7 @@ export default function ReceiptUploadScreen() {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </ResponsiveGrid>
         </AssistantCard>
       </View>
     </AssistantScreen>
@@ -173,10 +186,13 @@ const styles = StyleSheet.create({
   heroActions: {
     marginTop: 20,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   heroButton: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   heroOutline: {
     borderWidth: 1,
@@ -191,13 +207,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     lineHeight: 21,
   },
-  sourceGrid: {
+  cardGrid: {
     marginTop: 16,
-    flexDirection: 'row',
-    gap: 10,
   },
   sourceCard: {
-    flex: 1,
+    width: '100%',
     borderRadius: 20,
     padding: 14,
     alignItems: 'center',
@@ -215,14 +229,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  receiptGrid: {
-    marginTop: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
   receiptCard: {
-    width: '47%',
+    width: '100%',
     borderRadius: 20,
     padding: 14,
   },

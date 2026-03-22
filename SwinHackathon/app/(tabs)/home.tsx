@@ -1,4 +1,5 @@
 import { ThemeButton } from '@/components/ThemeButton';
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { StockTrendChart } from '@/components/finance/StockTrendChart';
 import {
@@ -284,7 +285,7 @@ export default function HomeScreen() {
                       { backgroundColor: account.accent },
                     ]}
                   />
-                  <View>
+                  <View style={styles.accountCopy}>
                     <Text style={[styles.accountLabel, { color: colors.text }]}>
                       {account.label}
                     </Text>
@@ -314,7 +315,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.actionGrid}>
+          <ResponsiveGrid minItemWidth={148} horizontalPadding={20} gap={12} maxColumns={2}>
             {quickActions.map((action) => (
               <Pressable
                 key={action.id}
@@ -352,10 +353,10 @@ export default function HomeScreen() {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </ResponsiveGrid>
         </View>
 
-        <View style={styles.rowGap}>
+        <ResponsiveGrid minItemWidth={164} horizontalPadding={20} gap={12} maxColumns={2}>
           {activityHighlights.map((item) => (
             <View
               key={item.id}
@@ -378,7 +379,7 @@ export default function HomeScreen() {
               </Text>
             </View>
           ))}
-        </View>
+        </ResponsiveGrid>
 
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.sectionHeader}>
@@ -403,7 +404,7 @@ export default function HomeScreen() {
                     >
                       <MaterialIcons name={item.icon} size={18} color={item.accent} />
                     </View>
-                    <View>
+                    <View style={styles.categoryCopy}>
                       <Text style={[styles.categoryTitle, { color: colors.text }]}>
                         {item.name}
                       </Text>
@@ -512,7 +513,7 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        <View style={styles.rowGap}>
+        <ResponsiveGrid minItemWidth={220} horizontalPadding={20} gap={12} maxColumns={2}>
           <View style={[styles.savingsCard, { backgroundColor: colors.primaryDark }]}>
             <Text style={[styles.savingsEyebrow, { color: hexToRgba(colors.card, 0.72) }]}>
               Savings target
@@ -569,7 +570,7 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </ResponsiveGrid>
 
         <View style={styles.sectionBlock}>
           <View style={styles.sectionHeader}>
@@ -693,7 +694,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.merchantRow}>
+          <ResponsiveGrid minItemWidth={148} horizontalPadding={20} gap={12} maxColumns={2}>
             {merchantHighlights.map((merchant) => (
               <Pressable
                 key={merchant.id}
@@ -713,7 +714,7 @@ export default function HomeScreen() {
                 >
                   <MaterialIcons name={merchant.icon} size={18} color={merchant.accent} />
                 </View>
-                <View>
+                <View style={styles.merchantCopy}>
                   <Text style={[styles.merchantLabel, { color: colors.text }]}>
                     {merchant.label}
                   </Text>
@@ -723,7 +724,7 @@ export default function HomeScreen() {
                 </View>
               </Pressable>
             ))}
-          </View>
+          </ResponsiveGrid>
         </View>
 
         <View style={styles.sectionBlock}>
@@ -789,7 +790,7 @@ export default function HomeScreen() {
               Moving $35 from spending to savings today keeps your monthly goal on track.
             </Text>
           </View>
-          <Pressable onPress={() => router.push('/(tabs)/insights')}>
+          <Pressable style={styles.assistantAction} onPress={() => router.push('/(tabs)/insights')}>
             <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
           </Pressable>
         </View>
@@ -918,13 +919,16 @@ const styles = StyleSheet.create({
   },
   heroHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginLeft: 'auto',
   },
   eyebrow: {
     fontSize: Typography.body,
@@ -967,7 +971,9 @@ const styles = StyleSheet.create({
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   balanceLabel: {
     fontSize: Typography.body,
@@ -993,10 +999,13 @@ const styles = StyleSheet.create({
   metricRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   metricCard: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
     borderRadius: 18,
     padding: 14,
     shadowColor: 'rgba(15,23,42,0.08)',
@@ -1017,8 +1026,10 @@ const styles = StyleSheet.create({
   chartHeader: {
     marginTop: 18,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   chartTitle: {
     fontSize: Typography.body,
@@ -1027,6 +1038,8 @@ const styles = StyleSheet.create({
   chartMeta: {
     fontSize: Typography.body,
     fontWeight: '600',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   sparklineWrap: {
     marginTop: 16,
@@ -1099,8 +1112,10 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 20,
@@ -1136,6 +1151,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    minWidth: 0,
+  },
+  accountCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   accountDot: {
     width: 12,
@@ -1144,10 +1164,13 @@ const styles = StyleSheet.create({
   },
   accountRight: {
     alignItems: 'flex-end',
+    minWidth: 0,
+    marginLeft: 8,
   },
   accountLabel: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   accountBalance: {
     fontSize: 16,
@@ -1156,11 +1179,13 @@ const styles = StyleSheet.create({
   accountMask: {
     fontSize: Typography.body,
     marginTop: 4,
+    flexShrink: 1,
   },
   accountChange: {
     marginTop: 4,
     fontSize: Typography.body,
     fontWeight: '700',
+    textAlign: 'right',
   },
   actionGrid: {
     flexDirection: 'row',
@@ -1168,7 +1193,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionCard: {
-    width: '47%',
+    width: '100%',
     borderRadius: 22,
     padding: 16,
     shadowColor: 'rgba(15,23,42,0.08)',
@@ -1196,10 +1221,11 @@ const styles = StyleSheet.create({
   },
   rowGap: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   highlightCard: {
-    flex: 1,
+    width: '100%',
     borderRadius: 22,
     padding: 16,
     shadowColor: 'rgba(15,23,42,0.08)',
@@ -1244,12 +1270,20 @@ const styles = StyleSheet.create({
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   categoryLabelWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  categoryCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   categoryIcon: {
     width: 42,
@@ -1261,14 +1295,17 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   categoryMeta: {
     marginTop: 4,
     fontSize: Typography.body,
+    flexShrink: 1,
   },
   categoryPercent: {
     fontSize: Typography.body,
     fontWeight: '700',
+    marginLeft: 'auto',
   },
   progressTrack: {
     marginTop: 12,
@@ -1315,7 +1352,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
   },
   savingsCard: {
-    flex: 1,
+    width: '100%',
     borderRadius: 24,
     padding: 18,
     shadowColor: 'rgba(15,23,42,0.1)',
@@ -1349,7 +1386,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   billsCard: {
-    flex: 1,
+    width: '100%',
     borderRadius: 24,
     padding: 18,
     shadowColor: 'rgba(15,23,42,0.1)',
@@ -1396,10 +1433,13 @@ const styles = StyleSheet.create({
   investmentChipRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   investmentChip: {
     flex: 1,
+    flexBasis: 96,
+    minWidth: 0,
     borderRadius: 18,
     padding: 12,
     gap: 4,
@@ -1415,10 +1455,13 @@ const styles = StyleSheet.create({
   investmentActionRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   investmentActionButton: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   billTitle: {
     fontSize: 16,
@@ -1442,15 +1485,18 @@ const styles = StyleSheet.create({
   },
   billTextWrap: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 12,
   },
   billName: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   billDue: {
     marginTop: 4,
     fontSize: Typography.body,
+    flexShrink: 1,
   },
   billAmount: {
     fontSize: Typography.body,
@@ -1458,12 +1504,17 @@ const styles = StyleSheet.create({
   },
   merchantRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   merchantChip: {
-    flex: 1,
+    width: '100%',
     borderRadius: 20,
     padding: 14,
+  },
+  merchantCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   merchantIcon: {
     width: 38,
@@ -1476,10 +1527,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   merchantCount: {
     marginTop: 4,
     fontSize: Typography.body,
+    flexShrink: 1,
   },
   resourceCard: {
     width: 224,
@@ -1521,7 +1574,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 18,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
     gap: 14,
     shadowColor: 'rgba(15,23,42,0.1)',
     shadowOpacity: 0.12,
@@ -1538,6 +1592,7 @@ const styles = StyleSheet.create({
   },
   assistantTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   assistantTitle: {
     fontSize: Typography.body,
@@ -1548,10 +1603,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     lineHeight: 20,
   },
+  assistantAction: {
+    marginLeft: 'auto',
+    alignSelf: 'center',
+  },
   transactionRow: {
     marginTop: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   transactionIcon: {
     width: 44,
@@ -1562,18 +1622,22 @@ const styles = StyleSheet.create({
   },
   transactionTextWrap: {
     flex: 1,
-    marginLeft: 12,
+    minWidth: 0,
   },
   transactionMerchant: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   transactionMeta: {
     marginTop: 4,
     fontSize: Typography.body,
+    flexShrink: 1,
   },
   transactionAmountWrap: {
     alignItems: 'flex-end',
+    minWidth: 0,
+    marginLeft: 8,
   },
   transactionAmount: {
     fontSize: Typography.body,

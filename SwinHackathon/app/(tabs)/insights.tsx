@@ -384,9 +384,10 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
+    flexWrap: 'wrap',
   },
   sectionTitle: {
     fontSize: 17,
@@ -402,6 +403,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 14,
+    flexWrap: 'wrap',
   },
   portfolioValue: {
     fontSize: 28,
@@ -425,6 +427,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
+    flexWrap: 'wrap',
   },
   featuredSymbol: {
     fontSize: 18,
@@ -444,10 +447,13 @@ const styles = StyleSheet.create({
   buttonRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   halfButton: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   watchRow: {
     minHeight: 70,
@@ -462,6 +468,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minWidth: 0,
   },
   watchIcon: {
     width: 40,
@@ -477,9 +484,12 @@ const styles = StyleSheet.create({
   watchName: {
     marginTop: 4,
     fontSize: Typography.body,
+    flexShrink: 1,
   },
   watchRight: {
     alignItems: 'flex-end',
+    minWidth: 0,
+    marginLeft: 8,
   },
   watchPrice: {
     fontSize: Typography.body,
@@ -560,6 +570,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 0,
   },
   categoryIcon: {
     width: 40,
@@ -571,6 +583,7 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 1,
   },
   categoryValue: {
     fontSize: Typography.body,

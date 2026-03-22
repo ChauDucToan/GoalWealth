@@ -1,4 +1,5 @@
 import { ThemeButton } from '@/components/ThemeButton';
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { MarketDisplayControls } from '@/components/finance/MarketDisplayControls';
@@ -257,7 +258,13 @@ export default function InvestmentsScreen() {
             </Pressable>
           </View>
 
-          <View style={styles.watchlistWrap}>
+          <ResponsiveGrid
+            minItemWidth={140}
+            horizontalPadding={34}
+            gap={10}
+            maxColumns={2}
+            style={styles.watchlistGrid}
+          >
             {watchlist.slice(0, 4).map((stock) => (
               <View
                 key={stock.symbol}
@@ -317,7 +324,7 @@ export default function InvestmentsScreen() {
                 </Pressable>
               </View>
             ))}
-          </View>
+          </ResponsiveGrid>
         </FinanceCard>
 
         <FinanceCard>
@@ -394,6 +401,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 14,
+    flexWrap: 'wrap',
   },
   heroCard: {
     borderRadius: 28,
@@ -443,17 +451,23 @@ const styles = StyleSheet.create({
   heroButtonRow: {
     marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   heroButton: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   summaryRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   summaryCard: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   summaryLabel: {
     fontSize: Typography.body,
@@ -466,8 +480,10 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -482,7 +498,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
   },
   stockBadge: {
@@ -494,6 +510,7 @@ const styles = StyleSheet.create({
   },
   stockTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   stockSymbol: {
     fontSize: Typography.body,
@@ -505,6 +522,8 @@ const styles = StyleSheet.create({
   },
   stockValueWrap: {
     alignItems: 'flex-end',
+    minWidth: 0,
+    marginLeft: 8,
   },
   stockPrice: {
     fontSize: Typography.body,
@@ -515,14 +534,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     fontWeight: '700',
   },
-  watchlistWrap: {
+  watchlistGrid: {
     marginTop: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
   },
   watchCard: {
-    width: '48%',
+    width: '100%',
     borderRadius: 18,
     borderWidth: 1,
     padding: 14,
@@ -530,9 +546,10 @@ const styles = StyleSheet.create({
   },
   watchCardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 10,
+    flexWrap: 'wrap',
   },
   watchDefaultButton: {
     minHeight: 26,
@@ -570,6 +587,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    minWidth: 0,
   },
   positionMeta: {
     marginTop: 4,

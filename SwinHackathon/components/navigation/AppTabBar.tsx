@@ -34,7 +34,7 @@ const routeMeta: Record<
   profile: { label: 'Profile', icon: 'person-outline' },
   insights: { label: 'Insights', icon: 'bar-chart' },
   achievements: { label: 'Achievements', icon: 'emoji-events' },
-  'news-resources': { label: 'News', icon: 'newspaper' },
+  'news-resources': { label: 'Community', icon: 'groups' },
   'search-notifications': { label: 'Search', icon: 'search' },
 };
 
@@ -267,7 +267,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   moreItem: {
-    width: '47%',
+    flexBasis: 140,
+    flexGrow: 1,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',

@@ -458,6 +458,7 @@ function createStyles(colors: ColorTheme) {
     },
     summaryMetric: {
       flex: 1,
+      minWidth: 0,
       minHeight: 74,
       alignItems: 'center',
       justifyContent: 'center',
@@ -494,10 +495,13 @@ function createStyles(colors: ColorTheme) {
       paddingHorizontal: 2,
       flexDirection: 'row',
       flexWrap: 'wrap',
+      justifyContent: 'space-between',
       marginHorizontal: -6,
     },
     badgeCard: {
-      width: '33.333%',
+      flexBasis: 102,
+      flexGrow: 1,
+      minWidth: 0,
       alignItems: 'center',
       marginBottom: 16,
       paddingHorizontal: 6,
@@ -565,6 +569,7 @@ function createStyles(colors: ColorTheme) {
     activeCardTop: {
       flexDirection: 'row',
       alignItems: 'flex-start',
+      flexWrap: 'wrap',
       gap: 12,
     },
     rowDivider: {
@@ -581,11 +586,13 @@ function createStyles(colors: ColorTheme) {
     },
     activeBody: {
       flex: 1,
+      minWidth: 0,
     },
     activeName: {
       fontSize: 16,
       color: colors.text,
       fontWeight: '800',
+      flexShrink: 1,
     },
     activeHint: {
       marginTop: 4,
@@ -597,6 +604,7 @@ function createStyles(colors: ColorTheme) {
       marginTop: 2,
       flexDirection: 'row',
       justifyContent: 'space-between',
+      flexWrap: 'wrap',
       gap: 10,
     },
     progressMeta: {
@@ -604,6 +612,7 @@ function createStyles(colors: ColorTheme) {
       color: hexToRgba(colors.text, 0.5),
       fontWeight: '600',
       flex: 1,
+      minWidth: 0,
     },
     progressTrack: {
       marginTop: 2,
@@ -689,13 +698,16 @@ function createStyles(colors: ColorTheme) {
       minHeight: 64,
       paddingHorizontal: 14,
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
+      gap: 12,
     },
     leadUser: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: 8,
+      flex: 1,
+      minWidth: 0,
     },
     leadUserAvatar: {
       width: 30,
@@ -779,8 +791,10 @@ function createStyles(colors: ColorTheme) {
       minHeight: 42,
       paddingHorizontal: 16,
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 10,
     },
     rowDividerSoft: {
       borderBottomWidth: 1,
@@ -790,6 +804,8 @@ function createStyles(colors: ColorTheme) {
       fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.6),
       fontWeight: '500',
+      flex: 1,
+      minWidth: 0,
     },
     statsValue: {
       fontSize: Typography.body,

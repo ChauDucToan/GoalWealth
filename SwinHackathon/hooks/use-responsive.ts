@@ -16,8 +16,8 @@ export function useResponsive() {
   const { width, height } = useWindowDimensions();
 
   return useMemo(() => {
-    const widthRatio = clamp(width / BASE_WIDTH, 0.88, 1.18);
-    const heightRatio = clamp(height / BASE_HEIGHT, 0.9, 1.12);
+    const widthRatio = clamp(width / BASE_WIDTH, 0.84, 1.18);
+    const heightRatio = clamp(height / BASE_HEIGHT, 0.88, 1.12);
     const blendedRatio = Math.min(widthRatio, heightRatio);
 
     const scale = (size: number, factor = 0.65) =>
@@ -30,7 +30,8 @@ export function useResponsive() {
     return {
       width,
       height,
-      isCompact: width < 360 || height < 760,
+      isCompact: width < 380 || height < 760,
+      isSmallPhone: width < 390,
       isTablet: width >= 768,
       scale,
       verticalScale,

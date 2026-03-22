@@ -82,7 +82,14 @@ export function AssistantScreen({
           ) : null}
         </View>
 
-        <View style={[styles.rightAccessory, { minWidth: scale(44, 0.78) }]}>{rightAccessory}</View>
+        <View
+          style={[
+            styles.rightAccessory,
+            rightAccessory ? { minWidth: scale(44, 0.78) } : styles.rightAccessoryEmpty,
+          ]}
+        >
+          {rightAccessory}
+        </View>
       </View>
 
       {children}
@@ -154,13 +161,20 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
+    minWidth: 0,
   },
   title: {
     fontWeight: '800',
+    flexShrink: 1,
   },
-  subtitle: {},
+  subtitle: {
+    flexShrink: 1,
+  },
   rightAccessory: {
     alignItems: 'flex-end',
+  },
+  rightAccessoryEmpty: {
+    minWidth: 0,
   },
   card: {
     borderWidth: 1,

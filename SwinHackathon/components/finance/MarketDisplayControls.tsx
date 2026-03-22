@@ -101,10 +101,12 @@ export function MarketDisplayControls({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   group: {
     flex: 1,
+    minWidth: 150,
     borderRadius: 18,
     borderWidth: 1,
     padding: 12,
@@ -118,12 +120,14 @@ const styles = StyleSheet.create({
   chipRow: {
     marginTop: 10,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   chip: {
     minHeight: 32,
     borderRadius: 999,
     paddingHorizontal: 10,
+    minWidth: 56,
     alignItems: 'center',
     justifyContent: 'center',
   },

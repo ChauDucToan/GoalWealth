@@ -1,4 +1,5 @@
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -15,7 +16,7 @@ export default function SelectCategoryScreen() {
   return (
     <FinanceScreen title="Select Category" subtitle="Choose a category for the current draft">
       <FinanceCard>
-        <View style={styles.grid}>
+        <ResponsiveGrid minItemWidth={88} maxColumns={3} horizontalPadding={34} gap={12}>
           {categories.map((item) => {
             const selected = item.name === transactionDraft.category;
             return (
@@ -40,20 +41,15 @@ export default function SelectCategoryScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </ResponsiveGrid>
       </FinanceCard>
     </FinanceScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
   option: {
-    width: '30%',
+    width: '100%',
     borderRadius: 18,
     borderWidth: 1,
     paddingVertical: 14,
@@ -72,5 +68,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     fontWeight: '700',
     textAlign: 'center',
+    width: '100%',
   },
 });

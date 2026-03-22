@@ -134,7 +134,7 @@ export default function ProfileScreen() {
           </ImageBackground>
 
           <View style={styles.streakBox}>
-            <View>
+            <View style={styles.streakCopy}>
               <Text style={styles.streakTitle}>Longest Streak: 22</Text>
               <Text style={styles.streakSubTitle}>Keep going, you are on your best run</Text>
             </View>
@@ -243,6 +243,8 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: 8,
       marginBottom: 6,
     },
     headerTitle: {
@@ -284,7 +286,8 @@ function createStyles(colors: ColorTheme) {
     },
     profileHead: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
       gap: 12,
     },
     avatar: {
@@ -336,7 +339,13 @@ function createStyles(colors: ColorTheme) {
       borderColor: hexToRgba(colors.primaryDark, 0.3),
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    streakCopy: {
+      flex: 1,
+      minWidth: 0,
     },
     metricsRow: {
       marginHorizontal: 14,
@@ -344,12 +353,15 @@ function createStyles(colors: ColorTheme) {
       borderRadius: 16,
       overflow: 'hidden',
       flexDirection: 'row',
+      flexWrap: 'wrap',
       backgroundColor: colors.backgroundSoft,
       borderWidth: 1,
       borderColor: colors.border,
     },
     metricCard: {
       flex: 1,
+      flexBasis: 100,
+      minWidth: 0,
       minHeight: 72,
       alignItems: 'center',
       justifyContent: 'center',
@@ -382,6 +394,7 @@ function createStyles(colors: ColorTheme) {
       marginTop: 2,
       fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.6),
+      flexShrink: 1,
     },
     streakBadge: {
       width: 30,
@@ -416,8 +429,9 @@ function createStyles(colors: ColorTheme) {
       minHeight: 58,
       paddingHorizontal: 16,
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
+      gap: 12,
     },
     rowDivider: {
       borderBottomWidth: 1,
@@ -427,6 +441,8 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+      flex: 1,
+      minWidth: 0,
     },
     itemIconWrap: {
       width: 24,
@@ -443,11 +459,13 @@ function createStyles(colors: ColorTheme) {
       fontSize: Typography.body,
       color: colors.text,
       fontWeight: '500',
+      flexShrink: 1,
     },
     dangerText: {
       fontSize: Typography.body,
       color: colors.error,
       fontWeight: '600',
+      flexShrink: 1,
     },
   });
 }

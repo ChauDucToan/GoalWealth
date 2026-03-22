@@ -495,9 +495,12 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   headerTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   headerIconButton: {
     width: 48,
@@ -534,10 +537,12 @@ const styles = StyleSheet.create({
   heroTopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    flexWrap: 'wrap',
     gap: 14,
   },
   heroCopy: {
     flex: 1,
+    minWidth: 0,
   },
   heroName: {
     fontSize: 22,
@@ -574,10 +579,13 @@ const styles = StyleSheet.create({
   },
   heroButtonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   heroButton: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   heroOutlineButton: {
     borderWidth: 1,
@@ -603,7 +611,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     shadowColor: 'rgba(15,23,42,0.1)',
     shadowOpacity: 0.12,
@@ -621,12 +629,14 @@ const styles = StyleSheet.create({
   threadCopy: {
     flex: 1,
     gap: 8,
+    minWidth: 0,
   },
   threadHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
+    flexWrap: 'wrap',
   },
   threadTitle: {
     flex: 1,
@@ -636,6 +646,7 @@ const styles = StyleSheet.create({
   threadMeta: {
     fontSize: Typography.body,
     fontWeight: '700',
+    flexShrink: 0,
   },
   threadPreview: {
     fontSize: Typography.body,

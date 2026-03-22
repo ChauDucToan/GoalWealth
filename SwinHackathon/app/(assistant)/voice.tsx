@@ -197,7 +197,9 @@ const styles = StyleSheet.create({
   },
   micOrb: {
     marginTop: 28,
-    width: 168,
+    width: '100%',
+    maxWidth: 168,
+    aspectRatio: 1,
     height: 168,
     borderRadius: 84,
     borderWidth: 1,
@@ -216,6 +218,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: 10,
   },
   waveBar: {
@@ -266,10 +269,13 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   button: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   outlineButton: {
     borderWidth: 1,

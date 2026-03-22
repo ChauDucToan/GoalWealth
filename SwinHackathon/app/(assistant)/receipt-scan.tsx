@@ -191,7 +191,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   receiptPreview: {
-    width: 170,
+    width: '100%',
+    maxWidth: 170,
     height: 220,
     borderRadius: 24,
     paddingHorizontal: 22,
@@ -227,7 +228,8 @@ const styles = StyleSheet.create({
   scanFrame: {
     position: 'absolute',
     top: 40,
-    width: 210,
+    width: '100%',
+    maxWidth: 210,
     height: 260,
     borderRadius: 28,
     borderWidth: 2,
@@ -271,6 +273,8 @@ const styles = StyleSheet.create({
   fieldRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
     gap: 16,
   },
   fieldLabel: {
@@ -298,10 +302,13 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
   button: {
     flex: 1,
+    flexBasis: 150,
+    minWidth: 0,
   },
   outlineButton: {
     borderWidth: 1,

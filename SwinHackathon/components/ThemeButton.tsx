@@ -98,5 +98,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: '700',
+    textAlign: 'center',
+    maxWidth: '100%',
   }
 });
