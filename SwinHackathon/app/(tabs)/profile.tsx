@@ -428,8 +428,9 @@ function createStyles(colors: ColorTheme) {
     itemRow: {
       minHeight: 58,
       paddingHorizontal: 16,
+      paddingVertical: 12,
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-between',
       gap: 12,
     },
