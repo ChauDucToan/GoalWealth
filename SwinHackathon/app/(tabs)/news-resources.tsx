@@ -16,7 +16,7 @@ import {
   CommunityRulesIllustration,
   CommunityTagChip,
 } from '@/components/community/ui';
-import { Typography } from '@/constants/theme';
+import { ColorTheme, Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -36,6 +36,7 @@ export default function FinanceCommunityScreen() {
   const { scale, verticalScale, scaleFont, isCompact } = useResponsive();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{ stage?: string | string[]; tab?: string | string[] }>();
   const stage = getFirstParam(params.stage) ?? 'landing';
   const tabParam = getFirstParam(params.tab);
@@ -370,15 +371,25 @@ export default function FinanceCommunityScreen() {
           style={[
             styles.bottomActionWrap,
             {
-              bottom: Math.max(insets.bottom, verticalScale(8, 0.76)) + verticalScale(72, 0.72),
+              bottom: Math.max(insets.bottom, verticalScale(8, 0.76)) + verticalScale(96, 0.72),
               paddingHorizontal: scale(20, 0.8),
             },
           ]}
         >
-          <CommunityPrimaryButton
-            title="Add New Post"
+          <Pressable
+            style={[
+              styles.addPostFab,
+              {
+                width: scale(56, 0.76),
+                height: scale(56, 0.76),
+                borderRadius: scale(28, 0.72),
+                backgroundColor: colors.primaryDark,
+              },
+            ]}
             onPress={() => router.push('/news-resources-workshops')}
-          />
+          >
+            <MaterialIcons name="add" size={scale(28, 0.76)} color={colors.card} />
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -478,228 +489,240 @@ export default function FinanceCommunityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: {
-    gap: 16,
-  },
-  heroWrap: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  eyebrow: {
-    fontWeight: '800',
-    letterSpacing: 1.6,
-  },
-  title: {
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    lineHeight: 21,
-    textAlign: 'center',
-    maxWidth: 320,
-  },
-  illustrationCard: {
-    paddingVertical: 22,
-  },
-  infoCard: {
-    gap: 14,
-  },
-  pointRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  pointIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pointText: {
-    flex: 1,
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  statRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statRowCompact: {
-    flexWrap: 'wrap',
-  },
-  statCard: {
-    flex: 1,
-    minHeight: 74,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-  },
-  statCardCompact: {
-    flexBasis: '48%',
-    minWidth: 0,
-    flexGrow: 1,
-  },
-  statValue: {
-    fontWeight: '900',
-  },
-  statLabel: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  rulesHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  rulesHeaderSpacer: {
-    width: 42,
-  },
-  rulesHeaderTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  iconButton: {
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ruleStack: {
-    gap: 2,
-  },
-  ruleRow: {
-    minHeight: 60,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  ruleLabel: {
-    fontWeight: '600',
-    flex: 1,
-    minWidth: 0,
-  },
-  ruleDot: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  legalRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 18,
-  },
-  legalText: {
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerRowCompact: {
-    alignItems: 'flex-start',
-  },
-  headerBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  feedTitle: {
-    fontWeight: '900',
-    letterSpacing: -0.5,
-  },
-  feedSubtitle: {
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  tabCard: {
-    gap: 12,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 4,
-  },
-  tabButton: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabLabel: {
-    fontWeight: '800',
-  },
-  feedMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  feedMetaRowCompact: {
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-  },
-  feedMetaText: {
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  feedMetaTextCompact: {
-    flexBasis: '100%',
-  },
-  filterButton: {
-    minHeight: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  filterButtonCompact: {
-    alignSelf: 'flex-start',
-  },
-  filterText: {
-    fontWeight: '800',
-  },
-  tagScroll: {
-    gap: 8,
-  },
-  loadMore: {
-    alignSelf: 'center',
-    minHeight: 38,
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  loadMoreText: {
-    fontWeight: '800',
-  },
-  bottomActionWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-  },
-});
+function createStyles(colors: ColorTheme) {
+  return StyleSheet.create({
+    root: { flex: 1 },
+    content: {
+      gap: 16,
+    },
+    heroWrap: {
+      alignItems: 'center',
+      gap: 8,
+    },
+    eyebrow: {
+      fontWeight: '800',
+      letterSpacing: 1.6,
+    },
+    title: {
+      fontWeight: '900',
+      letterSpacing: -0.8,
+      textAlign: 'center',
+    },
+    subtitle: {
+      lineHeight: 21,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    illustrationCard: {
+      paddingVertical: 22,
+    },
+    infoCard: {
+      gap: 14,
+    },
+    pointRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+    },
+    pointIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pointText: {
+      flex: 1,
+      lineHeight: 20,
+      fontWeight: '500',
+    },
+    statRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    statRowCompact: {
+      flexWrap: 'wrap',
+    },
+    statCard: {
+      flex: 1,
+      minHeight: 74,
+      borderRadius: 18,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+    },
+    statCardCompact: {
+      flexBasis: '48%',
+      minWidth: 0,
+      flexGrow: 1,
+    },
+    statValue: {
+      fontWeight: '900',
+    },
+    statLabel: {
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    rulesHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 2,
+    },
+    rulesHeaderSpacer: {
+      width: 42,
+    },
+    rulesHeaderTitle: {
+      flex: 1,
+      textAlign: 'center',
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+    iconButton: {
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ruleStack: {
+      gap: 2,
+    },
+    ruleRow: {
+      minHeight: 60,
+      paddingVertical: 14,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      gap: 12,
+    },
+    ruleLabel: {
+      fontWeight: '600',
+      flex: 1,
+      minWidth: 0,
+    },
+    ruleDot: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    legalRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      gap: 18,
+    },
+    legalText: {
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    headerRowCompact: {
+      alignItems: 'flex-start',
+    },
+    headerBody: {
+      flex: 1,
+      minWidth: 0,
+    },
+    feedTitle: {
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+    feedSubtitle: {
+      marginTop: 2,
+      fontWeight: '500',
+    },
+    tabCard: {
+      gap: 12,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      borderRadius: 18,
+      borderWidth: 1,
+      padding: 4,
+    },
+    tabButton: {
+      flex: 1,
+      minHeight: 42,
+      borderRadius: 14,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tabLabel: {
+      fontWeight: '800',
+    },
+    feedMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    feedMetaRowCompact: {
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
+    },
+    feedMetaText: {
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    feedMetaTextCompact: {
+      flexBasis: '100%',
+    },
+    filterButton: {
+      minHeight: 34,
+      borderRadius: 17,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    filterButtonCompact: {
+      alignSelf: 'flex-start',
+    },
+    filterText: {
+      fontWeight: '800',
+    },
+    tagScroll: {
+      gap: 8,
+    },
+    loadMore: {
+      alignSelf: 'center',
+      minHeight: 38,
+      borderRadius: 20,
+      borderWidth: 1,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    loadMoreText: {
+      fontWeight: '800',
+    },
+    bottomActionWrap: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      alignItems: 'flex-end',
+    },
+    addPostFab: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.16,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 6,
+    },
+  });
+}
