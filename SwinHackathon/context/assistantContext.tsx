@@ -49,7 +49,7 @@ const initialSettings: AssistantSettings = {
     'Spending Recommendations',
     'Budget Insights',
     'Saving Tips & Tricks',
-    'News & Resources',
+    'Finance Community',
   ],
   plan: 'free',
 };

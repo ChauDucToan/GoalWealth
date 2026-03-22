@@ -221,7 +221,7 @@ export default function AssistantSettingsScreen() {
                   'Spending Recommendations',
                   'Budget Insights',
                   'Saving Tips & Tricks',
-                  'News & Resources',
+                  'Finance Community',
                 ].map((item) => {
                   const selected = assistantSettings.suggestInsights.includes(item);
 

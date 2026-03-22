@@ -1,70 +1,184 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { SupportBubble } from '@/components/news/SupportBubble';
+import { communityNotifications } from '@/components/community/mock-data';
+import { CommunityAvatar, CommunityCard, CommunityScreenHeader } from '@/components/community/ui';
+import { Typography } from '@/constants/theme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Typography } from '@/constants/theme';
 
-export default function WorkshopDetailScreen() {
+const tabs = ['Today', 'Past'] as const;
+
+export default function CommunityNotificationScreen() {
   const { colors } = useTheme();
+  const { scale, verticalScale, scaleFont } = useResponsive();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('Today');
+
+  const visibleNotifications = activeTab === 'Today'
+    ? communityNotifications.slice(0, 2)
+    : communityNotifications;
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <Pressable style={styles.headerIconButton} onPress={() => router.back()}>
-            <MaterialIcons name="chevron-left" size={22} color={hexToRgba(colors.text, 0.6)} />
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Workshop Detail</Text>
-          <Pressable style={styles.headerIconButton} onPress={() => router.push('/news-resources-instructor')}>
-            <MaterialIcons name="person-outline" size={18} color={hexToRgba(colors.text, 0.55)} />
-          </Pressable>
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.card }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: scale(18, 0.8),
+            paddingTop: verticalScale(10, 0.76),
+            paddingBottom: verticalScale(40, 0.76),
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <CommunityScreenHeader title="Community Notification" onBack={() => router.back()} />
+
+        <View
+          style={[
+            styles.tabBar,
+            {
+              backgroundColor: colors.backgroundSoft,
+              borderColor: hexToRgba(colors.primaryDark, 0.08),
+            },
+          ]}
+        >
+          {tabs.map((tab) => {
+            const active = activeTab === tab;
+
+            return (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[
+                  styles.tabButton,
+                  {
+                    backgroundColor: active ? colors.card : 'transparent',
+                    borderColor: active ? hexToRgba(colors.primaryDark, 0.12) : 'transparent',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: active ? colors.primaryDark : hexToRgba(colors.text, 0.48),
+                      fontSize: scaleFont(13, 0.76),
+                    },
+                  ]}
+                >
+                  {tab}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-        <Image source={require('../../assets/images/loading-budget-photo.png')} style={styles.hero} />
-        <Text style={[styles.title, { color: colors.text }]}>Mastering Personal Finance in 100 Days, Asia</Text>
-        <Text style={[styles.body, { color: hexToRgba(colors.text, 0.68) }]}>
-          A practical workshop to help you establish clear habits in budgeting, debt management, and investing.
-        </Text>
-        {['Anyone new to personal finance', 'Working professionals', 'Small business owners'].map((item) => (
-          <View key={item} style={styles.row}>
-            <MaterialIcons name="check-circle" size={14} color={colors.primaryDark} />
-            <Text style={[styles.rowText, { color: hexToRgba(colors.text, 0.74) }]}>{item}</Text>
-          </View>
+
+        {visibleNotifications.map((notification) => (
+          <CommunityCard key={notification.id} style={styles.notificationCard}>
+            <Pressable
+              onPress={() => {
+                if (notification.action === 'comments') {
+                  router.push('/news-resources-article-detail');
+                  return;
+                }
+                if (notification.action === 'message') {
+                  router.push('/community-chat');
+                  return;
+                }
+                router.push({
+                  pathname: '/news-resources-instructor',
+                  params: { authorId: notification.author.id },
+                });
+              }}
+              style={styles.notificationRow}
+            >
+              <CommunityAvatar author={notification.author} size={scale(42, 0.76)} />
+              <View style={styles.notificationBody}>
+                <Text
+                  style={[
+                    styles.notificationText,
+                    { color: hexToRgba(colors.text, 0.76), fontSize: scaleFont(Typography.body, 0.76) },
+                  ]}
+                >
+                  {notification.body}
+                </Text>
+                <View style={styles.notificationMetaRow}>
+                  <Text
+                    style={[
+                      styles.notificationTime,
+                      { color: hexToRgba(colors.text, 0.42), fontSize: scaleFont(11, 0.76) },
+                    ]}
+                  >
+                    {notification.time}
+                  </Text>
+                  {notification.unread ? (
+                    <View style={[styles.unreadDot, { backgroundColor: colors.primaryDark }]} />
+                  ) : null}
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={scale(22, 0.72)} color={hexToRgba(colors.text, 0.28)} />
+            </Pressable>
+          </CommunityCard>
         ))}
-        <View style={styles.priceRow}>
-          <Text style={[styles.price, { color: colors.success }]}>$39.99</Text>
-          <Pressable style={[styles.ctaSmall, { backgroundColor: colors.primaryDark }]}>
-            <Text style={[styles.ctaText, { color: colors.card }]}>Register</Text>
-          </Pressable>
-        </View>
       </ScrollView>
-      <SupportBubble />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 110, gap: 8 },
-  headerRow: { marginTop: 2, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerIconButton: {
-    width: 32,
-    height: 32,
+  content: {
+    gap: 14,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 16, fontWeight: '800' },
-  hero: { width: '100%', height: 180, borderRadius: 12 },
-  title: { marginTop: 8, fontSize: 22, lineHeight: 26, fontWeight: '800' },
-  body: { fontSize: Typography.body, lineHeight: 18 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rowText: { fontSize: 11 },
-  priceRow: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  price: { fontSize: 24, fontWeight: '800' },
-  ctaSmall: { height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
-  ctaText: { fontSize: Typography.body, fontWeight: '700' },
+  tabText: {
+    fontWeight: '800',
+  },
+  notificationCard: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationBody: {
+    flex: 1,
+    gap: 8,
+  },
+  notificationText: {
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  notificationMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  notificationTime: {
+    fontWeight: '700',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
 });
