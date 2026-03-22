@@ -6,7 +6,7 @@ import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Typography } from '@/constants/theme';
 import {
   KeyboardAvoidingView,
@@ -35,6 +35,7 @@ export default function AssistantChatScreen() {
   } = useAssistant();
   const [draft, setDraft] = useState('');
   const [isToolMenuOpen, setIsToolMenuOpen] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const scenarioParam = Array.isArray(params.scenario) ? params.scenario[0] : params.scenario;
   const normalizedScenarioId =
@@ -53,13 +54,15 @@ export default function AssistantChatScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 16) + 138 },
+          { paddingBottom: 12 },
         ]}
       >
         <View style={styles.content}>
@@ -118,16 +121,15 @@ export default function AssistantChatScreen() {
         </View>
       </ScrollView>
 
-      <View
-        style={[
-          styles.bottomDock,
-          {
-            backgroundColor: colors.backgroundSoft,
-            bottom: Math.max(insets.bottom, 12),
-            paddingBottom: 8,
-          },
-        ]}
-      >
+        <View
+          style={[
+            styles.bottomDock,
+            {
+              backgroundColor: colors.backgroundSoft,
+              paddingBottom: Math.max(Math.min(insets.bottom, 8), 4),
+            },
+          ]}
+        >
         {isToolMenuOpen ? (
           <View style={styles.toolMenu}>
             <Pressable
@@ -159,11 +161,12 @@ export default function AssistantChatScreen() {
           </View>
         ) : null}
 
-        <View
+        <Pressable
           style={[
             styles.composerShell,
             { backgroundColor: colors.card, borderColor: hexToRgba(colors.primaryDark, 0.08) },
           ]}
+          onPress={() => inputRef.current?.focus()}
         >
           <Pressable
             style={[
@@ -176,12 +179,17 @@ export default function AssistantChatScreen() {
           </Pressable>
 
           <TextInput
+            ref={inputRef}
             value={draft}
             onChangeText={setDraft}
             placeholder={`Message ${assistantSettings.aiCompanionName}...`}
             placeholderTextColor={hexToRgba(colors.text, 0.34)}
             style={[styles.composerInput, { color: colors.text }]}
             multiline
+            showSoftInputOnFocus
+            blurOnSubmit={false}
+            returnKeyType="default"
+            onPressIn={() => inputRef.current?.focus()}
           />
 
           <Pressable
@@ -204,7 +212,7 @@ export default function AssistantChatScreen() {
           >
             <MaterialIcons name="north-east" size={22} color={colors.card} />
           </Pressable>
-        </View>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -214,8 +222,11 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
-    paddingBottom: 128,
+    paddingBottom: 24,
   },
   content: {
     paddingTop: 60,
@@ -289,12 +300,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bottomDock: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
     paddingHorizontal: 18,
     paddingTop: 8,
-    paddingBottom: 2,
   },
   toolMenu: {
     alignSelf: 'flex-start',
