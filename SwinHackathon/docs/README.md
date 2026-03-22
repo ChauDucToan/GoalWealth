@@ -39,6 +39,10 @@ Thư mục `docs` hiện đã được tách thành nhiều tài liệu để d�
 - Tài liệu riêng cho feature `Subscription Management`.
 - Mô tả data mock, màn overview, detail, add/edit, result và trạng thái hiện tại của flow.
 
+## Tài liệu bổ sung
+
+6. [Bộ tài liệu `Kha-*` cho đợt triển khai gần đây](./Kha-README.md)
+
 ## Ghi chú
 
 - Phần timeline lịch sử được tổng hợp từ git history hiện còn trong branch `develop`.
