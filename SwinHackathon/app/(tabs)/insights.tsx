@@ -2,7 +2,6 @@ import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { StockTrendChart } from '@/components/finance/StockTrendChart';
 import {
-  formatCompactCurrency,
   formatCurrency,
   formatDisplayCurrency,
 } from '@/components/finance/finance-utils';
@@ -304,11 +303,9 @@ export default function InsightsScreen() {
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Categories</Text>
-          <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
-            {formatCompactCurrency(
-              budgetCategories.reduce((sum, item) => sum + item.spent, 0)
-            )}
-          </Text>
+          <Pressable onPress={() => router.push('/(finance)/smart-budgeting')}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open planner</Text>
+          </Pressable>
         </View>
 
         {budgetCategories.map((item) => (

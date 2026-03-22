@@ -22,6 +22,7 @@ export function FinanceScreen({
   rightAccessory,
   contentStyle,
   scroll = true,
+  onBackPress,
 }: {
   title: string;
   subtitle?: string;
@@ -29,6 +30,7 @@ export function FinanceScreen({
   rightAccessory?: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
+  onBackPress?: () => void;
 }) {
   const { colors } = useTheme();
   const { scale, verticalScale, scaleFont } = useResponsive();
@@ -56,7 +58,7 @@ export function FinanceScreen({
               borderRadius: scale(13, 0.72),
             },
           ]}
-          onPress={() => router.back()}
+          onPress={onBackPress ?? (() => router.back())}
         >
           <MaterialIcons name="arrow-back" size={scale(22, 0.72)} color={colors.text} />
         </Pressable>

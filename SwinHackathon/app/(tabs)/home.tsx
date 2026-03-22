@@ -327,7 +327,7 @@ export default function HomeScreen() {
                   }
 
                   if (action.id === 'budget') {
-                    router.push('/(finance)/categories');
+                    router.push('/(finance)/smart-budgeting');
                     return;
                   }
 
@@ -384,9 +384,11 @@ export default function HomeScreen() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Budget Highlights</Text>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
-              Left {formatCurrency(overviewStats.budgetLeft)}
-            </Text>
+            <Pressable onPress={() => router.push('/(finance)/smart-budgeting')}>
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+                Open planner
+              </Text>
+            </Pressable>
           </View>
 
           {categories.map((item) => {
