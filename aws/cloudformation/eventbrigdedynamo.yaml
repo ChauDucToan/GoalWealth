@@ -1,0 +1,272 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Combine dynamodb with eventbrigde
+
+Parameters:
+  TableName:
+    Type: String
+    Default: GoalWealthMemory
+
+Resources:
+  QueryRetrieveMemory:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: memory-table-read
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: lambda-dynamo-read
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadMemoryTable
+                Effect: Allow
+                Action:
+                  - dynamodb:Query
+                  - dynamodb:GetItem
+                Resource: !GetAtt MemoryTable.Arn
+              - Sid: LambdaLogsCreateGroup
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                Resource: "*"
+              - Sid: LambdaLogsWrite
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/get-dynamo-query:*
+
+  MemoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  ReadDBFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: get-dynamo-query
+      Runtime: python3.12
+      Handler: index.get_data
+      Role: !GetAtt QueryRetrieveMemory.Arn
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MemoryTable
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource("dynamodb")
+          table = dynamodb.Table(os.environ["TABLE_NAME"])
+
+          def get_data(event, context):
+            payload = event
+            if "body" in event:
+              payload = json.loads(event["body"] or "{}")
+
+            action = payload.get("action")
+
+            try:
+              if action == "get_item":
+                response = table.get_item(
+                  Key={
+                    "pk": payload["pk"],
+                    "sk": payload["sk"]
+                  }
+                )
+
+                item = response.get("Item")
+                return {
+                  "statusCode": 200 if item else 404,
+                  "body": json.dumps(item if item else {"message": "Item not found"})
+                }
+
+              elif action == "query":
+                params = {
+                  "KeyConditionExpression": Key("pk").eq(event["pk"])
+                }
+
+                if "sk_prefix" in event:
+                  params["KeyConditionExpression"] &= Key("sk").begins_with(event["sk_prefix"])
+
+                if "exclusive_start_key" in event:
+                  params["ExclusiveStartKey"] = event["exclusive_start_key"]
+
+                response = table.query(**params)
+
+                return {
+                  "statusCode": 200,
+                  "body": json.dumps({
+                    "items": response.get("Items", []),
+                    "count": response.get("Count", 0),
+                    "last_evaluated_key": response.get("LastEvaluatedKey")
+                  })
+                }
+
+              return {
+                "statusCode": 400,
+                "body": json.dumps({"message": "action must be get_item or query"})
+              }
+
+            except Exception as e:
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"error": str(e)})
+                }
+
+  ReadMemoryApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: goalwealth-read-memory-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowMethods:
+          - POST
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - content-type
+
+  ReadMemoryApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ReadMemoryApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ReadDBFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  ReadMemoryApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ReadMemoryApi
+      RouteKey: "POST /memory"
+      Target: !Sub integrations/${ReadMemoryApiIntegration}
+
+  ReadMemoryApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ReadMemoryApi
+      StageName: "$default"
+      AutoDeploy: true
+
+  AllowApiGatewayInvokeReadDb:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReadDBFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ReadMemoryApi}/*/POST/memory
+
+  RefreshDigestLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: goalwealth-refresh-digest-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: lambda-basic-logs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  RefreshDigestFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: goalwealth-refresh-digest
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt RefreshDigestLambdaRole.Arn
+      Timeout: 15
+      MemorySize: 256
+      Code:
+        ZipFile: |
+          import json
+
+          def handler(event, context):
+              print("Receive event: ", json.dumps(event))
+
+              detail = event.get("detail", {})
+              user_id = detail.get("userId", "unknown")
+              opened_at = detail.get("openedAt", "unknown")
+
+              result = {
+                  "message": "Refresh workflow triggered",
+                  "userId": user_id,
+                  "openedAt": opened_at
+              }
+
+              print("Result:", json.dumps(result))
+              return result
+
+  AppOpenedRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: goalwealth-app-opened-rule
+      Description: Trigger Lambda when mobile app emits app_opened event
+      EventPattern:
+        source:
+            - goalwealth.mobile
+        detail-type:
+            - goalwealth.app_opened
+      Targets:
+        - Arn: !GetAtt RefreshDigestFunction.Arn
+          Id: RefreshDigestLambdaTarget
+
+  AllowEventBridgeInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RefreshDigestFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AppOpenedRule.Arn
+
+Outputs:
+  LambdaName:
+    Value: !Ref RefreshDigestFunction
+
+  RuleName:
+    Value: !Ref AppOpenedRule
+  
+  MemoryTableName:
+    Description: Name of the memory table
+    Value: !Ref MemoryTable
+
+  MemoryTableArn:
+    Description: ARN of the memory table
+    Value: !GetAtt MemoryTable.Arn
+
+  ReadMemoryApiUrl:
+    Description: HTTP API endpoint for ReadDBFunction
+    Value: !Sub https://${ReadMemoryApi}.execute-api.${AWS::Region}.amazonaws.com/memory
