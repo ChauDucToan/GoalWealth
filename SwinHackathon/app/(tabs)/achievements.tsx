@@ -2,6 +2,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -148,6 +149,7 @@ const segments = ['Badges', 'Leaderboard', 'Stats'] as const;
 export default function AchievementsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const router = useRouter();
   const [selectedSegment, setSelectedSegment] = useState<(typeof segments)[number]>('Badges');
   const tone = (key: ThemeTone) => colors[key];
   const unlockedCount = badges.filter((item) => item.unlocked).length;
@@ -156,7 +158,17 @@ export default function AchievementsScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.headerIconButton}>
+          <Pressable
+            style={styles.headerIconButton}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+                return;
+              }
+
+              router.replace('/(tabs)/home');
+            }}
+          >
             <MaterialIcons name="chevron-left" size={22} color={hexToRgba(colors.text, 0.5)} />
           </Pressable>
           <Text style={styles.headerTitle}>Achievements</Text>

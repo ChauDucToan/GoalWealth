@@ -178,6 +178,12 @@ export const quickActions: {
     subtitle: 'Keep records',
     icon: 'receipt-long',
   },
+  {
+    id: 'assessment',
+    title: 'Assess',
+    subtitle: 'Financial profile',
+    icon: 'fact-check',
+  },
 ];
 
 export const budgetCategories: FinanceCategory[] = [

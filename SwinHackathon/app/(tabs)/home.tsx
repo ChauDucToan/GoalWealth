@@ -336,6 +336,11 @@ export default function HomeScreen() {
                     return;
                   }
 
+                  if (action.id === 'assessment') {
+                    router.push('/(finance)/financial-assessment');
+                    return;
+                  }
+
                   router.push('/(tabs)/transactions');
                 }}
               >
