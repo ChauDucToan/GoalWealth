@@ -455,7 +455,7 @@ export default function HomeScreen() {
         <View style={styles.sectionBlock}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Goals</Text>
-            <Pressable onPress={() => router.push('/(tabs)/insights')}>
+            <Pressable onPress={() => router.push('/(finance)/financial-goals')}>
               <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Track</Text>
             </Pressable>
           </View>
@@ -469,9 +469,15 @@ export default function HomeScreen() {
               const progress = goal.saved / goal.target;
 
               return (
-                <View
+                <Pressable
                   key={goal.id}
                   style={[styles.goalCard, { backgroundColor: colors.card }]}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(finance)/financial-goals/[goalId]',
+                      params: { goalId: goal.id },
+                    })
+                  }
                 >
                   <View style={styles.rowBetween}>
                     <View
@@ -514,7 +520,7 @@ export default function HomeScreen() {
                       ]}
                     />
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </ScrollView>

@@ -28,7 +28,7 @@ export default function SignUp() {
         setSubmitAttempted(true);
 
         if (email.trim() && password.trim().length >= 8 && confirmPassword === password) {
-            console.log('(auth) Sign Up');
+            router.push('/(auth)/profile-setup/avatar');
         }
     };
 
