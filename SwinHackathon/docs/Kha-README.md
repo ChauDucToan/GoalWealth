@@ -22,10 +22,13 @@ thì nhóm `Kha-*` tập trung vào:
 2. [Tabs, Community và các màn UI theo design](./Kha-tabs-community-va-cac-man-ui-theo-design.md)
 3. [Assistant, Auth, State và các fix hành vi](./Kha-assistant-auth-state-va-cac-fix-hanh-vi.md)
 4. [Smart Budgeting và receipt flow](./Kha-smart-budgeting-va-receipt-flow.md)
-5. [Assistant và các quyết định UX, chat, navigation](./Kha-assistant-va-cac-quyet-dinh-ux-chat-navigation.md)
-6. [File by file reference](./Kha-file-by-file-reference.md)
-7. [News & Resources và các quyết định điều hướng](./Kha-news-resources-va-cac-quyet-dinh-dieu-huong.md)
-8. [Phương pháp triển khai và nguyên tắc thực thi](./Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md)
+5. [Financial Assessment flow và các quyết định triển khai](./Kha-financial-assessment-flow-va-cac-quyet-dinh-trien-khai.md)
+6. [Financial Goals flow và cách nối vào Home](./Kha-financial-goals-flow-va-cach-noi-vao-home.md)
+7. [Profile Setup & Account Completion flow](./Kha-profile-setup-account-completion-flow.md)
+8. [Assistant và các quyết định UX, chat, navigation](./Kha-assistant-va-cac-quyet-dinh-ux-chat-navigation.md)
+9. [File by file reference](./Kha-file-by-file-reference.md)
+10. [News & Resources và các quyết định điều hướng](./Kha-news-resources-va-cac-quyet-dinh-dieu-huong.md)
+11. [Phương pháp triển khai và nguyên tắc thực thi](./Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md)
 
 ## Ghi chú
 

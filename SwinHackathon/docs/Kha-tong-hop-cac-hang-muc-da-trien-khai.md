@@ -22,6 +22,7 @@ Trong đợt làm việc này, phần việc tập trung lớn nhất nằm ở 
 4. xử lý các vấn đề điều hướng, bottom tab, safe area, keyboard, modal và state local/context
 5. mở rộng module `Smart Budgeting` từ một màn demo đơn lẻ thành một flow có cấu trúc hơn
 6. bổ sung tài liệu nội bộ để dễ bàn giao hoặc tiếp tục phát triển
+7. mở rộng coverage cho các board còn thiếu trong `fin/` như `Financial Assessment`, `Financial Goals`, `Profile Setup & Account Completion`
 
 ## 3. Các nhóm hạng mục chính đã làm
 
@@ -61,7 +62,7 @@ Các phần đã làm:
 
 ### 3.4. Nhóm Smart Budgeting
 
-Đây là nhóm thay đổi lớn nhất trong đợt này.
+Đây là nhóm thay đổi lớn nhất ở giai đoạn trước của đợt này.
 
 Những gì đã được làm:
 
@@ -72,6 +73,16 @@ Những gì đã được làm:
 - cho phép import receipt và áp dụng dữ liệu vào budget mock
 - mở rộng `Monthly Budget`
 - làm lại `Budget Insights` theo hướng mạnh và giàu thông tin hơn
+
+### 3.5. Nhóm financial assessment, financial goals và profile setup
+
+Các phần mới được bổ sung trong ngày làm việc gần nhất:
+
+- `Comprehensive Financial Assessment` dưới dạng module nhiều bước trong `(finance)`
+- `Financial Goals` dưới dạng module riêng, có hub, detail và create screen
+- `Profile Setup & Account Completion` dưới dạng flow 24 bước trong `(auth)`
+- nối `Sign Up` vào profile setup flow mới
+- nối `Home` vào `Financial Assessment` và `Financial Goals` để có entry test thật
 
 ## 4. Những màn hình hoặc flow đã được dựng theo thiết kế
 
@@ -107,6 +118,27 @@ Dựa trên chuỗi yêu cầu và source code hiện tại, các màn sau đã 
 - `share-budget.tsx`
 - `add-member.tsx`
 - `setup/*` với nhiều bước chi tiết
+
+### 4.4. Trong `(finance)/financial-assessment`
+
+- `index.tsx`
+- `full-name.tsx` đến `voice-confirmation.tsx`
+- `_layout.tsx`, `_shared.tsx`, `_data.ts`
+- `context/financialAssessmentContext.tsx` và `hooks/use-financial-assessment.tsx`
+
+### 4.5. Trong `(finance)/financial-goals`
+
+- `index.tsx`
+- `[goalId].tsx`
+- `create.tsx`
+- `_layout.tsx`, `_data.ts`
+
+### 4.6. Trong `(auth)/profile-setup`
+
+- `avatar.tsx` đến `premium-success.tsx`
+- `_layout.tsx`, `_shared.tsx`, `_data.ts`
+- `context/profileSetupContext.tsx` và `hooks/use-profile-setup.tsx`
+- `app/(auth)/signUp.tsx` đã được nối vào route đầu của flow
 
 ## 5. Các loại cải tiến đã làm ngoài việc dựng UI thuần
 
@@ -162,7 +194,10 @@ Bộ tài liệu này được tách thành nhiều file để tiện đọc:
 2. `Kha-tabs-community-va-cac-man-ui-theo-design.md`
 3. `Kha-assistant-auth-state-va-cac-fix-hanh-vi.md`
 4. `Kha-smart-budgeting-va-receipt-flow.md`
-5. `Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md`
+5. `Kha-financial-assessment-flow-va-cac-quyet-dinh-trien-khai.md`
+6. `Kha-financial-goals-flow-va-cach-noi-vao-home.md`
+7. `Kha-profile-setup-account-completion-flow.md`
+8. `Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md`
 
 ## 10. Kết luận
 

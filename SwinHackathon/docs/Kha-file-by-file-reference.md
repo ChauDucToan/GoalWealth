@@ -393,7 +393,147 @@ Những gì đã được làm:
 - category pressure section
 - recommended moves và CTA cuối màn
 
-## 7. Kết luận
+
+## 7. Nhóm `Financial Assessment`
+
+### 7.1. `app/(finance)/financial-assessment/_layout.tsx`, `_shared.tsx`, `_data.ts`
+
+Vai trò:
+
+- tạo route group, shell chung và nguồn data cho toàn bộ assessment
+
+Những gì đã được làm:
+
+- dựng khung progress/back chung
+- gom option data về một chỗ
+- giữ toàn bộ module theo cấu trúc dễ mở rộng
+
+### 7.2. `context/financialAssessmentContext.tsx` và `hooks/use-financial-assessment.tsx`
+
+Vai trò:
+
+- giữ state câu trả lời trong suốt 21 bước assessment
+
+Ý nghĩa:
+
+- cho phép từng screen vừa đọc vừa cập nhật dữ liệu mà không cần global app state
+
+### 7.3. `app/(finance)/financial-assessment/index.tsx`
+
+Vai trò:
+
+- màn entry cho whole assessment flow
+
+Những gì đã được làm:
+
+- làm màn đệm trước survey dài
+- chỉnh CTA và khoảng cách cuối màn để không bị cụt hoặc dính viền
+- dùng để review trạng thái block assessment
+
+### 7.4. `full-name.tsx` đến `voice-confirmation.tsx`
+
+Vai trò:
+
+- chuỗi 21 màn của board `Comprehensive Financial Assessment`
+
+Những gì đã được làm:
+
+- dựng theo từng block thay vì làm một lần toàn bộ
+- giữ progress đồng bộ toàn flow
+- nối từ `Home` qua action `Assess`
+
+## 8. Nhóm `Financial Goals`
+
+### 8.1. `app/(finance)/financial-goals/_layout.tsx` và `_data.ts`
+
+Vai trò:
+
+- route group goals và data mock của module
+
+### 8.2. `app/(finance)/financial-goals/index.tsx`
+
+Vai trò:
+
+- hub `Financial Goals`
+
+Những gì đã được làm:
+
+- hero summary của goals
+- active goal list
+- CTA vào create và detail
+
+### 8.3. `app/(finance)/financial-goals/[goalId].tsx`
+
+Vai trò:
+
+- detail screen cho từng goal
+
+Những gì đã được làm:
+
+- dynamic route theo `goalId`
+- progress, milestones, contribution rhythm, completion gap
+
+### 8.4. `app/(finance)/financial-goals/create.tsx`
+
+Vai trò:
+
+- màn tạo goal mới
+
+Những gì đã được làm:
+
+- chọn category, target, monthly contribution và preview draft
+
+## 9. Nhóm `Profile Setup & Account Completion`
+
+### 9.1. `app/(auth)/profile-setup/_layout.tsx`, `_shared.tsx`, `_data.ts`
+
+Vai trò:
+
+- route group, shell và nguồn data cho flow account completion
+
+Những gì đã được làm:
+
+- thống nhất progress bar, header/back và CTA pattern
+- gom avatar options, bank list, notification options, plan options
+
+### 9.2. `context/profileSetupContext.tsx` và `hooks/use-profile-setup.tsx`
+
+Vai trò:
+
+- giữ state onboarding giữa nhiều step auth flow
+
+Các state chính:
+
+- avatar đang chọn
+- bank đang chọn
+- savings account đang chọn
+- notifications enabled
+- premium plan đang chọn
+
+### 9.3. `app/(auth)/signUp.tsx`
+
+Vai trò:
+
+- entry vào flow profile setup sau khi tạo tài khoản
+
+Những gì đã được làm:
+
+- bỏ `console.log` cũ
+- sau validate hợp lệ thì chuyển sang `/(auth)/profile-setup/avatar`
+
+### 9.4. `avatar.tsx` đến `premium-success.tsx`
+
+Vai trò:
+
+- chuỗi 24 màn của board `Profile Setup & Account Completion`
+
+Những gì đã được làm:
+
+- chia flow thành các cụm: avatar, bank, security, consent, score/report, premium
+- chuẩn hóa `totalSteps={24}` trên toàn bộ module
+- dọn warning lint sau khi dựng nhiều màn liên tiếp
+
+## 10. Kết luận
 
 Nếu cần hiểu nhanh “file nào giữ trách nhiệm gì” trong đợt triển khai này, file reference này là điểm vào phù hợp nhất.
 
