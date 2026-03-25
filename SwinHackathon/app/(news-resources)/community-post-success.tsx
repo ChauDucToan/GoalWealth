@@ -45,7 +45,7 @@ export default function CommunityPostSuccessScreen() {
           title="See Post"
           onPress={() =>
             router.replace({
-              pathname: '/(tabs)/news-resources',
+              pathname: '/community-home',
               params: { stage: 'feed', tab: 'my-posts' },
             })
           }
@@ -53,7 +53,7 @@ export default function CommunityPostSuccessScreen() {
 
         <Pressable
           style={styles.shareRow}
-          onPress={() => router.replace({ pathname: '/(tabs)/news-resources', params: { stage: 'feed' } })}
+          onPress={() => router.replace({ pathname: '/community-home', params: { stage: 'feed' } })}
         >
           <MaterialIcons name="share" size={scale(18, 0.72)} color={colors.primaryDark} />
           <Text style={[styles.shareText, { color: colors.primaryDark, fontSize: scaleFont(13, 0.76) }]}>

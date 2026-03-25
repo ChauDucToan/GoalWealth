@@ -46,7 +46,7 @@ export default function CommunityDeletePostScreen() {
 
         <CommunityPrimaryButton
           title="Yes, Delete It"
-          onPress={() => router.replace({ pathname: '/(tabs)/news-resources', params: { stage: 'feed' } })}
+          onPress={() => router.replace({ pathname: '/community-home', params: { stage: 'feed' } })}
         />
 
         <CommunityPrimaryButton title="No, Don&apos;t Delete" subtle onPress={() => router.back()} />

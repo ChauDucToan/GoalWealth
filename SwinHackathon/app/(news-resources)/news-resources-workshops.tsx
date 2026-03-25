@@ -1,230 +1,140 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import {
-  communityAuthors,
-  communityComposerActions,
-  communityComposerTags,
-} from '@/components/community/mock-data';
-import {
-  CommunityAvatar,
-  CommunityCard,
-  CommunityPrimaryButton,
-  CommunityScreenHeader,
-  CommunityTagChip,
-} from '@/components/community/ui';
+import { CommunityCard, CommunityScreenHeader } from '@/components/community/ui';
+import { workshopFeed } from '@/components/news-resources/content-data';
 import { Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const postPhoto = require('../../assets/images/loading-budget-photo.png');
-
-export default function CommunityAddPostScreen() {
+export default function NewsWorkshopsScreen() {
   const { colors } = useTheme();
   const { scale, verticalScale, scaleFont } = useResponsive();
   const router = useRouter();
-  const [draft, setDraft] = useState(
-    'Hi all! We are able to save over $1200 in just three months. It is all about being disciplined and tracking every expense.'
-  );
-  const [selectedTags, setSelectedTags] = useState(['budgeting', 'opportunity']);
-  const [hasPhoto, setHasPhoto] = useState(true);
-
-  const toggleTag = (value: string) => {
-    setSelectedTags((current) =>
-      current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
-    );
-  };
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: colors.card }]} edges={['top']}>
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: scale(18, 0.8),
+            paddingTop: verticalScale(10, 0.76),
+            paddingBottom: verticalScale(40, 0.76),
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            {
-              paddingHorizontal: scale(18, 0.8),
-              paddingTop: verticalScale(10, 0.76),
-              paddingBottom: verticalScale(36, 0.76),
-            },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <CommunityScreenHeader title="Add New Post" onBack={() => router.back()} />
+        <CommunityScreenHeader title="Workshops" onBack={() => router.back()} />
 
-          <CommunityCard style={styles.composerCard}>
-            <View style={styles.composerRow}>
-              <CommunityAvatar author={communityAuthors.melissa} size={scale(42, 0.76)} />
-              <View style={styles.promptWrap}>
-                <Text
-                  style={[
-                    styles.promptLabel,
-                    { color: hexToRgba(colors.text, 0.48), fontSize: scaleFont(12, 0.76) },
-                  ]}
-                >
-                  What&apos;s on your mind pal?
+        <CommunityCard>
+          <Text style={[styles.heroTitle, { color: colors.text, fontSize: scaleFont(24, 0.76) }]}>Live rooms to review your money plan with structure</Text>
+          <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56), fontSize: scaleFont(Typography.body, 0.76) }]}>Smaller groups, clear topics and practical sessions instead of passive content alone.</Text>
+        </CommunityCard>
+
+        {workshopFeed.map((workshop) => (
+          <Pressable
+            key={workshop.id}
+            style={[styles.workshopCard, { backgroundColor: colors.card }]}
+            onPress={() =>
+              router.push({ pathname: '/news-resources-workshop-detail', params: { workshopId: workshop.id } })
+            }
+          >
+            <View style={[styles.workshopTop, { borderBottomColor: colors.border }]}> 
+              <View style={[styles.workshopBadge, { backgroundColor: hexToRgba(colors.primaryDark, 0.12) }]}> 
+                <MaterialIcons name="play-circle-outline" size={scale(22, 0.72)} color={colors.primaryDark} />
+              </View>
+              <View style={styles.workshopHead}>
+                <Text style={[styles.workshopMeta, { color: colors.primaryDark, fontSize: scaleFont(11, 0.76) }]}>
+                  {workshop.category} • {workshop.minutes}
                 </Text>
-                <TextInput
-                  multiline
-                  value={draft}
-                  onChangeText={setDraft}
-                  placeholder="Write your update for the community"
-                  placeholderTextColor={hexToRgba(colors.text, 0.28)}
-                  style={[
-                    styles.input,
-                    {
-                      color: colors.text,
-                      fontSize: scaleFont(Typography.body, 0.76),
-                      minHeight: verticalScale(150, 0.76),
-                    },
-                  ]}
-                />
+                <Text style={[styles.workshopTitle, { color: colors.text, fontSize: scaleFont(17, 0.76) }]}>{workshop.title}</Text>
+                <Text style={[styles.workshopSubtitle, { color: hexToRgba(colors.text, 0.54), fontSize: scaleFont(13, 0.76) }]}>{workshop.subtitle}</Text>
               </View>
             </View>
 
-            <View style={styles.tagWrap}>
-              {communityComposerTags.map((tag) => (
-                <CommunityTagChip
-                  key={tag.id}
-                  label={tag.label}
-                  active={selectedTags.includes(tag.id)}
-                  onPress={() => toggleTag(tag.id)}
-                />
-              ))}
-            </View>
-
-            <View style={styles.actionRow}>
-              {communityComposerActions.map((action) => (
-                <Pressable
-                  key={action.id}
-                  onPress={() => {
-                    if (action.id === 'image') {
-                      setHasPhoto((current) => !current);
-                    }
-                  }}
-                  style={[
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.backgroundSoft,
-                      borderColor: hexToRgba(colors.primaryDark, 0.08),
-                    },
-                  ]}
-                >
-                  <MaterialIcons name={action.icon} size={scale(18, 0.72)} color={colors.primaryDark} />
-                  <Text
-                    style={[
-                      styles.actionText,
-                      { color: hexToRgba(colors.text, 0.64), fontSize: scaleFont(12, 0.76) },
-                    ]}
-                  >
-                    {action.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </CommunityCard>
-
-          {hasPhoto ? (
-            <CommunityCard style={styles.previewCard}>
-              <View style={styles.previewHeader}>
-                <Text style={[styles.previewTitle, { color: colors.text, fontSize: scaleFont(15, 0.76) }]}>
-                  Media Preview
-                </Text>
-                <Pressable onPress={() => setHasPhoto(false)}>
-                  <MaterialIcons name="close" size={scale(18, 0.72)} color={hexToRgba(colors.text, 0.48)} />
-                </Pressable>
+            <View style={styles.workshopFooter}>
+              <View>
+                <Text style={[styles.footerLabel, { color: hexToRgba(colors.text, 0.42), fontSize: scaleFont(11, 0.76) }]}>Instructor</Text>
+                <Text style={[styles.footerValue, { color: colors.text, fontSize: scaleFont(13, 0.76) }]}>{workshop.instructor}</Text>
               </View>
-              <Image source={postPhoto} style={[styles.previewImage, { height: verticalScale(170, 0.76) }]} />
-            </CommunityCard>
-          ) : null}
-
-          <CommunityPrimaryButton
-            title="Submit Post"
-            onPress={() => router.push('/community-post-success')}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
+              <View>
+                <Text style={[styles.footerLabel, { color: hexToRgba(colors.text, 0.42), fontSize: scaleFont(11, 0.76) }]}>Schedule</Text>
+                <Text style={[styles.footerValue, { color: colors.primaryDark, fontSize: scaleFont(13, 0.76) }]}>{workshop.schedule}</Text>
+              </View>
+            </View>
+          </Pressable>
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: {
-    gap: 16,
+  content: { gap: 14 },
+  heroTitle: {
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
-  composerCard: {
+  heroBody: {
+    marginTop: 6,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  workshopCard: {
+    borderRadius: 22,
+    padding: 16,
     gap: 14,
   },
-  composerRow: {
+  workshopTop: {
+    paddingBottom: 14,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 14,
   },
-  promptWrap: {
-    flex: 1,
-  },
-  promptLabel: {
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  input: {
-    lineHeight: 21,
-    fontWeight: '500',
-    paddingTop: 0,
-    paddingBottom: 0,
-    textAlignVertical: 'top',
-  },
-  tagWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  actionButton: {
-    minHeight: 40,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
+  workshopBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
   },
-  actionText: {
-    fontWeight: '700',
+  workshopHead: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
-  previewCard: {
-    gap: 12,
+  workshopMeta: {
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  previewHeader: {
+  workshopTitle: {
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  workshopSubtitle: {
+    lineHeight: 19,
+    fontWeight: '500',
+  },
+  workshopFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
   },
-  previewTitle: {
-    fontWeight: '800',
+  footerLabel: {
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  previewImage: {
-    width: '100%',
-    borderRadius: 18,
+  footerValue: {
+    marginTop: 4,
+    fontWeight: '700',
   },
 });

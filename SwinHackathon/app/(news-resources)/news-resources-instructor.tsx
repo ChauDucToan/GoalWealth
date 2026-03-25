@@ -173,7 +173,7 @@ export default function CommunityProfileScreen() {
                   post={post}
                   onPressComments={(currentPost) =>
                     router.push({
-                      pathname: '/news-resources-article-detail',
+                      pathname: '/community-comments',
                       params: { postId: currentPost.id },
                     })
                   }

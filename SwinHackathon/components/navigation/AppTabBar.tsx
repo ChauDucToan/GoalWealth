@@ -34,7 +34,7 @@ const routeMeta: Record<
   profile: { label: 'Profile', icon: 'person-outline' },
   insights: { label: 'Insights', icon: 'bar-chart' },
   achievements: { label: 'Achievements', icon: 'emoji-events' },
-  'news-resources': { label: 'Community', icon: 'groups' },
+  'news-resources': { label: 'Resources', icon: 'newspaper' },
   'search-notifications': { label: 'Search', icon: 'search' },
 };
 
