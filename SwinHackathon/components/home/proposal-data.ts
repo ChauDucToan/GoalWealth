@@ -81,14 +81,6 @@ export type ProposalRebalanceAction = {
   tone: ProposalTone;
 };
 
-export type ProposalDataSource = {
-  id: string;
-  title: string;
-  body: string;
-  icon: ProposalIcon;
-  tone: ProposalTone;
-};
-
 export const proposalHomeModules: ProposalModuleCard[] = [
   {
     id: 'assessment',
@@ -347,37 +339,6 @@ export const proposalRebalanceActions: ProposalRebalanceAction[] = [
     impact: 'Keeps upside exposure while improving control',
     icon: 'notifications-none',
     tone: 'primaryDark',
-  },
-];
-
-export const proposalDataSources: ProposalDataSource[] = [
-  {
-    id: 'guided',
-    title: 'Guided setup and manual entries',
-    body: 'Assessment answers and user-entered summaries set the baseline.',
-    icon: 'edit-note',
-    tone: 'primaryDark',
-  },
-  {
-    id: 'ocr',
-    title: 'OCR receipts and statements',
-    body: 'Image imports become structured inputs after user review.',
-    icon: 'document-scanner',
-    tone: 'success',
-  },
-  {
-    id: 'market',
-    title: 'Market data and watchlist signals',
-    body: 'Prices, alerts and event drivers feed the recommendation engine.',
-    icon: 'candlestick-chart',
-    tone: 'warning',
-  },
-  {
-    id: 'news',
-    title: 'Economic news monitoring',
-    body: 'High-impact macro events are classified and routed into the user’s current plan context.',
-    icon: 'newspaper',
-    tone: 'error',
   },
 ];
 

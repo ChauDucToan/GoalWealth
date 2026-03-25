@@ -28,6 +28,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow GoalWealth to access your photos so you can import receipt images for OCR review.",
+          "cameraPermission": "Allow GoalWealth to use your camera so you can capture receipts for OCR review.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-document-picker",
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",

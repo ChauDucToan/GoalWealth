@@ -5,9 +5,11 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';
 
 const recentReceipts = [
@@ -29,7 +31,126 @@ const importSources: {
 export default function ReceiptUploadScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { selectAssistantScenario } = useAssistant();
+  const { selectAssistantScenario, setReceiptImportDraft } = useAssistant();
+  const [activeSource, setActiveSource] = useState<'camera' | 'gallery' | 'files' | null>(null);
+
+  const openScanWithDraft = (draft: {
+    source: 'camera' | 'gallery' | 'files' | 'demo';
+    uri?: string;
+    name: string;
+    mimeType?: string | null;
+    fileSize?: number | null;
+    kind: 'image' | 'document' | 'mock';
+  }) => {
+    setReceiptImportDraft(draft);
+    router.push('/(assistant)/receipt-scan');
+  };
+
+  const pickFromCamera = async () => {
+    setActiveSource('camera');
+
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert('Camera access needed', 'Allow camera access to capture a receipt for OCR review.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets?.[0]) {
+        return;
+      }
+
+      const asset = result.assets[0];
+
+      openScanWithDraft({
+        source: 'camera',
+        uri: asset.uri,
+        name: asset.fileName ?? 'Camera receipt',
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize,
+        kind: 'image',
+      });
+    } finally {
+      setActiveSource(null);
+    }
+  };
+
+  const pickFromGallery = async () => {
+    setActiveSource('gallery');
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert('Photo access needed', 'Allow photo library access to import a receipt image.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+        allowsMultipleSelection: false,
+      });
+
+      if (result.canceled || !result.assets?.[0]) {
+        return;
+      }
+
+      const asset = result.assets[0];
+
+      openScanWithDraft({
+        source: 'gallery',
+        uri: asset.uri,
+        name: asset.fileName ?? 'Gallery receipt',
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize,
+        kind: 'image',
+      });
+    } finally {
+      setActiveSource(null);
+    }
+  };
+
+  const pickFromFiles = async () => {
+    setActiveSource('files');
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        multiple: false,
+        type: ['image/*', 'application/pdf'],
+      });
+
+      if (result.canceled || !result.assets?.[0]) {
+        return;
+      }
+
+      const asset = result.assets[0];
+
+      openScanWithDraft({
+        source: 'files',
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType,
+        fileSize: asset.size,
+        kind: asset.mimeType?.startsWith('image/') ? 'image' : 'document',
+      });
+    } finally {
+      setActiveSource(null);
+    }
+  };
+
+  const importActions: Record<(typeof importSources)[number]['label'], () => Promise<void>> = {
+    'Take photo': pickFromCamera,
+    'Browse files': pickFromFiles,
+    Gallery: pickFromGallery,
+  };
 
   return (
     <AssistantScreen
@@ -54,7 +175,13 @@ export default function ReceiptUploadScreen() {
           <View style={styles.heroActions}>
             <ThemeButton
               title="Start demo scan"
-              onPress={() => router.push('/(assistant)/receipt-scan')}
+              onPress={() =>
+                openScanWithDraft({
+                  source: 'demo',
+                  name: 'FreshMart Grocery receipt',
+                  kind: 'mock',
+                })
+              }
               colorBackground={colors.card}
               colorText={colors.primaryDark}
               style={styles.heroButton}
@@ -90,8 +217,18 @@ export default function ReceiptUploadScreen() {
                 style={[
                   styles.sourceCard,
                   { backgroundColor: colors.backgroundSoft },
+                  activeSource ===
+                  (item.label === 'Take photo'
+                    ? 'camera'
+                    : item.label === 'Browse files'
+                      ? 'files'
+                      : 'gallery')
+                    ? styles.sourceCardActive
+                    : null,
                 ]}
-                onPress={() => router.push('/(assistant)/receipt-scan')}
+                onPress={() => {
+                  void importActions[item.label]();
+                }}
               >
                 <View
                   style={[
@@ -124,7 +261,13 @@ export default function ReceiptUploadScreen() {
               <Pressable
                 key={item.id}
                 style={[styles.receiptCard, { backgroundColor: colors.backgroundSoft }]}
-                onPress={() => router.push('/(assistant)/receipt-scan')}
+                onPress={() =>
+                  openScanWithDraft({
+                    source: 'demo',
+                    name: `${item.title}.jpg`,
+                    kind: 'mock',
+                  })
+                }
               >
                 <View
                   style={[
@@ -216,6 +359,9 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     gap: 12,
+  },
+  sourceCardActive: {
+    opacity: 0.82,
   },
   sourceIcon: {
     width: 44,

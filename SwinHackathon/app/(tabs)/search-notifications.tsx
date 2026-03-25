@@ -170,9 +170,9 @@ export default function SearchNotificationsScreen() {
       >
         <View style={styles.pageHeader}>
           <View style={styles.pageHeaderCopy}>
-            <Text style={styles.pageTitle}>Search & Notifications</Text>
+            <Text style={styles.pageTitle}>Alerts & Search</Text>
             <Text style={styles.pageBody}>
-              One place for alerts, merchant lookup and transaction discovery without the old clutter.
+              One place for alerts first, with transaction search kept nearby when you need it.
             </Text>
           </View>
 

@@ -10,8 +10,6 @@ import {
 import { financeGoals } from '@/components/home/mock-data';
 import {
   proposalAdvisorSnapshot,
-  proposalBacktestMetrics,
-  proposalDataSources,
   proposalNewsSignals,
   proposalRebalanceActions,
   proposalTopPriorities,
@@ -32,7 +30,7 @@ import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 function toneColor(colors: ReturnType<typeof useTheme>['colors'], tone: ProposalTone) {
@@ -44,7 +42,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const { isSmallPhone } = useResponsive();
   const { tabBarFloatingClearance } = useTabBarClearance();
-  const { transactions, stockHoldings, stocks, watchlistSymbols, displayCurrency } = useFinance();
+  const {
+    transactions,
+    stockHoldings,
+    stocks,
+    watchlistSymbols,
+    defaultStockSymbol,
+    displayCurrency,
+  } = useFinance();
 
   const holdings = stockHoldings
     .map((holding) => {
@@ -55,7 +60,25 @@ export default function HomeScreen() {
   const watchlist = watchlistSymbols
     .map((symbol) => stocks.find((item) => item.symbol === symbol))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const featuredStock = holdings[0]?.stock ?? watchlist[0] ?? stocks[0];
+  const selectableStocks = useMemo(() => {
+    const seen = new Set<string>();
+
+    return [...holdings.map((item) => item.stock), ...watchlist, ...stocks].filter((item) => {
+      if (seen.has(item.symbol)) {
+        return false;
+      }
+
+      seen.add(item.symbol);
+      return true;
+    });
+  }, [holdings, stocks, watchlist]);
+  const [selectedStockSymbol, setSelectedStockSymbol] = useState(defaultStockSymbol);
+  const featuredStock =
+    selectableStocks.find((item) => item.symbol === selectedStockSymbol) ??
+    stocks.find((item) => item.symbol === defaultStockSymbol) ??
+    holdings[0]?.stock ??
+    watchlist[0] ??
+    stocks[0];
   const portfolioValue = holdings.reduce(
     (sum, item) => sum + item.holding.shares * item.stock.price,
     0
@@ -95,21 +118,39 @@ export default function HomeScreen() {
           </Text>
 
           <View style={styles.heroChipRow}>
-            <ProductStatusChip
-              label={`${proposalAdvisorSnapshot.disciplineScore}/100 discipline`}
-              tone="success"
-              icon="emoji-events"
-            />
-            <ProductStatusChip
-              label={`${proposalAdvisorSnapshot.activeGoals} goals live`}
-              tone="secondary"
-              icon="flag"
-            />
-            <ProductStatusChip
-              label={`${proposalAdvisorSnapshot.highImpactSignals} alerts`}
-              tone="warning"
-              icon="notifications-active"
-            />
+            {[
+              {
+                label: `${proposalAdvisorSnapshot.disciplineScore}/100 discipline`,
+                icon: 'emoji-events' as const,
+                tint: colors.primaryDark,
+              },
+              {
+                label: `${proposalAdvisorSnapshot.activeGoals} goals live`,
+                icon: 'flag' as const,
+                tint: colors.success,
+              },
+              {
+                label: `${proposalAdvisorSnapshot.highImpactSignals} alerts`,
+                icon: 'notifications-active' as const,
+                tint: colors.warning,
+              },
+            ].map((item) => (
+              <View
+                key={item.label}
+                style={[
+                  styles.heroSignalChip,
+                  {
+                    backgroundColor: hexToRgba(colors.card, 0.94),
+                    borderColor: hexToRgba(colors.card, 0.98),
+                  },
+                ]}
+              >
+                <MaterialIcons name={item.icon} size={14} color={item.tint} />
+                <Text style={[styles.heroSignalText, { color: colors.primaryDark }]}>
+                  {item.label}
+                </Text>
+              </View>
+            ))}
           </View>
 
           <View style={[styles.heroStatRow, isSmallPhone && styles.heroStackRow]}>
@@ -266,6 +307,45 @@ export default function HomeScreen() {
 
               {featuredStock ? (
                 <View style={styles.chartWrap}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.portfolioSymbolScroll}
+                  >
+                    {selectableStocks.map((item) => {
+                      const selected = item.symbol === featuredStock.symbol;
+
+                      return (
+                        <Pressable
+                          key={item.symbol}
+                          style={[
+                            styles.portfolioSymbolChip,
+                            {
+                              backgroundColor: selected
+                                ? colors.primaryDark
+                                : colors.backgroundSoft,
+                              borderColor: selected
+                                ? colors.primaryDark
+                                : hexToRgba(colors.primaryDark, 0.08),
+                            },
+                          ]}
+                          onPress={() => setSelectedStockSymbol(item.symbol)}
+                        >
+                          <Text
+                            style={[
+                              styles.portfolioSymbolText,
+                              {
+                                color: selected ? colors.card : colors.text,
+                              },
+                            ]}
+                          >
+                            {item.symbol}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+
                   <StockTrendChart
                     values={featuredStock.chart}
                     accent={featuredStock.accent}
@@ -321,45 +401,7 @@ export default function HomeScreen() {
           </ResponsiveGrid>
         </View>
 
-        <ResponsiveGrid
-          minItemWidth={220}
-          horizontalPadding={20}
-          gap={12}
-          maxColumns={2}
-          maxContentWidth={960}
-        >
-          <ProductSurfaceCard>
-            <ProductSectionHeader
-              title="Inputs & proof"
-              meta="Keep advice grounded in real data"
-              actionLabel="Import"
-              onPress={() => router.push('/(assistant)/receipt-upload')}
-            />
-
-            {proposalDataSources.slice(0, 3).map((item, index) => (
-              <ProductRow
-                key={item.id}
-                title={item.title}
-                body={item.body}
-                icon={item.icon}
-                tone={item.tone}
-                divider={index < 2}
-              />
-            ))}
-
-            <View style={styles.metricRow}>
-              {proposalBacktestMetrics.slice(0, 2).map((item) => (
-                <ProductMetricTile
-                  key={item.id}
-                  label={item.label}
-                  value={item.value}
-                  helper={item.note}
-                  tone="primaryDark"
-                />
-              ))}
-            </View>
-          </ProductSurfaceCard>
-
+        <View style={styles.sectionStack}>
           <ProductSurfaceCard>
             <ProductSectionHeader
               title="Next activity"
@@ -396,7 +438,7 @@ export default function HomeScreen() {
               />
             ))}
           </ProductSurfaceCard>
-        </ResponsiveGrid>
+        </View>
       </View>
     </ScrollView>
   );
@@ -462,6 +504,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  heroSignalChip: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroSignalText: {
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '700',
   },
   heroStatRow: {
     flexDirection: 'row',
@@ -581,5 +638,23 @@ const styles = StyleSheet.create({
   },
   chartWrap: {
     marginTop: -2,
+    gap: 10,
+  },
+  portfolioSymbolScroll: {
+    paddingBottom: 2,
+    gap: 8,
+  },
+  portfolioSymbolChip: {
+    minHeight: 32,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  portfolioSymbolText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

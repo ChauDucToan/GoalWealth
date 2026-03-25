@@ -1,4 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -23,51 +24,37 @@ export function SmartBudgetingHomeScreen() {
     () => [
       hasCompletedSetup
         ? {
-            id: 'workspace',
-            title: 'Budget Workspace',
-            body: 'Setup is complete. Open the live budget instead of re-running onboarding.',
+            id: 'monthly',
+            title: 'Monthly budget',
+            body: 'Track spend, left to spend and category pacing.',
             route: '/(finance)/smart-budgeting/monthly-budget',
-            icon: 'task-alt' as const,
+            icon: 'pie-chart-outline' as const,
           }
         : {
             id: 'setup',
-            title: 'Budget Setup',
-            body: 'Walk through the onboarding questions from the left side of the kit.',
+            title: 'Finish setup',
+            body: 'Set your target and core categories first.',
             route: '/(finance)/smart-budgeting/setup',
             icon: 'checklist' as const,
           },
       {
-        id: 'receipt',
-        title: 'Import Receipt',
-        body: 'Open receipt capture and apply spending directly into the budget.',
-        route: '/(finance)/smart-budgeting/setup/receipt-gallery',
-        icon: 'receipt-long' as const,
-      },
-      {
-        id: 'monthly',
-        title: 'Monthly Budget',
-        body: 'See the ring, breakdown and active budget progress.',
-        route: '/(finance)/smart-budgeting/monthly-budget',
-        icon: 'pie-chart-outline' as const,
-      },
-      {
         id: 'insights',
-        title: 'Budget Insights',
-        body: 'Open recommendations, pacing and monthly patterns.',
+        title: 'Insights',
+        body: 'See pacing, category pressure and next actions.',
         route: '/(finance)/smart-budgeting/budget-insights',
         icon: 'insights' as const,
       },
       {
         id: 'categories',
-        title: 'Organize Category',
-        body: 'Create, edit and reorder budget categories.',
+        title: 'Categories',
+        body: 'Create, edit and tidy budget categories.',
         route: '/(finance)/smart-budgeting/manage-categories',
         icon: 'category' as const,
       },
       {
         id: 'share',
-        title: 'Budget Together Easily',
-        body: 'Share by QR and invite members into the plan.',
+        title: 'Share budget',
+        body: 'Invite members or share the plan by QR.',
         route: '/(finance)/smart-budgeting/share-budget',
         icon: 'group-add' as const,
       },
@@ -78,7 +65,7 @@ export function SmartBudgetingHomeScreen() {
   return (
     <FinanceScreen
       title="Smart Budgeting"
-      subtitle="A routed flow that matches the budgeting kit: dashboard, insights, categories and sharing."
+      subtitle="Keep the monthly plan, categories and budget insights in one place."
       contentStyle={styles.contentStyle}
       hideBackButton
       bottomInsetSpacing={verticalScale(isCompact ? 180 : 150, 0.72)}
@@ -107,17 +94,17 @@ export function SmartBudgetingHomeScreen() {
       <View style={styles.stack}>
         <FinanceCard style={[styles.heroCard, { backgroundColor: colors.primaryDark }]}>
           <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.74) }]}>
-            {hasCompletedSetup ? 'Budget Workspace' : 'Budget Set Up'}
+            {hasCompletedSetup ? 'Budget ready' : 'Budget setup'}
           </Text>
           <Text style={[styles.heroTitle, { color: colors.card }]}>
             {hasCompletedSetup
-              ? 'Your budget is ready. You can operate it directly without re-running setup.'
-              : "Let's set up your budget and keep every category on pace."}
+              ? 'Open the monthly budget and keep every category on pace.'
+              : 'Set the monthly target first, then move into the live budget.'}
           </Text>
           <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.82) }]}>
             {hasCompletedSetup
-              ? 'Receipt import, category management and monthly budget review are now independent flows.'
-              : 'The design kit shows this flow as a sequence. This screen is the operational hub to open each step directly.'}
+              ? 'Insights, categories and sharing stay available as lightweight follow-up actions.'
+              : 'Once setup is done, this screen becomes the shortcut into the budget workspace.'}
           </Text>
 
           <View style={[styles.progressTrack, { backgroundColor: hexToRgba(colors.card, 0.16) }]}>
@@ -162,38 +149,35 @@ export function SmartBudgetingHomeScreen() {
               {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Budget Setup'}
             </Text>
           </Pressable>
-
-          {hasCompletedSetup ? (
-            <Pressable
-              style={[styles.heroSecondaryButton, { borderColor: hexToRgba(colors.card, 0.18) }]}
-              onPress={() => router.push('/(finance)/smart-budgeting/setup/receipt-gallery')}
-            >
-              <Text style={[styles.heroSecondaryButtonText, { color: colors.card }]}>
-                Import Receipt
-              </Text>
-            </Pressable>
-          ) : null}
         </FinanceCard>
 
-        <View style={styles.grid}>
+        <ResponsiveGrid
+          minItemWidth={180}
+          horizontalPadding={0}
+          gap={12}
+          maxColumns={2}
+        >
           {quickDestinations.map((item) => (
             <Pressable
               key={item.id}
               style={[styles.navCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => pushRoute(item.route)}
-            >
-              <View
-                style={[styles.navIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}
               >
-                <MaterialIcons name={item.icon} size={20} color={colors.primaryDark} />
-              </View>
-              <Text style={[styles.navTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.navBody, { color: hexToRgba(colors.text, 0.56) }]}>
-                {item.body}
-              </Text>
+                <View
+                  style={[styles.navIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}
+                >
+                  <MaterialIcons name={item.icon} size={20} color={colors.primaryDark} />
+                </View>
+                <Text style={[styles.navTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text
+                  numberOfLines={2}
+                  style={[styles.navBody, { color: hexToRgba(colors.text, 0.56) }]}
+                >
+                  {item.body}
+                </Text>
             </Pressable>
           ))}
-        </View>
+        </ResponsiveGrid>
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
@@ -309,28 +293,12 @@ function createStyles(colors: ColorTheme) {
       fontSize: 14,
       fontWeight: '800',
     },
-    heroSecondaryButton: {
-      minHeight: 44,
-      borderRadius: 18,
-      borderWidth: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    heroSecondaryButtonText: {
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-    },
     navCard: {
-      width: '47%',
+      width: '100%',
       borderRadius: 22,
       borderWidth: 1,
       padding: 16,
-      minHeight: 148,
+      minHeight: 132,
       justifyContent: 'space-between',
     },
     navIcon: {

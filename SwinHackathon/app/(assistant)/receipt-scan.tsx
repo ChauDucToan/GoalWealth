@@ -4,23 +4,45 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';
 
-const extractedFields = [
-  { label: 'Merchant', value: 'FreshMart Grocery' },
-  { label: 'Category', value: 'Food & Groceries' },
-  { label: 'Total', value: '$88.00' },
-  { label: 'Date', value: 'Sep 23' },
-];
+function prettifyReceiptName(name?: string) {
+  if (!name) {
+    return 'Imported receipt';
+  }
+
+  const cleaned = name
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned || /^img\s*\d+/i.test(cleaned)) {
+    return 'Imported receipt';
+  }
+
+  return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 export default function ReceiptScanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { activeScenarioId, selectAssistantScenario } = useAssistant();
+  const {
+    activeScenarioId,
+    openCustomAssistantThread,
+    receiptImportDraft,
+    selectAssistantScenario,
+    setReceiptImportDraft,
+  } = useAssistant();
   const [progress, setProgress] = useState(10);
+
+  useEffect(() => {
+    setProgress(10);
+  }, [receiptImportDraft?.name, receiptImportDraft?.uri]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,31 +59,130 @@ export default function ReceiptScanScreen() {
     }
 
     if (progress < 80) {
-      return 'Extracting totals and merchant details';
+      return 'Extracting file details';
     }
 
     if (!isDone) {
-      return 'Classifying the transaction';
+      return 'Preparing review summary';
     }
 
     return 'Receipt summary ready';
   }, [isDone, progress]);
 
+  const importedName = prettifyReceiptName(receiptImportDraft?.name);
+  const sourceLabel =
+    receiptImportDraft?.source === 'camera'
+      ? 'Camera capture'
+      : receiptImportDraft?.source === 'gallery'
+        ? 'Photo library'
+        : receiptImportDraft?.source === 'files'
+          ? 'Files import'
+          : 'Demo import';
+
+  const extractedFields = useMemo(
+    () => [
+      { label: 'Merchant', value: importedName },
+      {
+        label: 'Category',
+        value: receiptImportDraft?.source === 'camera' ? 'Needs review' : 'Imported receipt',
+      },
+      { label: 'Source', value: sourceLabel },
+      {
+        label: 'File',
+        value: receiptImportDraft?.name ?? 'FreshMart Grocery receipt.jpg',
+      },
+    ],
+    [importedName, receiptImportDraft?.name, receiptImportDraft?.source, sourceLabel]
+  );
+
+  const sendToAssistant = () => {
+    if (!isDone) {
+      return;
+    }
+
+    if (receiptImportDraft && receiptImportDraft.source !== 'demo') {
+      const now = Date.now();
+
+      openCustomAssistantThread({
+        id: `receipt-import-${now}`,
+        title: 'Receipt review',
+        prompt: `Review the imported receipt ${receiptImportDraft.name}.`,
+        icon: 'receipt-long',
+        messages: [
+          {
+            id: `receipt-import-user-${now}`,
+            role: 'user',
+            text: `I imported ${receiptImportDraft.name}. Can you review the OCR summary and tell me what to fix before I add it?`,
+            meta: 'Now',
+          },
+          {
+            id: `receipt-import-reply-${now + 1}`,
+            role: 'assistant',
+            text: `I reviewed ${receiptImportDraft.name}. The current draft reads ${importedName} from ${sourceLabel.toLowerCase()}. Treat the category and amount as review-needed before using this receipt in your finance plan.`,
+            meta: 'Now',
+          },
+        ],
+      });
+      setReceiptImportDraft(null);
+      router.replace({
+        pathname: '/(assistant)/chat/[scenario]',
+        params: { scenario: 'custom' },
+      });
+      return;
+    }
+
+    selectAssistantScenario('receipt');
+    setReceiptImportDraft(null);
+    router.replace({
+      pathname: '/(assistant)/chat/[scenario]',
+      params: { scenario: 'receipt' },
+    });
+  };
+
   return (
     <AssistantScreen
       title="Receipt Scanner"
-      subtitle="Demo OCR flow that mirrors the scanning and result states in the board"
+      subtitle="Import a receipt, preview the file and send the reviewed summary into chat"
     >
       <View style={styles.stack}>
         <AssistantCard style={[styles.previewCard, { backgroundColor: colors.darkBackground }]}>
-          <View style={[styles.receiptPreview, { backgroundColor: colors.card }]}>
-            <View style={styles.receiptHeaderLine} />
-            <View style={styles.receiptLineShort} />
-            <View style={styles.receiptDivider} />
-            <View style={styles.receiptLine} />
-            <View style={styles.receiptLine} />
-            <View style={styles.receiptLineShort} />
-          </View>
+          {receiptImportDraft?.kind === 'image' && receiptImportDraft.uri ? (
+            <ExpoImage
+              source={{ uri: receiptImportDraft.uri }}
+              style={styles.receiptPreview}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.receiptPreview, { backgroundColor: colors.card }]}>
+              {receiptImportDraft?.kind === 'document' ? (
+                <View style={styles.documentPreview}>
+                  <View
+                    style={[
+                      styles.documentBadge,
+                      { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+                    ]}
+                  >
+                    <MaterialIcons name="description" size={28} color={colors.primaryDark} />
+                  </View>
+                  <Text style={[styles.documentName, { color: colors.text }]}>
+                    {receiptImportDraft.name}
+                  </Text>
+                  <Text style={[styles.documentMeta, { color: hexToRgba(colors.text, 0.5) }]}>
+                    PDF or document import
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.receiptHeaderLine} />
+                  <View style={styles.receiptLineShort} />
+                  <View style={styles.receiptDivider} />
+                  <View style={styles.receiptLine} />
+                  <View style={styles.receiptLine} />
+                  <View style={styles.receiptLineShort} />
+                </>
+              )}
+            </View>
+          )}
 
           <View
             style={[
@@ -102,6 +223,9 @@ export default function ReceiptScanScreen() {
         {isDone ? (
           <AssistantCard>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Extracted receipt data</Text>
+            <Text style={[styles.sectionBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              Review the imported summary before adding it to chat.
+            </Text>
             <View style={styles.fieldGroup}>
               {extractedFields.map((field) => (
                 <View key={field.label} style={styles.fieldRow}>
@@ -121,7 +245,7 @@ export default function ReceiptScanScreen() {
             >
               <MaterialIcons name="check-circle" size={18} color={colors.success} />
               <Text style={[styles.noticeText, { color: colors.success }]}>
-                Ready to add into the AI assistant chat
+                Ready to send into the assistant for review
               </Text>
             </View>
           </AssistantCard>
@@ -129,10 +253,11 @@ export default function ReceiptScanScreen() {
 
         <View style={styles.buttonRow}>
           <ThemeButton
-            title={isDone ? 'Scan again' : 'Cancel'}
+            title={isDone ? 'Choose another' : 'Cancel'}
             onPress={() => {
               if (isDone) {
-                setProgress(10);
+                setReceiptImportDraft(null);
+                router.replace('/(assistant)/receipt-upload');
                 return;
               }
 
@@ -144,17 +269,7 @@ export default function ReceiptScanScreen() {
           />
           <ThemeButton
             title={isDone ? 'Send to assistant' : 'Processing'}
-            onPress={() => {
-              if (!isDone) {
-                return;
-              }
-
-              selectAssistantScenario('receipt');
-              router.replace({
-                pathname: '/(assistant)/chat/[scenario]',
-                params: { scenario: 'receipt' },
-              });
-            }}
+            onPress={sendToAssistant}
             colorBackground={colors.primaryDark}
             colorText={colors.card}
             disabled={!isDone}
@@ -197,6 +312,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: 22,
     paddingVertical: 26,
+    overflow: 'hidden',
   },
   receiptHeaderLine: {
     height: 10,
@@ -224,6 +340,30 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 999,
     backgroundColor: '#D6EFFF',
+  },
+  documentPreview: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  documentBadge: {
+    width: 62,
+    height: 62,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentName: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  documentMeta: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   scanFrame: {
     position: 'absolute',
@@ -265,6 +405,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
+  },
+  sectionBody: {
+    marginTop: 6,
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   fieldGroup: {
     marginTop: 14,

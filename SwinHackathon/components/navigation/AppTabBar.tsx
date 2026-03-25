@@ -37,7 +37,7 @@ const routeMeta: Record<
   insights: { label: 'Strategy', icon: 'bar-chart' },
   achievements: { label: 'Achievements', icon: 'emoji-events' },
   'news-resources': { label: 'News', icon: 'newspaper' },
-  'search-notifications': { label: 'Search', icon: 'search' },
+  'search-notifications': { label: 'Alerts', icon: 'notifications-none' },
 };
 
 export function AppTabBar({ state, navigation }: BottomTabBarProps) {

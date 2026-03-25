@@ -1,6 +1,7 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { getGoalAwareStockAdvice } from '@/components/finance/stock-advice';
 import {
   investmentNewsImpacts,
   investmentPortfolioSnapshot,
@@ -21,9 +22,9 @@ import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import type { RebalanceRecommendation, WatchlistAlert } from '@/types/product-domain';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';
 
 function toneForPriority(
@@ -59,6 +60,7 @@ function toneForAlert(
 export default function InvestmentsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const params = useLocalSearchParams<{ symbol?: string }>();
   const pushRoute = (route: string) => router.push(route as never);
   const { openCustomAssistantThread } = useAssistant();
   const {
@@ -83,8 +85,35 @@ export default function InvestmentsScreen() {
   const watchlist = watchlistSymbols
     .map((symbol) => stocks.find((item) => item.symbol === symbol))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const selectableStocks = useMemo(() => {
+    const seen = new Set<string>();
+
+    return [...holdings.map((item) => item.stock), ...watchlist, ...stocks]
+      .filter((item) => {
+        if (seen.has(item.symbol)) {
+          return false;
+        }
+
+        seen.add(item.symbol);
+        return true;
+      });
+  }, [holdings, stocks, watchlist]);
+  const [selectedSymbol, setSelectedSymbol] = useState(defaultStockSymbol);
+
+  useEffect(() => {
+    const nextSymbol = params.symbol?.trim().toUpperCase();
+
+    if (!nextSymbol) {
+      return;
+    }
+
+    if (selectableStocks.some((item) => item.symbol === nextSymbol)) {
+      setSelectedSymbol(nextSymbol);
+    }
+  }, [params.symbol, selectableStocks]);
 
   const featured =
+    selectableStocks.find((item) => item.symbol === selectedSymbol) ??
     stocks.find((item) => item.symbol === defaultStockSymbol) ??
     holdings[0]?.stock ??
     watchlist[0] ??
@@ -111,16 +140,20 @@ export default function InvestmentsScreen() {
   const featuredAlert = featured
     ? watchlistAlerts.find((item) => item.symbol === featured.symbol)
     : undefined;
-  const featuredAdviceTitle = featuredAlert?.title ??
-    (holdings.some((item) => item.stock.symbol === featured?.symbol)
-      ? 'Hold and review goal fit'
-      : 'Keep this name on watch');
-  const featuredAdviceBody = featuredAlert?.explanation ??
-    (holdings.some((item) => item.stock.symbol === featured?.symbol)
-      ? 'You already hold this stock. Review concentration and near-term goals before adding more exposure.'
-      : 'Wait until the setup fits your goals and current risk guardrails.');
+  const featuredHolding = featured
+    ? holdings.find((item) => item.stock.symbol === featured.symbol)?.holding
+    : undefined;
+  const featuredAdvice = featured
+    ? getGoalAwareStockAdvice({
+        stock: featured,
+        holding: featuredHolding,
+        isWatched: watchlistSymbols.includes(featured.symbol),
+        displayCurrency,
+        signalText: featuredAlert?.explanation,
+      })
+    : null;
 
-  const openStockAdvisor = (symbol: string, name: string, advice: string) => {
+  const openStockAdvisor = (symbol: string, title: string, assistantReply: string) => {
     openCustomAssistantThread({
       id: `stock-advice-${symbol}`,
       title: `${symbol} advice`,
@@ -136,7 +169,7 @@ export default function InvestmentsScreen() {
         {
           id: `stock-advice-reply-${symbol}`,
           role: 'assistant',
-          text: `${name} should be reviewed in context, not treated as an automatic buy. ${advice}`,
+          text: assistantReply,
           meta: 'Now',
         },
       ],
@@ -213,9 +246,75 @@ export default function InvestmentsScreen() {
                 >
                   <MaterialIcons name="star" size={12} color={colors.card} />
                   <Text style={[styles.defaultBadgeText, { color: colors.card }]}>
-                    Default {featured.symbol}
+                    {featured.symbol === defaultStockSymbol ? 'Default' : 'Set default'}
                   </Text>
                 </Pressable>
+              </View>
+
+              <View style={styles.symbolSelectorBlock}>
+                <View style={styles.symbolSelectorHeader}>
+                  <Text
+                    style={[styles.symbolSelectorLabel, { color: hexToRgba(colors.card, 0.7) }]}
+                  >
+                    Choose a stock
+                  </Text>
+                  <Pressable
+                    style={[
+                      styles.searchLaunchButton,
+                      {
+                        backgroundColor: hexToRgba(colors.card, 0.14),
+                        borderColor: hexToRgba(colors.card, 0.18),
+                      },
+                    ]}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(finance)/stock-search',
+                        params: { symbol: featured.symbol },
+                      })
+                    }
+                  >
+                    <MaterialIcons name="search" size={16} color={colors.card} />
+                    <Text style={[styles.searchLaunchText, { color: colors.card }]}>
+                      Search stocks
+                    </Text>
+                  </Pressable>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.symbolChipRow}
+                >
+                  {selectableStocks.map((item) => {
+                    const selected = item.symbol === featured.symbol;
+
+                    return (
+                      <Pressable
+                        key={item.symbol}
+                        style={[
+                          styles.symbolChip,
+                          {
+                            backgroundColor: selected
+                              ? colors.card
+                              : hexToRgba(colors.card, 0.18),
+                            borderColor: selected
+                              ? colors.card
+                              : hexToRgba(colors.card, 0.24),
+                          },
+                        ]}
+                        onPress={() => setSelectedSymbol(item.symbol)}
+                      >
+                        <Text
+                          style={[
+                            styles.symbolChipText,
+                            { color: selected ? colors.primaryDark : colors.card },
+                          ]}
+                        >
+                          {item.symbol}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
               </View>
 
               <StockTrendChart
@@ -239,10 +338,10 @@ export default function InvestmentsScreen() {
                   STOCK ADVICE
                 </Text>
                 <Text style={[styles.featuredAdviceTitle, { color: colors.card }]}>
-                  {featuredAdviceTitle}
+                  {featuredAdvice?.title ?? 'Review this name in goal context'}
                 </Text>
                 <Text style={[styles.featuredAdviceBody, { color: hexToRgba(colors.card, 0.82) }]}>
-                  {featuredAdviceBody}
+                  {featuredAdvice?.body ?? 'Use your goal order before deciding whether this stock deserves capital now.'}
                 </Text>
               </View>
             </View>
@@ -267,7 +366,12 @@ export default function InvestmentsScreen() {
               title="Ask Finpal AI"
               onPress={() =>
                 featured
-                  ? openStockAdvisor(featured.symbol, featured.name, featuredAdviceBody)
+                  ? openStockAdvisor(
+                      featured.symbol,
+                      featuredAdvice?.title ?? featured.symbol,
+                      featuredAdvice?.assistantReply ??
+                        `${featured.symbol} should be reviewed in the context of your goal order before any action.`
+                    )
                   : undefined
               }
               colorBackground={hexToRgba(colors.card, 0.14)}
@@ -553,10 +657,23 @@ export default function InvestmentsScreen() {
                     <Pressable
                       onPress={() => {
                         const stock = stocks.find((item) => item.symbol === alert.symbol);
+                        const holding = stockHoldings.find((item) => item.symbol === alert.symbol);
+
+                        if (!stock) {
+                          return;
+                        }
+
+                        const advice = getGoalAwareStockAdvice({
+                          stock,
+                          holding,
+                          isWatched: watchlistSymbols.includes(alert.symbol),
+                          displayCurrency,
+                          signalText: alert.explanation,
+                        });
                         openStockAdvisor(
                           alert.symbol,
-                          stock?.name ?? alert.symbol,
-                          alert.explanation
+                          advice.title,
+                          advice.assistantReply
                         );
                       }}
                     >
@@ -734,6 +851,54 @@ const styles = StyleSheet.create({
   heroChartWrap: {
     marginTop: 20,
     gap: 12,
+  },
+  symbolSelectorBlock: {
+    gap: 8,
+  },
+  symbolSelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  symbolSelectorLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  searchLaunchButton: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchLaunchText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  symbolChipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 2,
+  },
+  symbolChip: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  symbolChipText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
   featuredAdviceCard: {
     borderWidth: 1,

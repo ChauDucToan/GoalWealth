@@ -29,13 +29,24 @@ export type AssistantCustomThread = {
   messages: AssistantMessage[];
 };
 
+export type ReceiptImportDraft = {
+  source: 'camera' | 'gallery' | 'files' | 'demo';
+  uri?: string;
+  name: string;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  kind: 'image' | 'document' | 'mock';
+};
+
 type AssistantContextValue = {
   activeScenarioId: string;
   conversation: AssistantMessage[];
   assistantSettings: AssistantSettings;
   customThread: AssistantCustomThread | null;
+  receiptImportDraft: ReceiptImportDraft | null;
   selectAssistantScenario: (id: string) => void;
   openCustomAssistantThread: (thread: AssistantCustomThread) => void;
+  setReceiptImportDraft: (draft: ReceiptImportDraft | null) => void;
   sendAssistantMessage: (text: string) => void;
   setAssistantSettings: (patch: Partial<AssistantSettings>) => void;
   resetAssistantMemory: () => void;
@@ -77,6 +88,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     buildConversationFromScenario(initialScenario)
   );
   const [customThread, setCustomThread] = useState<AssistantCustomThread | null>(null);
+  const [receiptImportDraft, setReceiptImportDraftState] = useState<ReceiptImportDraft | null>(null);
   const [assistantSettings, setAssistantSettingsState] = useState(initialSettings);
 
   const value = useMemo<AssistantContextValue>(() => {
@@ -99,6 +111,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setCustomThread(thread);
       setActiveScenarioId('custom');
       setConversation(thread.messages);
+    };
+
+    const setReceiptImportDraft = (draft: ReceiptImportDraft | null) => {
+      setReceiptImportDraftState(draft);
     };
 
     const sendAssistantMessage = (text: string) => {
@@ -133,6 +149,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setConversation(buildConversationFromScenario(initialScenario));
       setActiveScenarioId(initialScenario?.id ?? defaultAssistantScenarioId);
       setCustomThread(null);
+      setReceiptImportDraftState(null);
       setAssistantSettingsState((current) => ({
         ...current,
         memoryNotes: '',
@@ -145,14 +162,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       conversation,
       assistantSettings,
       customThread,
+      receiptImportDraft,
       selectAssistantScenario,
       openCustomAssistantThread,
+      setReceiptImportDraft,
       sendAssistantMessage,
       setAssistantSettings,
       resetAssistantMemory,
       getAssistantScenario,
     };
-  }, [activeScenarioId, assistantSettings, conversation, customThread]);
+  }, [activeScenarioId, assistantSettings, conversation, customThread, receiptImportDraft]);
 
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;
 }

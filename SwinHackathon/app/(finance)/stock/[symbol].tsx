@@ -1,5 +1,6 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { getGoalAwareStockAdvice } from '@/components/finance/stock-advice';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { MarketDisplayControls } from '@/components/finance/MarketDisplayControls';
 import { StockTrendChart } from '@/components/finance/StockTrendChart';
@@ -65,16 +66,12 @@ export default function StockDetailScreen() {
 
   const positionValue = holding ? holding.shares * stock.price : 0;
   const unrealizedPnL = holding ? (stock.price - holding.averageCost) * holding.shares : 0;
-  const stockAdviceTitle = holding
-    ? 'Hold and review concentration'
-    : isWatched
-      ? 'Keep this stock on watch'
-      : 'Review before acting';
-  const stockAdviceBody = holding
-    ? 'You already hold this name. Check goal fit, concentration and timing before adding more exposure.'
-    : isWatched
-      ? 'The name is worth monitoring, but it should be reviewed against your goals before taking a position.'
-      : 'Look at chart context, sector risk and portfolio fit before making a move.';
+  const stockAdvice = getGoalAwareStockAdvice({
+    stock,
+    holding,
+    isWatched,
+    displayCurrency,
+  });
 
   const askAboutStock = () => {
     openCustomAssistantThread({
@@ -92,7 +89,7 @@ export default function StockDetailScreen() {
         {
           id: `stock-detail-reply-${stock.symbol}`,
           role: 'assistant',
-          text: `${stock.symbol} is being shown as a decision-support surface, not a direct buy idea. ${stockAdviceBody}`,
+          text: stockAdvice.assistantReply,
           meta: 'Now',
         },
       ],
@@ -210,9 +207,9 @@ export default function StockDetailScreen() {
           <Text style={[styles.adviceLabel, { color: hexToRgba(colors.text, 0.5) }]}>
             CURRENT ADVICE
           </Text>
-          <Text style={[styles.adviceTitle, { color: colors.text }]}>{stockAdviceTitle}</Text>
+          <Text style={[styles.adviceTitle, { color: colors.text }]}>{stockAdvice.title}</Text>
           <Text style={[styles.adviceBody, { color: hexToRgba(colors.text, 0.56) }]}>
-            {stockAdviceBody}
+            {stockAdvice.body}
           </Text>
         </FinanceCard>
 
