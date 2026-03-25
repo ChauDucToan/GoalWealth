@@ -6,8 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { goSmartBudgetBack } from './_navigation';
-import { categoryColorOptions, categoryIconOptions } from './_data';
+import { categoryColorOptions, categoryIconOptions } from '@/components/smart-budgeting/data';
 
 export default function EditCategoryScreen() {
   const { colors } = useTheme();
@@ -21,7 +20,6 @@ export default function EditCategoryScreen() {
       title="Edit Budget Category"
       subtitle="Single editor for create, edit and delete states from the design flow."
       contentStyle={styles.contentStyle}
-      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/manage-categories')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -88,7 +86,7 @@ export default function EditCategoryScreen() {
           <View style={styles.buttonStack}>
             <Pressable
               style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-              onPress={() => router.replace('/(finance)/smart-budgeting/manage-categories')}
+              onPress={() => router.back()}
             >
               <Text style={[styles.primaryButtonText, { color: colors.card }]}>Save Budget Category</Text>
             </Pressable>

@@ -327,7 +327,7 @@ export default function HomeScreen() {
                   }
 
                   if (action.id === 'budget') {
-                    router.push('/(finance)/smart-budgeting');
+                    router.push('/(finance)/categories');
                     return;
                   }
 
@@ -394,11 +394,9 @@ export default function HomeScreen() {
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Budget Highlights</Text>
-            <Pressable onPress={() => router.push('/(finance)/smart-budgeting')}>
-              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
-                Open planner
-              </Text>
-            </Pressable>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+              Left {formatCurrency(overviewStats.budgetLeft)}
+            </Text>
           </View>
 
           {categories.map((item) => {
@@ -460,7 +458,7 @@ export default function HomeScreen() {
         <View style={styles.sectionBlock}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Goals</Text>
-            <Pressable onPress={() => router.push('/(finance)/financial-goals')}>
+            <Pressable onPress={() => router.push('/(tabs)/insights')}>
               <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Track</Text>
             </Pressable>
           </View>
@@ -474,15 +472,9 @@ export default function HomeScreen() {
               const progress = goal.saved / goal.target;
 
               return (
-                <Pressable
+                <View
                   key={goal.id}
                   style={[styles.goalCard, { backgroundColor: colors.card }]}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(finance)/financial-goals/[goalId]',
-                      params: { goalId: goal.id },
-                    })
-                  }
                 >
                   <View style={styles.rowBetween}>
                     <View
@@ -525,7 +517,7 @@ export default function HomeScreen() {
                       ]}
                     />
                   </View>
-                </Pressable>
+                </View>
               );
             })}
           </ScrollView>

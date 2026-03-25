@@ -4,8 +4,8 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { scoreBreakdown } from './_data';
-import { ProfileSetupShell, SetupPrimaryButton } from './_shared';
+import { scoreBreakdown } from '@/components/profile-setup/data';
+import { ProfileSetupShell, SetupPrimaryButton } from '@/components/profile-setup/shared';
 
 export default function FinancialScoreScreen() {
   const { colors } = useTheme();

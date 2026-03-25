@@ -1,406 +1,916 @@
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
+import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import {
-  getSubscriptionById,
   subscriptionCategories,
   subscriptionCycles,
+  subscriptionItems,
   subscriptionPaymentMethods,
-  subscriptionServices,
+  type SubscriptionItem,
+  type SubscriptionTone,
 } from '@/components/finance/subscription-data';
-import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
-import { formatCurrency } from '@/components/finance/finance-utils';
-import { ColorTheme } from '@/constants/theme';
+import { Typography } from '@/constants/theme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import React from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-export default function SubscriptionAddScreen() {
-  const { preset, chooser, cycle: cycleParam } = useLocalSearchParams<{ preset?: string; chooser?: string; cycle?: string }>();
+function toneColor(colors: ReturnType<typeof useTheme>['colors'], tone: SubscriptionTone) {
+  return colors[tone];
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const router = useRouter();
-  const presetItem = getSubscriptionById(preset);
-  const [search, setSearch] = useState('');
-  const [selectedId, setSelectedId] = useState(presetItem.id);
-  const [amount, setAmount] = useState(String(presetItem.amount));
-  const [nextPayment, setNextPayment] = useState(presetItem.nextPayment);
-  const [cycle, setCycle] = useState(presetItem.cycle);
-  const [category, setCategory] = useState(presetItem.category);
-  const [paymentMethod, setPaymentMethod] = useState(presetItem.paymentMethod);
-  const [couponCode, setCouponCode] = useState('FIRSTINFO20');
-  const [notes, setNotes] = useState(presetItem.description);
-  const [autoRenew, setAutoRenew] = useState(presetItem.autoRenew);
-  const [smartReminder, setSmartReminder] = useState(true);
-  const projectedYearly = Number(amount || 0) * (cycle === 'Yearly' ? 1 : cycle === 'Bi-Monthly' ? 6 : cycle === 'Weekly' ? 52 : 12);
-  const isFrequencyOpen = chooser === 'frequency';
-  const isServiceOpen = chooser === 'service';
 
-  const filteredServices = subscriptionServices.filter((item) =>
-    item.service.toLowerCase().includes(search.toLowerCase())
-  );
-  const selectedService = subscriptionServices.find((item) => item.id === selectedId) ?? subscriptionServices[0];
+  return <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.56) }]}>{children}</Text>;
+}
 
-  useEffect(() => {
-    if (cycleParam && subscriptionCycles.includes(cycleParam as (typeof subscriptionCycles)[number])) {
-      setCycle(cycleParam as (typeof subscriptionCycles)[number]);
-    }
-  }, [cycleParam]);
+function IconPreview({
+  item,
+  accent,
+}: {
+  item: SubscriptionItem;
+  accent: string;
+}) {
+  const { colors } = useTheme();
 
   return (
-    <>
-      <FinanceScreen
-        title={preset ? 'Edit Subscription' : 'Add New Subscription'}
-        subtitle={preset ? 'Update billing details, reminders and payment setup.' : 'Create a recurring subscription entry with category and reminder details.'}
-        contentStyle={styles.contentStyle}
-      >
-        <View style={styles.stack}>
-        <FinanceCard style={[styles.heroCard, { backgroundColor: hexToRgba(selectedService.accent, 0.1) }]}> 
-          <View style={styles.heroTop}>
-            <View style={[styles.heroIcon, { backgroundColor: selectedService.accent }]}>
-              <MaterialIcons name={selectedService.icon} size={22} color={colors.card} />
+    <View style={[styles.iconPreview, { backgroundColor: hexToRgba(accent, 0.12) }]}>
+      <MaterialIcons name={item.icon} size={24} color={accent} />
+      <Text style={[styles.iconPreviewText, { color: colors.text }]}>{item.name}</Text>
+    </View>
+  );
+}
+
+export default function SubscriptionAddScreen() {
+  const { colors } = useTheme();
+  const { isSmallPhone, scaleFont } = useResponsive();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ preset?: string }>();
+  const preset = params.preset
+    ? subscriptionItems.find((item) => item.id === params.preset) ?? null
+    : null;
+  const editing = Boolean(preset);
+  const [search, setSearch] = React.useState('');
+  const [selectedId, setSelectedId] = React.useState<string | null>(preset?.id ?? null);
+  const selectedSubscription = selectedId
+    ? subscriptionItems.find((item) => item.id === selectedId) ?? null
+    : null;
+  const accent = selectedSubscription ? toneColor(colors, selectedSubscription.tone) : colors.primaryDark;
+  const [amount, setAmount] = React.useState(preset ? String(preset.amount) : '');
+  const [nextPayment, setNextPayment] = React.useState(
+    preset ? (preset.nextPayment === 'Paused' ? 'Jul 04' : preset.nextPayment) : ''
+  );
+  const [cycle, setCycle] = React.useState(preset?.cycle ?? subscriptionCycles[0]);
+  const [category, setCategory] = React.useState(preset?.category ?? '');
+  const [paymentMethod, setPaymentMethod] = React.useState(preset?.paymentMethod ?? '');
+  const [autoRenew, setAutoRenew] = React.useState(preset?.autoRenew ?? true);
+  const filteredItems = subscriptionItems.filter((item) =>
+    item.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  return (
+    <FinanceScreen
+      title={editing ? 'Edit Plan' : 'Add Plan'}
+      subtitle="Choose the service and billing setup for this recurring plan"
+    >
+      <View style={styles.stack}>
+        <FinanceCard
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: hexToRgba(accent, 0.12),
+              borderColor: hexToRgba(accent, 0.16),
+            },
+          ]}
+        >
+          <View style={[styles.heroHeader, isSmallPhone && styles.heroHeaderCompact]}>
+            <View style={styles.heroCopy}>
+              <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
+                <MaterialIcons name="subscriptions" size={16} color={accent} />
+                <Text style={[styles.heroBadgeText, { color: accent }]}>
+                  {editing ? 'Plan details' : selectedSubscription ? 'Plan selected' : 'Choose a plan'}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.heroTitle,
+                  {
+                    color: colors.text,
+                    fontSize: scaleFont(isSmallPhone ? 24 : 28, 0.7),
+                    lineHeight: isSmallPhone ? 30 : 34,
+                  },
+                ]}
+              >
+                {selectedSubscription ? selectedSubscription.name : 'Choose a subscription'}
+              </Text>
+              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                {editing
+                  ? 'Adjust the billing settings so this plan stays easy to manage.'
+                  : selectedSubscription
+                    ? 'Review the billing details below, then save this plan into your recurring list.'
+                    : 'Pick a service below first, then complete the billing details for that plan.'}
+              </Text>
             </View>
-            <View>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>{selectedService.service}</Text>
-              <Text style={[styles.heroMeta, { color: hexToRgba(colors.text, 0.56) }]}>{category} • {cycle}</Text>
+
+            <View
+              style={[
+                styles.priceChip,
+                isSmallPhone && styles.priceChipCompact,
+                { backgroundColor: colors.card },
+              ]}
+            >
+              <Text style={[styles.priceValue, { color: colors.text }]}>
+                {selectedSubscription ? `$${amount || '0.00'}` : 'Select'}
+              </Text>
+              <Text style={[styles.priceMeta, { color: hexToRgba(colors.text, 0.52) }]}>
+                {selectedSubscription ? `every ${cycle === 'Monthly' ? 'month' : 'year'}` : 'a plan first'}
+              </Text>
             </View>
           </View>
-          <Text style={[styles.heroAmount, { color: colors.text }]}>{formatCurrency(Number(amount || 0))}</Text>
-          <View style={styles.heroMetaRow}>
-            <View style={[styles.heroMetaPill, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroMetaLabel, { color: hexToRgba(colors.text, 0.5) }]}>Yearly projection</Text>
-              <Text style={[styles.heroMetaValue, { color: colors.text }]}>{formatCurrency(projectedYearly)}</Text>
+
+          <ResponsiveGrid
+            minItemWidth={isSmallPhone ? 112 : 118}
+            horizontalPadding={isSmallPhone ? 12 : 34}
+            gap={10}
+            maxColumns={isSmallPhone ? 2 : 3}
+            style={styles.heroMiniGrid}
+          >
+            <View style={[styles.heroMiniCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroMiniValue, { color: colors.text }]}>
+                {selectedSubscription ? nextPayment : 'Choose'}
+              </Text>
+              <Text style={[styles.heroMiniLabel, { color: hexToRgba(colors.text, 0.52) }]}>
+                Next payment
+              </Text>
             </View>
-            <View style={[styles.heroMetaPill, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroMetaLabel, { color: hexToRgba(colors.text, 0.5) }]}>Reminder mode</Text>
-              <Text style={[styles.heroMetaValue, { color: colors.text }]}>{smartReminder ? 'Smart on' : 'Off'}</Text>
+            <View style={[styles.heroMiniCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroMiniValue, { color: colors.text }]}>
+                {category || 'Select'}
+              </Text>
+              <Text style={[styles.heroMiniLabel, { color: hexToRgba(colors.text, 0.52) }]}>
+                Category
+              </Text>
             </View>
-          </View>
+            <View style={[styles.heroMiniCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroMiniValue, { color: selectedSubscription ? accent : colors.primaryDark }]}>
+                {selectedSubscription ? (autoRenew ? 'Auto' : 'Manual') : 'Pending'}
+              </Text>
+              <Text style={[styles.heroMiniLabel, { color: hexToRgba(colors.text, 0.52) }]}>
+                Renewal
+              </Text>
+            </View>
+          </ResponsiveGrid>
         </FinanceCard>
 
         <FinanceCard>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose service</Text>
-            <Pressable onPress={() => router.setParams({ chooser: 'service' })}>
-              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open library</Text>
-            </Pressable>
-          </View>
-          <View style={[styles.searchRow, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}> 
-            <MaterialIcons name="search" size={18} color={hexToRgba(colors.text, 0.5)} />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose service</Text>
+          <Text style={[styles.sectionBody, { color: hexToRgba(colors.text, 0.56) }]}>
+            Search and pick the service tile that best matches the subscription you want to track.
+          </Text>
+
+          <View
+            style={[
+              styles.searchWrap,
+              {
+                backgroundColor: colors.backgroundSoft,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <MaterialIcons name="search" size={18} color={hexToRgba(colors.text, 0.42)} />
             <TextInput
               value={search}
               onChangeText={setSearch}
-              placeholder="Search subscription service"
-              placeholderTextColor={hexToRgba(colors.text, 0.4)}
+              placeholder="Search plan or service"
+              placeholderTextColor={hexToRgba(colors.text, 0.36)}
               style={[styles.searchInput, { color: colors.text }]}
             />
           </View>
 
-          {filteredServices.length === 0 ? (
-            <View style={[styles.emptyPanel, { backgroundColor: hexToRgba(colors.primaryDark, 0.06) }]}> 
-              <MaterialIcons name="search-off" size={30} color={colors.primaryDark} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Search not found</Text>
-              <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}>Try a different keyword or keep the current service selection.</Text>
-            </View>
-          ) : (
-            <View style={styles.serviceGrid}>
-              {filteredServices.map((item) => {
-                const active = item.id === selectedId;
+          <ResponsiveGrid
+            minItemWidth={isSmallPhone ? 240 : 146}
+            horizontalPadding={isSmallPhone ? 18 : 36}
+            gap={10}
+            maxColumns={isSmallPhone ? 1 : 2}
+            style={styles.serviceGrid}
+          >
+            {filteredItems.length ? (
+              filteredItems.map((item) => {
+                const itemAccent = toneColor(colors, item.tone);
+                const selected = item.id === selectedId;
+
                 return (
                   <Pressable
                     key={item.id}
-                    style={[styles.serviceCard, { backgroundColor: active ? hexToRgba(item.accent, 0.1) : colors.card, borderColor: active ? item.accent : colors.border }]}
+                    style={[
+                      styles.serviceCard,
+                      {
+                        backgroundColor: selected ? hexToRgba(itemAccent, 0.12) : colors.backgroundSoft,
+                        borderColor: selected ? itemAccent : colors.border,
+                      },
+                    ]}
                     onPress={() => {
                       setSelectedId(item.id);
                       setAmount(String(item.amount));
+                      setNextPayment(item.nextPayment === 'Paused' ? 'Jul 04' : item.nextPayment);
+                      setCycle(item.cycle);
+                      setCategory(item.category);
+                      setPaymentMethod(item.paymentMethod);
+                      setAutoRenew(item.autoRenew);
                     }}
                   >
-                    <View style={[styles.serviceBadge, { backgroundColor: hexToRgba(item.accent, 0.14) }]}>
-                      <MaterialIcons name={item.icon} size={18} color={item.accent} />
-                    </View>
-                    <Text style={[styles.serviceName, { color: colors.text }]}>{item.shortLabel}</Text>
+                    <IconPreview item={item} accent={itemAccent} />
+                    <Text style={[styles.servicePlan, { color: hexToRgba(colors.text, 0.56) }]}>
+                      {item.plan}
+                    </Text>
                   </Pressable>
                 );
-              })}
-            </View>
-          )}
+              })
+            ) : (
+              <View
+                style={[
+                  styles.serviceEmptyCard,
+                  {
+                    backgroundColor: colors.backgroundSoft,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.serviceEmptyIcon,
+                    { backgroundColor: hexToRgba(colors.warning, 0.14) },
+                  ]}
+                >
+                  <MaterialIcons name="search-off" size={24} color={colors.warning} />
+                </View>
+                <Text style={[styles.serviceEmptyTitle, { color: colors.text }]}>
+                  No matching service found
+                </Text>
+                <Text style={[styles.serviceEmptyBody, { color: hexToRgba(colors.text, 0.56) }]}>
+                  Try another keyword or clear the search to browse the sample plans available in this demo.
+                </Text>
+                <ThemeButton
+                  title="Clear Search"
+                  onPress={() => setSearch('')}
+                  colorBackground={colors.primaryDark}
+                  colorText={colors.card}
+                  style={styles.serviceEmptyButton}
+                />
+              </View>
+            )}
+          </ResponsiveGrid>
         </FinanceCard>
 
         <FinanceCard>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Billing details</Text>
-          <View style={styles.formStack}>
-            <View style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.52) }]}>Amount</Text>
-              <TextInput value={amount} onChangeText={setAmount} keyboardType="numeric" style={[styles.fieldInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft }]} />
-            </View>
-            <View style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.52) }]}>Next payment due</Text>
-              <TextInput value={nextPayment} onChangeText={setNextPayment} style={[styles.fieldInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft }]} />
-            </View>
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Subscription setup</Text>
 
-          <Text style={[styles.subLabel, { color: hexToRgba(colors.text, 0.52) }]}>Billing cycle</Text>
-          <Pressable
-            style={[styles.selectorRow, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
-            onPress={() => router.setParams({ chooser: 'frequency' })}
+          <ResponsiveGrid
+            minItemWidth={isSmallPhone ? 240 : 150}
+            horizontalPadding={isSmallPhone ? 18 : 36}
+            gap={12}
+            maxColumns={isSmallPhone ? 1 : 2}
+            style={styles.formGrid}
           >
-            <View>
-              <Text style={[styles.selectorLabel, { color: hexToRgba(colors.text, 0.52) }]}>Chosen frequency</Text>
-              <Text style={[styles.selectorValue, { color: colors.text }]}>{cycle}</Text>
-            </View>
-            <MaterialIcons name="keyboard-arrow-down" size={22} color={colors.text} />
-          </Pressable>
-
-          <Text style={[styles.subLabel, { color: hexToRgba(colors.text, 0.52) }]}>Category</Text>
-          <View style={styles.optionWrap}>
-            {subscriptionCategories.map((item) => (
-              <Pressable key={item} style={[styles.optionChip, { backgroundColor: category === item ? hexToRgba(colors.primaryDark, 0.1) : colors.card, borderColor: category === item ? colors.primaryDark : colors.border }]} onPress={() => setCategory(item)}>
-                <Text style={[styles.optionChipText, { color: category === item ? colors.primaryDark : colors.text }]}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={[styles.subLabel, { color: hexToRgba(colors.text, 0.52) }]}>Payment method</Text>
-          <View style={styles.paymentStack}>
-            {subscriptionPaymentMethods.map((item) => (
-              <Pressable key={item} style={[styles.paymentRow, { backgroundColor: paymentMethod === item ? hexToRgba(colors.primaryDark, 0.08) : colors.backgroundSoft, borderColor: paymentMethod === item ? colors.primaryDark : colors.border }]} onPress={() => setPaymentMethod(item)}>
-                <Text style={[styles.paymentText, { color: colors.text }]}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <View style={styles.formStack}>
             <View style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.52) }]}>Coupon code</Text>
-              <TextInput value={couponCode} onChangeText={setCouponCode} style={[styles.fieldInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft }]} />
+              <FieldLabel>Amount</FieldLabel>
+              <View
+                style={[
+                  styles.inputShell,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.prefix, { color: hexToRgba(colors.text, 0.56) }]}>$</Text>
+                <TextInput
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="numeric"
+                  placeholder="0.00"
+                  placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                  style={[styles.inlineInput, { color: colors.text }]}
+                />
+              </View>
             </View>
+
             <View style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.52) }]}>Description</Text>
-              <TextInput value={notes} onChangeText={setNotes} multiline style={[styles.fieldInput, styles.textArea, { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft }]} />
-            </View>
-          </View>
-
-          <View style={styles.toggleStack}>
-            <View style={styles.toggleRow}>
-              <View>
-                <Text style={[styles.toggleTitle, { color: colors.text }]}>Auto renew</Text>
-                <Text style={[styles.toggleBody, { color: hexToRgba(colors.text, 0.56) }]}>Keep the plan active until manually cancelled.</Text>
+              <FieldLabel>Next payment due</FieldLabel>
+              <View
+                style={[
+                  styles.inputShell,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+              >
+                <MaterialIcons name="calendar-month" size={18} color={hexToRgba(colors.text, 0.48)} />
+                <TextInput
+                  value={nextPayment}
+                  onChangeText={setNextPayment}
+                  placeholder="Jun 28"
+                  placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                  style={[styles.inlineInput, { color: colors.text }]}
+                />
               </View>
-              <Switch value={autoRenew} onValueChange={setAutoRenew} trackColor={{ true: colors.primaryDark, false: colors.border }} />
             </View>
-            <View style={styles.toggleRow}>
-              <View>
-                <Text style={[styles.toggleTitle, { color: colors.text }]}>Smart reminder</Text>
-                <Text style={[styles.toggleBody, { color: hexToRgba(colors.text, 0.56) }]}>Remind before payment and failed renewal events.</Text>
-              </View>
-              <Switch value={smartReminder} onValueChange={setSmartReminder} trackColor={{ true: colors.primaryDark, false: colors.border }} />
-            </View>
-          </View>
-        </FinanceCard>
+          </ResponsiveGrid>
 
-        <FinanceCard style={[styles.previewCard, { backgroundColor: hexToRgba(selectedService.accent, 0.08) }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preview</Text>
-          <Text style={[styles.previewTitle, { color: colors.text }]}>{selectedService.service}</Text>
-          <Text style={[styles.previewBody, { color: hexToRgba(colors.text, 0.56) }]}>{formatCurrency(Number(amount || 0))} • {cycle} • {paymentMethod}</Text>
-          <View style={styles.previewFooter}>
-            <View style={[styles.previewStat, { backgroundColor: colors.card }]}>
-              <Text style={[styles.previewStatLabel, { color: hexToRgba(colors.text, 0.5) }]}>Coupon</Text>
-              <Text style={[styles.previewStatValue, { color: colors.text }]}>{couponCode || 'None'}</Text>
-            </View>
-            <View style={[styles.previewStat, { backgroundColor: colors.card }]}>
-              <Text style={[styles.previewStatLabel, { color: hexToRgba(colors.text, 0.5) }]}>Renewal</Text>
-              <Text style={[styles.previewStatValue, { color: colors.text }]}>{autoRenew ? 'Auto' : 'Manual'}</Text>
-            </View>
-          </View>
-        </FinanceCard>
-
-        <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.push({ pathname: '/(finance)/subscription-result', params: { mode: preset ? 'updated' : 'added', id: selectedId } })}>
-          <Text style={[styles.primaryButtonText, { color: colors.card }]}>{preset ? 'Save subscription' : 'Create subscription'}</Text>
-        </Pressable>
-        </View>
-      </FinanceScreen>
-
-      <Modal visible={isFrequencyOpen} transparent animationType="fade" onRequestClose={() => router.setParams({ chooser: undefined })}>
-        <View style={[styles.modalBackdrop, { backgroundColor: hexToRgba(colors.text, 0.72) }]}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Choose Frequency</Text>
-                <Text style={[styles.modalBody, { color: hexToRgba(colors.text, 0.56) }]}>Select how often this subscription renews.</Text>
-              </View>
-              <Pressable style={[styles.modalClose, { backgroundColor: colors.backgroundSoft }]} onPress={() => router.setParams({ chooser: undefined })}>
-                <MaterialIcons name="close" size={18} color={colors.text} />
-              </Pressable>
-            </View>
-
-            <View style={styles.modalOptionStack}>
+          <View style={styles.fieldBlock}>
+            <FieldLabel>Billing cycle</FieldLabel>
+            <View style={styles.optionRow}>
               {subscriptionCycles.map((item) => {
-                const active = cycle === item;
+                const selected = item === cycle;
                 return (
                   <Pressable
                     key={item}
-                    style={[styles.modalOptionRow, { backgroundColor: active ? hexToRgba(colors.primaryDark, 0.08) : colors.backgroundSoft, borderColor: active ? colors.primaryDark : colors.border }]}
-                    onPress={() => {
-                      setCycle(item);
-                      router.setParams({ chooser: undefined, cycle: item });
-                    }}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? accent : colors.backgroundSoft,
+                        borderColor: selected ? accent : colors.border,
+                      },
+                    ]}
+                    onPress={() => setCycle(item)}
                   >
-                    <View>
-                      <Text style={[styles.modalOptionTitle, { color: colors.text }]}>{item}</Text>
-                      <Text style={[styles.modalOptionMeta, { color: hexToRgba(colors.text, 0.52) }]}>
-                        {item === 'Weekly'
-                          ? 'Charge every week'
-                          : item === 'Monthly'
-                            ? 'Charge every month'
-                            : item === 'Bi-Monthly'
-                              ? 'Charge every two months'
-                              : 'Charge once per year'}
-                      </Text>
-                    </View>
-                    {active ? <MaterialIcons name="check-circle" size={20} color={colors.primaryDark} /> : null}
+                    <Text style={[styles.optionText, { color: selected ? colors.card : colors.text }]}>
+                      {item}
+                    </Text>
                   </Pressable>
                 );
               })}
             </View>
           </View>
-        </View>
-      </Modal>
 
-      <Modal visible={isServiceOpen} transparent animationType="slide" onRequestClose={() => router.setParams({ chooser: undefined })}>
-        <View style={[styles.modalBackdrop, { backgroundColor: hexToRgba(colors.text, 0.72) }]}>
-          <View style={[styles.librarySheet, { backgroundColor: colors.card }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Add New Subscription</Text>
-                <Text style={[styles.modalBody, { color: hexToRgba(colors.text, 0.56) }]}>Search and pick a recurring service from your workspace library.</Text>
-              </View>
-              <Pressable style={[styles.modalClose, { backgroundColor: colors.backgroundSoft }]} onPress={() => router.setParams({ chooser: undefined })}>
-                <MaterialIcons name="close" size={18} color={colors.text} />
-              </Pressable>
+          <View style={styles.fieldBlock}>
+            <FieldLabel>Category</FieldLabel>
+            <View style={styles.optionRow}>
+              {subscriptionCategories.map((item) => {
+                const selected = item === category;
+                return (
+                  <Pressable
+                    key={item}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? hexToRgba(accent, 0.12) : colors.backgroundSoft,
+                        borderColor: selected ? accent : colors.border,
+                      },
+                    ]}
+                    onPress={() => setCategory(item)}
+                  >
+                    <Text style={[styles.optionText, { color: selected ? accent : colors.text }]}>
+                      {item}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
+          </View>
 
-            <View style={[styles.searchRow, { backgroundColor: colors.backgroundSoft, borderColor: colors.border, marginTop: 0 }]}> 
-              <MaterialIcons name="search" size={18} color={hexToRgba(colors.text, 0.5)} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search subscription service"
-                placeholderTextColor={hexToRgba(colors.text, 0.4)}
-                style={[styles.searchInput, { color: colors.text }]}
+          <View style={styles.fieldBlock}>
+            <FieldLabel>Payment method</FieldLabel>
+            <View style={styles.optionRow}>
+              {subscriptionPaymentMethods.map((item) => {
+                const selected = item === paymentMethod;
+                return (
+                  <Pressable
+                    key={item}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? hexToRgba(colors.primaryDark, 0.12) : colors.backgroundSoft,
+                        borderColor: selected ? colors.primaryDark : colors.border,
+                      },
+                    ]}
+                    onPress={() => setPaymentMethod(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        { color: selected ? colors.primaryDark : colors.text },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.fieldBlock}>
+            <FieldLabel>Renewal settings</FieldLabel>
+            <View style={styles.switchStack}>
+              <View style={styles.switchRow}>
+                <View
+                  style={styles.switchCopy}
+                >
+                  <Text style={[styles.switchTitle, { color: colors.text }]}>Auto renew</Text>
+                  <Text style={[styles.switchBody, { color: hexToRgba(colors.text, 0.56) }]}>
+                    Continue the subscription every cycle until you pause or cancel it.
+                  </Text>
+                </View>
+                <Pressable
+                  style={[
+                    styles.switchTrack,
+                    {
+                      backgroundColor: autoRenew ? accent : hexToRgba(colors.text, 0.16),
+                    },
+                  ]}
+                  onPress={() => setAutoRenew((value) => !value)}
+                >
+                  <View
+                    style={[
+                      styles.switchThumb,
+                      {
+                        backgroundColor: colors.card,
+                        transform: [{ translateX: autoRenew ? 16 : 0 }],
+                      },
+                    ]}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </FinanceCard>
+
+        <FinanceCard
+          style={[
+            styles.summaryCard,
+            {
+              backgroundColor: hexToRgba(accent, 0.08),
+              borderColor: hexToRgba(accent, 0.12),
+            },
+          ]}
+        >
+          <Text style={[styles.summaryTitle, { color: colors.text }]}>Subscription Preview</Text>
+          <Text style={[styles.summaryBody, { color: hexToRgba(colors.text, 0.72) }]}>
+            {selectedSubscription
+              ? 'A compact preview of the plan you are about to save.'
+              : 'Select a plan above, then complete the core billing fields before saving.'}
+          </Text>
+
+          {selectedSubscription ? (
+            <View
+              style={[
+                styles.previewCard,
+                { backgroundColor: colors.card, borderColor: hexToRgba(accent, 0.14) },
+              ]}
+            >
+              <View style={styles.previewHeader}>
+                <View style={[styles.previewIconWrap, { backgroundColor: hexToRgba(accent, 0.12) }]}>
+                  <MaterialIcons name={selectedSubscription.icon} size={22} color={accent} />
+                </View>
+                <View style={styles.previewCopy}>
+                  <Text style={[styles.previewTitle, { color: colors.text }]}>
+                    {selectedSubscription.name}
+                  </Text>
+                  <Text style={[styles.previewMeta, { color: hexToRgba(colors.text, 0.56) }]}>
+                    {selectedSubscription.plan} • {category || 'Choose category'}
+                  </Text>
+                </View>
+                <View style={[styles.previewAmountPill, { backgroundColor: hexToRgba(accent, 0.1) }]}>
+                  <Text style={[styles.previewAmountValue, { color: accent }]}>{`$${amount || '0.00'}`}</Text>
+                </View>
+              </View>
+
+              <View style={styles.previewPillRow}>
+                <View style={[styles.previewPill, { backgroundColor: colors.backgroundSoft }]}>
+                  <MaterialIcons name="event-repeat" size={14} color={accent} />
+                  <Text style={[styles.previewPillText, { color: colors.text }]}>{cycle}</Text>
+                </View>
+                <View style={[styles.previewPill, { backgroundColor: colors.backgroundSoft }]}>
+                  <MaterialIcons name="calendar-month" size={14} color={colors.primaryDark} />
+                  <Text style={[styles.previewPillText, { color: colors.text }]}>
+                    {nextPayment || 'Pick due date'}
+                  </Text>
+                </View>
+                <View style={[styles.previewPill, { backgroundColor: colors.backgroundSoft }]}>
+                  <MaterialIcons name="credit-card" size={14} color={colors.primaryDark} />
+                  <Text style={[styles.previewPillText, { color: colors.text }]}>
+                    {paymentMethod || 'Choose payment'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.previewNotice, { backgroundColor: hexToRgba(colors.success, 0.08) }]}>
+                <MaterialIcons name="check-circle" size={16} color={colors.success} />
+                <Text style={[styles.previewNoticeText, { color: hexToRgba(colors.text, 0.7) }]}>
+                  {autoRenew
+                    ? 'Auto renew is enabled for this subscription.'
+                    : 'Manual renewal is enabled for this subscription.'}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.summaryActions}>
+            <View style={styles.summaryButtonWrap}>
+              <ThemeButton
+                title={editing ? 'Save Changes' : 'Save Plan'}
+                onPress={() => {
+                  if (!selectedSubscription) {
+                    return;
+                  }
+
+                  router.replace({
+                    pathname: '/(finance)/subscription-result',
+                    params: {
+                      id: selectedSubscription.id,
+                      mode: editing ? 'updated' : 'added',
+                    },
+                  });
+                }}
+                colorBackground={colors.success}
+                colorText={colors.card}
+                style={styles.summaryButton}
+                textStyle={isSmallPhone ? styles.summaryButtonTextCompact : undefined}
+                disabled={!selectedSubscription}
               />
             </View>
-
-            {filteredServices.length === 0 ? (
-              <View style={[styles.libraryEmptyPanel, { backgroundColor: hexToRgba(colors.primaryDark, 0.06) }]}>
-                <MaterialIcons name="search-off" size={34} color={colors.primaryDark} />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>Oops! Subscription service not found</Text>
-                <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}>Press back or try a broader search term to continue building the subscription entry.</Text>
-              </View>
-            ) : (
-              <View style={styles.libraryList}>
-                {filteredServices.map((item) => {
-                  const active = item.id === selectedId;
-                  return (
-                    <Pressable
-                      key={item.id}
-                      style={[styles.libraryRow, { backgroundColor: active ? hexToRgba(item.accent, 0.08) : colors.backgroundSoft, borderColor: active ? item.accent : colors.border }]}
-                      onPress={() => {
-                        setSelectedId(item.id);
-                        setAmount(String(item.amount));
-                        router.setParams({ chooser: undefined });
-                      }}
-                    >
-                      <View style={[styles.libraryIcon, { backgroundColor: hexToRgba(item.accent, 0.14) }]}>
-                        <MaterialIcons name={item.icon} size={18} color={item.accent} />
-                      </View>
-                      <View style={styles.libraryCopy}>
-                        <Text style={[styles.libraryTitle, { color: colors.text }]}>{item.service}</Text>
-                        <Text style={[styles.libraryMeta, { color: hexToRgba(colors.text, 0.52) }]}>{item.type} • {formatCurrency(item.amount)}</Text>
-                      </View>
-                      {active ? <MaterialIcons name="check-circle" size={20} color={colors.primaryDark} /> : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
+            <View style={styles.summaryButtonWrap}>
+              <ThemeButton
+                title="Cancel"
+                onPress={() => router.back()}
+                colorBackground={colors.card}
+                colorText={colors.text}
+                style={[styles.summaryButton, styles.summaryOutline, { borderColor: colors.border }]}
+                textStyle={isSmallPhone ? styles.summaryButtonTextCompact : undefined}
+              />
+            </View>
           </View>
-        </View>
-      </Modal>
-    </>
+        </FinanceCard>
+      </View>
+    </FinanceScreen>
   );
 }
 
-function createStyles(colors: ColorTheme) {
-  return StyleSheet.create({
-    contentStyle: { paddingBottom: 28 },
-    stack: { marginTop: 18, gap: 16 },
-    heroCard: { borderWidth: 0 },
-    heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    heroIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-    heroTitle: { fontSize: 16, fontWeight: '800' },
-    heroMeta: { marginTop: 4, fontSize: 12, fontWeight: '600' },
-    heroAmount: { marginTop: 18, fontSize: 30, fontWeight: '900' },
-    heroMetaRow: { marginTop: 16, flexDirection: 'row', gap: 10 },
-    heroMetaPill: { flex: 1, borderRadius: 16, padding: 12 },
-    heroMetaLabel: { fontSize: 11, fontWeight: '700' },
-    heroMetaValue: { marginTop: 5, fontSize: 13, fontWeight: '800' },
-    sectionTitle: { fontSize: 15, fontWeight: '800' },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    sectionLink: { fontSize: 12, fontWeight: '800' },
-    searchRow: { marginTop: 16, borderWidth: 1, borderRadius: 18, minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },
-    searchInput: { flex: 1, fontSize: 13, fontWeight: '600' },
-    emptyPanel: { marginTop: 16, borderRadius: 22, padding: 18, alignItems: 'center' },
-    emptyTitle: { marginTop: 10, fontSize: 15, fontWeight: '800' },
-    emptyBody: { marginTop: 6, fontSize: 12, lineHeight: 18, textAlign: 'center', fontWeight: '500' },
-    serviceGrid: { marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    serviceCard: { width: '31%', borderWidth: 1, borderRadius: 18, paddingVertical: 14, alignItems: 'center', gap: 8 },
-    serviceBadge: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    serviceName: { fontSize: 12, fontWeight: '700' },
-    formStack: { marginTop: 16, gap: 12 },
-    fieldBlock: { gap: 0 },
-    fieldLabel: { marginBottom: 8, fontSize: 12, fontWeight: '700' },
-    fieldInput: { minHeight: 46, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, fontSize: 13, fontWeight: '600' },
-    textArea: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
-    subLabel: { marginTop: 18, fontSize: 12, fontWeight: '700' },
-    selectorRow: { marginTop: 10, minHeight: 56, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-    selectorLabel: { fontSize: 11, fontWeight: '700' },
-    selectorValue: { marginTop: 4, fontSize: 13, fontWeight: '800' },
-    optionWrap: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    optionChip: { borderWidth: 1, borderRadius: 16, minHeight: 40, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
-    optionChipText: { fontSize: 12, fontWeight: '700' },
-    paymentStack: { marginTop: 10, gap: 10 },
-    paymentRow: { borderWidth: 1, borderRadius: 16, minHeight: 42, paddingHorizontal: 14, justifyContent: 'center' },
-    paymentText: { fontSize: 12, fontWeight: '700' },
-    toggleStack: { marginTop: 18, gap: 14 },
-    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
-    toggleTitle: { fontSize: 13, fontWeight: '800' },
-    toggleBody: { marginTop: 4, fontSize: 11, lineHeight: 17, fontWeight: '500', maxWidth: 210 },
-    previewCard: { borderWidth: 0 },
-    previewTitle: { marginTop: 14, fontSize: 16, fontWeight: '800' },
-    previewBody: { marginTop: 6, fontSize: 12, fontWeight: '600' },
-    previewFooter: { marginTop: 16, flexDirection: 'row', gap: 10 },
-    previewStat: { flex: 1, borderRadius: 16, padding: 12 },
-    previewStatLabel: { fontSize: 11, fontWeight: '700' },
-    previewStatValue: { marginTop: 4, fontSize: 12, fontWeight: '800' },
-    primaryButton: { minHeight: 50, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    primaryButtonText: { fontSize: 14, fontWeight: '800' },
-    modalBackdrop: { flex: 1, justifyContent: 'flex-end', padding: 18 },
-    modalSheet: { borderRadius: 28, padding: 18, gap: 16 },
-    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-    modalTitle: { fontSize: 18, fontWeight: '900' },
-    modalBody: { marginTop: 6, fontSize: 12, lineHeight: 18, fontWeight: '500' },
-    modalClose: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    modalOptionStack: { gap: 10 },
-    modalOptionRow: { minHeight: 62, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    modalOptionTitle: { fontSize: 14, fontWeight: '800' },
-    modalOptionMeta: { marginTop: 4, fontSize: 11, fontWeight: '600' },
-    librarySheet: { maxHeight: '88%', borderRadius: 28, padding: 18, gap: 16 },
-    libraryList: { gap: 10 },
-    libraryRow: { minHeight: 64, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
-    libraryIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    libraryCopy: { flex: 1 },
-    libraryTitle: { fontSize: 13, fontWeight: '800' },
-    libraryMeta: { marginTop: 4, fontSize: 11, fontWeight: '600' },
-    libraryEmptyPanel: { borderRadius: 22, padding: 24, alignItems: 'center' },
-  });
-}
+const styles = StyleSheet.create({
+  stack: {
+    marginTop: 18,
+    gap: 14,
+  },
+  heroCard: {
+    borderWidth: 1,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 14,
+    flexWrap: 'wrap',
+  },
+  heroHeaderCompact: {
+    flexDirection: 'column',
+  },
+  heroCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  heroBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroBadgeText: {
+    fontSize: Typography.body,
+    fontWeight: '700',
+  },
+  heroTitle: {
+    marginTop: 14,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800',
+  },
+  heroBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  priceChip: {
+    minWidth: 146,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  priceChipCompact: {
+    width: '100%',
+    minWidth: 0,
+  },
+  priceValue: {
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  priceMeta: {
+    marginTop: 4,
+    fontSize: Typography.body,
+    lineHeight: 18,
+  },
+  heroMiniCard: {
+    width: '100%',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  heroMiniGrid: {
+    marginTop: 16,
+  },
+  heroMiniValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  heroMiniLabel: {
+    marginTop: 4,
+    fontSize: Typography.body,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  sectionBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  searchWrap: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: Typography.body,
+    paddingVertical: 12,
+  },
+  serviceGrid: {
+    marginTop: 16,
+  },
+  serviceEmptyCard: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  serviceEmptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceEmptyTitle: {
+    marginTop: 14,
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  serviceEmptyBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  serviceEmptyButton: {
+    width: '100%',
+    marginTop: 18,
+  },
+  serviceCard: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 14,
+    gap: 8,
+  },
+  iconPreview: {
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconPreviewText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: Typography.body,
+    fontWeight: '700',
+  },
+  servicePlan: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  formGrid: {
+    marginTop: 16,
+  },
+  fieldBlock: {
+    marginTop: 16,
+  },
+  fieldLabel: {
+    marginBottom: 10,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  inputShell: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  prefix: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  inlineInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: Typography.body,
+    paddingVertical: 12,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  optionChip: {
+    minHeight: 40,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    justifyContent: 'center',
+  },
+  optionText: {
+    fontSize: Typography.body,
+    fontWeight: '700',
+  },
+  textAreaShell: {
+    minHeight: 116,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  textArea: {
+    minHeight: 88,
+    fontSize: Typography.body,
+    lineHeight: 20,
+    textAlignVertical: 'top',
+  },
+  switchStack: {
+    marginTop: 20,
+  },
+  switchRow: {
+    minHeight: 72,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  switchCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  switchTitle: {
+    fontSize: Typography.body,
+    fontWeight: '800',
+  },
+  switchBody: {
+    marginTop: 4,
+    fontSize: Typography.body,
+    lineHeight: 19,
+  },
+  switchTrack: {
+    width: 44,
+    height: 28,
+    borderRadius: 999,
+    padding: 3,
+    justifyContent: 'center',
+  },
+  switchThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+  },
+  summaryCard: {
+    borderWidth: 1,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  summaryBody: {
+    marginTop: 10,
+    fontSize: Typography.body,
+    lineHeight: 21,
+  },
+  previewCard: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 16,
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  previewIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  previewMeta: {
+    marginTop: 4,
+    fontSize: Typography.body,
+  },
+  previewAmountPill: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  previewAmountValue: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  previewPillRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  previewPill: {
+    minHeight: 38,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  previewNotice: {
+    marginTop: 14,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  previewNoticeText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: Typography.body,
+    lineHeight: 19,
+  },
+  summaryActions: {
+    marginTop: 18,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  summaryButtonWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  summaryButton: {
+    width: '100%',
+  },
+  summaryOutline: {
+    borderWidth: 1,
+  },
+  summaryButtonTextCompact: {
+    fontSize: 13,
+  },
+});

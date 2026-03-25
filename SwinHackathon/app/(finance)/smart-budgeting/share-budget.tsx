@@ -6,8 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { goSmartBudgetBack } from './_navigation';
-import { memberInvites } from './_data';
+import { memberInvites } from '@/components/smart-budgeting/data';
 
 export default function ShareBudgetScreen() {
   const { colors } = useTheme();
@@ -19,7 +18,6 @@ export default function ShareBudgetScreen() {
       title="Budget Together Easily"
       subtitle="QR share, add members and review invite status like the collaboration screens in the kit."
       contentStyle={styles.contentStyle}
-      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -63,7 +61,7 @@ export default function ShareBudgetScreen() {
             </Pressable>
             <Pressable
               style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push('/(finance)/smart-budgeting/invite-members')}
+              onPress={() => router.push('/(finance)/smart-budgeting/add-member')}
             >
               <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Invite Members</Text>
             </Pressable>
@@ -90,9 +88,7 @@ export default function ShareBudgetScreen() {
                     </Text>
                   </View>
                 </View>
-                <Pressable onPress={() => router.push('/(finance)/smart-budgeting/invite-members')}>
-                  <MaterialIcons name="chevron-right" size={20} color={hexToRgba(colors.text, 0.34)} />
-                </Pressable>
+                <MaterialIcons name="chevron-right" size={20} color={hexToRgba(colors.text, 0.34)} />
               </View>
             ))}
           </View>

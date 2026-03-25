@@ -1,58 +1,233 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { CommunityCard } from '@/components/community/ui';
-import { articleFeed, workshopFeed } from '@/components/news-resources/content-data';
-import { SupportBubble } from '@/components/news/SupportBubble';
+import {
+  communityAuthors,
+  communityFeedTags,
+  communityIntroPoints,
+  communityPosts,
+  communityRules,
+  type CommunityPost,
+} from '@/components/community/mock-data';
+import {
+  CommunityAvatar,
+  CommunityCard,
+  CommunityLandingIllustration,
+  CommunityPostCard,
+  CommunityPrimaryButton,
+  CommunityRulesIllustration,
+  CommunityTagChip,
+} from '@/components/community/ui';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function NewsResourcesHubScreen() {
+const feedTabs = ['Feed', 'My Posts'] as const;
+
+function getFirstParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default function FinanceCommunityScreen() {
   const { colors } = useTheme();
+  const {
+    hasSeenCommunityIntro,
+    isIntroPreferencesReady,
+    markCommunityIntroSeen,
+  } = useIntroPreferences();
   const { scale, verticalScale, scaleFont, isCompact } = useResponsive();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const params = useLocalSearchParams<{ stage?: string | string[]; tab?: string | string[] }>();
+  const stage = getFirstParam(params.stage) ?? (hasSeenCommunityIntro ? 'feed' : 'landing');
+  const tabParam = getFirstParam(params.tab);
+  const [activeTab, setActiveTab] = useState<(typeof feedTabs)[number]>(
+    tabParam === 'my-posts' ? 'My Posts' : 'Feed'
+  );
+  const [selectedTag, setSelectedTag] = useState('trending');
 
-  const featuredArticle = articleFeed[0];
-  const featuredWorkshop = workshopFeed[0];
+  useEffect(() => {
+    setActiveTab(tabParam === 'my-posts' ? 'My Posts' : 'Feed');
+  }, [tabParam]);
 
-  return (
-    <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']}>
-      <View style={styles.root}>
+  const visiblePosts = useMemo(() => {
+    const tabPosts =
+      activeTab === 'My Posts' ? communityPosts.filter((post) => post.isMine) : communityPosts;
+
+    if (selectedTag === 'trending') {
+      return tabPosts;
+    }
+
+    return tabPosts.filter((post) =>
+      [post.category.toLowerCase(), ...post.tags.map((tag) => tag.replace('#', ''))].some((entry) =>
+        entry.includes(selectedTag)
+      )
+    );
+  }, [activeTab, selectedTag]);
+
+  const setStage = (nextStage: 'landing' | 'rules' | 'feed', nextTab?: 'feed' | 'my-posts') => {
+    const paramsObject =
+      nextStage === 'feed' && nextTab
+          ? { stage: nextStage, tab: nextTab }
+          : { stage: nextStage };
+
+    router.replace({
+      pathname: '/(tabs)/news-resources',
+      params: paramsObject,
+    });
+  };
+
+  const openComments = (post: CommunityPost) => {
+    router.push({
+      pathname: '/news-resources-article-detail',
+      params: { postId: post.id },
+    });
+  };
+
+  if (!isIntroPreferencesReady) {
+    return <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']} />;
+  }
+
+  if (stage === 'rules') {
+    return (
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.card }]} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingHorizontal: scale(20, 0.8),
+              paddingTop: verticalScale(10, 0.76),
+              paddingBottom: verticalScale(132, 0.76),
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.rulesHeaderRow}>
+            <View style={styles.rulesHeaderSpacer} />
+            <Text style={[styles.rulesHeaderTitle, { color: colors.text, fontSize: scaleFont(20, 0.76) }]}>
+              Before you post...
+            </Text>
+            <Pressable
+              onPress={() => setStage('landing')}
+              style={[
+                styles.iconButton,
+                {
+                  width: scale(42, 0.76),
+                  height: scale(42, 0.76),
+                  borderRadius: scale(21, 0.72),
+                  backgroundColor: colors.backgroundSoft,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <MaterialIcons name="close" size={scale(18, 0.72)} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <CommunityRulesIllustration />
+
+          <Text style={[styles.title, { color: colors.text, fontSize: scaleFont(29, 0.76) }]}>
+            Before you post...
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: hexToRgba(colors.text, 0.58),
+                fontSize: scaleFont(Typography.body, 0.76),
+              },
+            ]}
+          >
+            Please read our terms and conditions and remember the community rules before posting.
+          </Text>
+
+          <View style={styles.ruleStack}>
+            {communityRules.map((rule) => {
+              const tone = rule.status === 'warn' ? colors.warning : colors.error;
+
+              return (
+                <View key={rule.id} style={[styles.ruleRow, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.ruleLabel, { color: colors.text, fontSize: scaleFont(15, 0.76) }]}>
+                    {rule.title}
+                  </Text>
+                  <View
+                    style={[
+                      styles.ruleDot,
+                      { backgroundColor: hexToRgba(tone, 0.12), borderColor: hexToRgba(tone, 0.2) },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={rule.status === 'warn' ? 'priority-high' : 'close'}
+                      size={scale(14, 0.72)}
+                      color={tone}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          <CommunityPrimaryButton
+            title="Understood, let's post"
+            onPress={() => setStage('feed')}
+          />
+
+          <View style={styles.legalRow}>
+            {['Terms & Condition', 'Privacy Policy'].map((item) => (
+              <Text
+                key={item}
+                style={[
+                  styles.legalText,
+                  { color: colors.primaryDark, fontSize: scaleFont(12, 0.76) },
+                ]}
+              >
+                {item}
+              </Text>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (stage === 'feed') {
+    return (
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']}>
         <ScrollView
           contentContainerStyle={[
             styles.content,
             {
               paddingHorizontal: scale(18, 0.8),
-              paddingTop: verticalScale(14, 0.76),
-              paddingBottom: Math.max(insets.bottom + verticalScale(130, 0.76), verticalScale(146, 0.76)),
+              paddingTop: verticalScale(12, 0.76),
+              paddingBottom: verticalScale(156, 0.76),
             },
           ]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.headerRow}>
-            <View style={styles.headerText}>
-              <Text style={[styles.eyebrow, { color: colors.primaryDark, fontSize: scaleFont(12, 0.76) }]}>DISCOVER</Text>
-              <Text style={[styles.pageTitle, { color: colors.text, fontSize: scaleFont(28, 0.76) }]}>News & Resources</Text>
+          <View style={[styles.headerRow, isCompact && styles.headerRowCompact]}>
+            <CommunityAvatar author={communityAuthors.melissa} size={scale(36, 0.76)} />
+            <View style={styles.headerBody}>
+              <Text style={[styles.feedTitle, { color: colors.text, fontSize: scaleFont(24, 0.76) }]}>
+                Community
+              </Text>
               <Text
                 style={[
-                  styles.pageSubtitle,
-                  { color: hexToRgba(colors.text, 0.56), fontSize: scaleFont(Typography.body, 0.76) },
+                  styles.feedSubtitle,
+                  { color: hexToRgba(colors.text, 0.56), fontSize: scaleFont(12, 0.76) },
                 ]}
               >
-                Read faster, join workshops and keep community support one tap away.
+                Explore finance-related posts from people.
               </Text>
             </View>
-
             <Pressable
-              onPress={() => router.push('/community-notifications')}
+              onPress={() => router.push('/news-resources-workshop-detail')}
               style={[
-                styles.headerButton,
+                styles.iconButton,
                 {
                   width: scale(42, 0.76),
                   height: scale(42, 0.76),
@@ -66,94 +241,264 @@ export default function NewsResourcesHubScreen() {
             </Pressable>
           </View>
 
-          <CommunityCard style={[styles.featuredCard, { backgroundColor: colors.primaryLight }]}>
-            <Text style={[styles.featuredEyebrow, { color: colors.primaryDark }]}>Featured article</Text>
-            <Text style={[styles.featuredTitle, { color: colors.text }]}>{featuredArticle.title}</Text>
-            <Text style={[styles.featuredBody, { color: hexToRgba(colors.text, 0.58) }]}>{featuredArticle.excerpt}</Text>
+          <CommunityCard style={styles.tabCard}>
+            <View
+              style={[
+                styles.tabBar,
+                {
+                  backgroundColor: colors.backgroundSoft,
+                  borderColor: hexToRgba(colors.primaryDark, 0.08),
+                },
+              ]}
+            >
+              {feedTabs.map((tab) => {
+                const active = activeTab === tab;
 
-            <View style={[styles.metaRow, isCompact && styles.metaRowCompact]}>
-              {[featuredArticle.category, featuredArticle.author, featuredArticle.minutes].map((item) => (
-                <View key={item} style={[styles.metaChip, { backgroundColor: colors.card }]}>
-                  <Text style={[styles.metaChipText, { color: colors.text }]}>{item}</Text>
-                </View>
+                return (
+                  <Pressable
+                    key={tab}
+                    onPress={() => {
+                      setActiveTab(tab);
+                      router.setParams?.({ tab: tab === 'My Posts' ? 'my-posts' : 'feed', stage: 'feed' } as never);
+                    }}
+                    style={[
+                      styles.tabButton,
+                      {
+                        backgroundColor: active ? colors.card : 'transparent',
+                        borderColor: active ? hexToRgba(colors.primaryDark, 0.12) : 'transparent',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tabLabel,
+                        {
+                          color: active ? colors.primaryDark : hexToRgba(colors.text, 0.5),
+                          fontSize: scaleFont(13, 0.76),
+                        },
+                      ]}
+                    >
+                      {tab}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={[styles.feedMetaRow, isCompact && styles.feedMetaRowCompact]}>
+              <Text
+                style={[
+                  styles.feedMetaText,
+                  isCompact && styles.feedMetaTextCompact,
+                  { color: hexToRgba(colors.text, 0.46), fontSize: scaleFont(11, 0.76) },
+                ]}
+              >
+                18 trending posts
+              </Text>
+              <Pressable
+                onPress={() => router.push('/community-filter-posts')}
+                style={[
+                  styles.filterButton,
+                  isCompact && styles.filterButtonCompact,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+              >
+                <MaterialIcons name="tune" size={scale(16, 0.72)} color={colors.primaryDark} />
+                <Text
+                  style={[
+                    styles.filterText,
+                    { color: colors.primaryDark, fontSize: scaleFont(12, 0.76) },
+                  ]}
+                >
+                  Filter
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tagScroll}
+            >
+              {communityFeedTags.map((tag) => (
+                <CommunityTagChip
+                  key={tag.id}
+                  label={tag.label}
+                  active={selectedTag === tag.id}
+                  onPress={() => setSelectedTag(tag.id)}
+                />
               ))}
-            </View>
+            </ScrollView>
+          </CommunityCard>
 
-            <Pressable
-              style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-              onPress={() =>
-                router.push({ pathname: '/news-resources-article-detail', params: { articleId: featuredArticle.id } })
+          {visiblePosts.map((post) => (
+            <CommunityPostCard
+              key={post.id}
+              post={post}
+              onPressAuthor={(author) =>
+                router.push({
+                  pathname: '/news-resources-instructor',
+                  params: { authorId: author.id },
+                })
               }
-            >
-              <Text style={[styles.primaryButtonText, { color: colors.card }]}>Read Featured Story</Text>
-            </Pressable>
-          </CommunityCard>
+              onPressComments={openComments}
+              onPressDelete={(currentPost) =>
+                router.push({
+                  pathname: '/community-delete-post',
+                  params: { postId: currentPost.id },
+                })
+              }
+            />
+          ))}
 
-          <View style={[styles.dualColumn, isCompact && styles.dualColumnCompact]}>
+          {activeTab === 'My Posts' ? (
             <Pressable
-              style={[styles.panelCard, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/news-resources-articles')}
+              style={[
+                styles.loadMore,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: hexToRgba(colors.primaryDark, 0.08),
+                },
+              ]}
             >
-              <View style={[styles.panelIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.12) }]}>
-                <MaterialIcons name="article" size={scale(20, 0.72)} color={colors.primaryDark} />
-              </View>
-              <Text style={[styles.panelTitle, { color: colors.text }]}>Articles</Text>
-              <Text style={[styles.panelBody, { color: hexToRgba(colors.text, 0.54) }]}>Browse quick reads and practical explainers.</Text>
+              <MaterialIcons name="expand-more" size={scale(18, 0.72)} color={colors.primaryDark} />
+              <Text
+                style={[
+                  styles.loadMoreText,
+                  { color: colors.primaryDark, fontSize: scaleFont(12, 0.76) },
+                ]}
+              >
+                Load More
+              </Text>
             </Pressable>
-
-            <Pressable
-              style={[styles.panelCard, { backgroundColor: colors.card }]}
-              onPress={() => router.push('/news-resources-workshops')}
-            >
-              <View style={[styles.panelIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.12) }]}>
-                <MaterialIcons name="ondemand-video" size={scale(20, 0.72)} color={colors.primaryDark} />
-              </View>
-              <Text style={[styles.panelTitle, { color: colors.text }]}>Workshops</Text>
-              <Text style={[styles.panelBody, { color: hexToRgba(colors.text, 0.54) }]}>Join live sessions and hands-on planning rooms.</Text>
-            </Pressable>
-          </View>
-
-          <CommunityCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Upcoming workshop</Text>
-              <Pressable onPress={() => router.push('/news-resources-workshops')}>
-                <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>See all</Text>
-              </Pressable>
-            </View>
-
-            <View style={[styles.workshopRow, { borderColor: colors.border, backgroundColor: colors.backgroundSoft }]}>
-              <View style={styles.workshopText}>
-                <Text style={[styles.workshopTitle, { color: colors.text }]}>{featuredWorkshop.title}</Text>
-                <Text style={[styles.workshopSubtitle, { color: hexToRgba(colors.text, 0.52) }]}>{featuredWorkshop.subtitle}</Text>
-                <Text style={[styles.workshopSchedule, { color: colors.primaryDark }]}>{featuredWorkshop.schedule}</Text>
-              </View>
-              <View style={[styles.workshopBadge, { backgroundColor: colors.card }]}>
-                <Text style={[styles.workshopBadgeText, { color: colors.text }]}>{featuredWorkshop.minutes}</Text>
-              </View>
-            </View>
-          </CommunityCard>
-
-          <CommunityCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Finance Community</Text>
-              <Pressable onPress={() => router.push('/community-home')}>
-                <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open</Text>
-              </Pressable>
-            </View>
-            <Text style={[styles.communityBody, { color: hexToRgba(colors.text, 0.58) }]}>
-              Keep community as a separate layer for discussion, posting and peer support instead of mixing it into editorial entry screens.
-            </Text>
-            <Pressable
-              style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
-              onPress={() => router.push('/community-home')}
-            >
-              <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Go To Community</Text>
-            </Pressable>
-          </CommunityCard>
+          ) : null}
         </ScrollView>
 
-        <SupportBubble />
-      </View>
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.bottomActionWrap,
+            {
+              bottom: Math.max(insets.bottom, verticalScale(8, 0.76)) + verticalScale(96, 0.72),
+              paddingHorizontal: scale(20, 0.8),
+            },
+          ]}
+        >
+          <Pressable
+            style={[
+              styles.addPostFab,
+              {
+                width: scale(56, 0.76),
+                height: scale(56, 0.76),
+                borderRadius: scale(28, 0.72),
+                backgroundColor: colors.primaryDark,
+              },
+            ]}
+            onPress={() => router.push('/news-resources-workshops')}
+          >
+            <MaterialIcons name="add" size={scale(28, 0.76)} color={colors.card} />
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: scale(20, 0.8),
+            paddingTop: verticalScale(16, 0.76),
+            paddingBottom: verticalScale(132, 0.76),
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.heroWrap}>
+          <Text style={[styles.eyebrow, { color: colors.primaryDark, fontSize: scaleFont(13, 0.76) }]}>
+            FINPAL SOCIAL
+          </Text>
+          <Text style={[styles.title, { color: colors.text, fontSize: scaleFont(31, 0.76) }]}>
+            finpal Finance Community
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: hexToRgba(colors.text, 0.62),
+                fontSize: scaleFont(Typography.body, 0.76),
+              },
+            ]}
+          >
+            Let&apos;s join a community where everyone is learning to spend smarter, save consistently
+            and grow together.
+          </Text>
+        </View>
+
+        <CommunityCard style={styles.illustrationCard}>
+          <CommunityLandingIllustration />
+        </CommunityCard>
+
+        <CommunityCard style={styles.infoCard}>
+          {communityIntroPoints.map((point) => (
+            <View key={point} style={styles.pointRow}>
+              <View style={[styles.pointIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.12) }]}>
+                <MaterialIcons name="check" size={scale(16, 0.72)} color={colors.primaryDark} />
+              </View>
+              <Text
+                style={[
+                  styles.pointText,
+                  { color: hexToRgba(colors.text, 0.74), fontSize: scaleFont(Typography.body, 0.76) },
+                ]}
+              >
+                {point}
+              </Text>
+            </View>
+          ))}
+
+          <View style={[styles.statRow, isCompact && styles.statRowCompact]}>
+            {[
+              ['25k+', 'active members'],
+              ['4.9', 'community rating'],
+              ['120+', 'daily stories'],
+            ].map(([value, label]) => (
+              <View
+                key={label}
+                style={[
+                  styles.statCard,
+                  isCompact && styles.statCardCompact,
+                  {
+                    backgroundColor: colors.backgroundSoft,
+                    borderColor: hexToRgba(colors.primaryDark, 0.06),
+                  },
+                ]}
+              >
+                <Text style={[styles.statValue, { color: colors.text, fontSize: scaleFont(18, 0.76) }]}>
+                  {value}
+                </Text>
+                <Text
+                  style={[
+                    styles.statLabel,
+                    { color: hexToRgba(colors.text, 0.48), fontSize: scaleFont(12, 0.76) },
+                  ]}
+                >
+                  {label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </CommunityCard>
+
+          <CommunityPrimaryButton
+            title="Explore Community"
+            onPress={() => {
+              markCommunityIntroSeen();
+              setStage('rules');
+            }}
+          />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -161,189 +506,237 @@ export default function NewsResourcesHubScreen() {
 function createStyles(colors: ColorTheme) {
   return StyleSheet.create({
     root: { flex: 1 },
-    content: { gap: 16 },
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      gap: 14,
+    content: {
+      gap: 16,
     },
-    headerText: {
-      flex: 1,
-      minWidth: 0,
-      gap: 4,
+    heroWrap: {
+      alignItems: 'center',
+      gap: 8,
     },
     eyebrow: {
       fontWeight: '800',
-      letterSpacing: 1,
+      letterSpacing: 1.6,
     },
-    pageTitle: {
+    title: {
       fontWeight: '900',
-      letterSpacing: -0.6,
+      letterSpacing: -0.8,
+      textAlign: 'center',
     },
-    pageSubtitle: {
-      lineHeight: 20,
-      fontWeight: '500',
+    subtitle: {
+      lineHeight: 21,
+      textAlign: 'center',
       maxWidth: 320,
     },
-    headerButton: {
+    illustrationCard: {
+      paddingVertical: 22,
+    },
+    infoCard: {
+      gap: 14,
+    },
+    pointRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+    },
+    pointIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pointText: {
+      flex: 1,
+      lineHeight: 20,
+      fontWeight: '500',
+    },
+    statRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    statRowCompact: {
+      flexWrap: 'wrap',
+    },
+    statCard: {
+      flex: 1,
+      minHeight: 74,
+      borderRadius: 18,
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
     },
-    featuredCard: {
-      borderWidth: 0,
-      gap: 12,
+    statCardCompact: {
+      flexBasis: '48%',
+      minWidth: 0,
+      flexGrow: 1,
     },
-    featuredEyebrow: {
-      fontSize: 12,
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      letterSpacing: 0.7,
-    },
-    featuredTitle: {
-      fontSize: 25,
-      lineHeight: 31,
+    statValue: {
       fontWeight: '900',
-      letterSpacing: -0.5,
     },
-    featuredBody: {
-      fontSize: Typography.body,
-      lineHeight: 20,
-      fontWeight: '500',
+    statLabel: {
+      fontWeight: '600',
+      textAlign: 'center',
     },
-    metaRow: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    metaRowCompact: {
-      flexWrap: 'wrap',
-    },
-    metaChip: {
-      minHeight: 30,
-      paddingHorizontal: 12,
-      borderRadius: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    metaChipText: {
-      fontSize: 12,
-      fontWeight: '700',
-    },
-    primaryButton: {
-      marginTop: 4,
-      minHeight: 48,
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    primaryButtonText: {
-      fontSize: 14,
-      fontWeight: '800',
-    },
-    dualColumn: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    dualColumnCompact: {
-      flexDirection: 'column',
-    },
-    panelCard: {
-      flex: 1,
-      minHeight: 170,
-      borderRadius: 24,
-      padding: 18,
-      gap: 12,
-    },
-    panelIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    panelTitle: {
-      fontSize: 18,
-      fontWeight: '800',
-    },
-    panelBody: {
-      fontSize: 14,
-      lineHeight: 20,
-      fontWeight: '500',
-    },
-    sectionHeader: {
+    rulesHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      marginBottom: 2,
+    },
+    rulesHeaderSpacer: {
+      width: 42,
+    },
+    rulesHeaderTitle: {
+      flex: 1,
+      textAlign: 'center',
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+    iconButton: {
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ruleStack: {
+      gap: 2,
+    },
+    ruleRow: {
+      minHeight: 60,
+      paddingVertical: 14,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
       gap: 12,
     },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: '800',
+    ruleLabel: {
+      fontWeight: '600',
+      flex: 1,
+      minWidth: 0,
     },
-    sectionLink: {
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    workshopRow: {
-      marginTop: 14,
-      minHeight: 110,
-      borderRadius: 20,
+    ruleDot: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       borderWidth: 1,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    legalRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      gap: 18,
+    },
+    legalText: {
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
     },
-    workshopText: {
+    headerRowCompact: {
+      alignItems: 'flex-start',
+    },
+    headerBody: {
       flex: 1,
       minWidth: 0,
-      gap: 4,
     },
-    workshopTitle: {
-      fontSize: 16,
-      fontWeight: '800',
+    feedTitle: {
+      fontWeight: '900',
+      letterSpacing: -0.5,
     },
-    workshopSubtitle: {
-      fontSize: 13,
-      lineHeight: 18,
+    feedSubtitle: {
+      marginTop: 2,
       fontWeight: '500',
     },
-    workshopSchedule: {
-      marginTop: 4,
-      fontSize: 12,
-      fontWeight: '800',
+    tabCard: {
+      gap: 12,
     },
-    workshopBadge: {
-      minWidth: 72,
-      minHeight: 40,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 10,
+    tabBar: {
+      flexDirection: 'row',
+      borderRadius: 18,
+      borderWidth: 1,
+      padding: 4,
     },
-    workshopBadgeText: {
-      fontSize: 12,
-      fontWeight: '800',
-    },
-    communityBody: {
-      marginTop: 12,
-      fontSize: 14,
-      lineHeight: 20,
-      fontWeight: '500',
-    },
-    secondaryButton: {
-      marginTop: 16,
-      minHeight: 46,
-      borderRadius: 20,
+    tabButton: {
+      flex: 1,
+      minHeight: 42,
+      borderRadius: 14,
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    secondaryButtonText: {
-      fontSize: 14,
-      fontWeight: '700',
+    tabLabel: {
+      fontWeight: '800',
+    },
+    feedMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    feedMetaRowCompact: {
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
+    },
+    feedMetaText: {
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    feedMetaTextCompact: {
+      flexBasis: '100%',
+    },
+    filterButton: {
+      minHeight: 34,
+      borderRadius: 17,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    filterButtonCompact: {
+      alignSelf: 'flex-start',
+    },
+    filterText: {
+      fontWeight: '800',
+    },
+    tagScroll: {
+      gap: 8,
+    },
+    loadMore: {
+      alignSelf: 'center',
+      minHeight: 38,
+      borderRadius: 20,
+      borderWidth: 1,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    loadMoreText: {
+      fontWeight: '800',
+    },
+    bottomActionWrap: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      alignItems: 'flex-end',
+    },
+    addPostFab: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.16,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 6,
     },
   });
 }

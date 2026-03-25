@@ -1,124 +1,282 @@
+import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { getSubscriptionById } from '@/components/finance/subscription-data';
-import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
-import { formatCurrency } from '@/components/finance/finance-utils';
-import { ColorTheme } from '@/constants/theme';
+import { subscriptionItems } from '@/components/finance/subscription-data';
+import { Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
-const RESULT_COPY = {
+type SubscriptionResultMode =
+  | 'added'
+  | 'updated'
+  | 'paused'
+  | 'reactivated'
+  | 'cancelled';
+
+const modeConfig: Record<
+  SubscriptionResultMode,
+  {
+    icon: React.ComponentProps<typeof MaterialIcons>['name'];
+    title: string;
+    body: (name: string) => string;
+    accent: 'success' | 'warning' | 'error' | 'primaryDark';
+  }
+> = {
   added: {
-    title: 'Subscription Added.',
-    body: 'The new recurring service is now visible in the workspace and payment sections.',
     icon: 'check-circle',
+    title: 'Subscription Added',
+    body: (name) => `${name} is now tracked in your recurring payments overview.`,
+    accent: 'success',
   },
   updated: {
-    title: 'Subscription Updated.',
-    body: 'The edited plan details have been refreshed in the subscription workspace.',
     icon: 'task-alt',
+    title: 'Subscription Updated',
+    body: (name) => `${name} has been refreshed with the latest billing settings.`,
+    accent: 'primaryDark',
   },
   paused: {
-    title: 'Subscription Paused.',
-    body: 'The plan is paused and will stay visible for later review or reactivation.',
     icon: 'pause-circle',
+    title: 'Subscription Paused',
+    body: (name) => `${name} has been paused and will stop renewing until you reactivate it.`,
+    accent: 'warning',
   },
   reactivated: {
-    title: 'Subscription Activated.',
-    body: 'The plan is active again and upcoming payments will resume in the dashboard.',
     icon: 'play-circle',
+    title: 'Subscription Reactivated',
+    body: (name) => `${name} is active again and upcoming reminders are back on schedule.`,
+    accent: 'success',
   },
   cancelled: {
-    title: 'Subscription Cancelled.',
-    body: 'The cancellation state is stored so the service remains visible in your history.',
     icon: 'cancel',
+    title: 'Subscription Cancelled',
+    body: (name) => `${name} has been marked for cancellation in this demo flow.`,
+    accent: 'error',
   },
-} as const;
+};
 
 export default function SubscriptionResultScreen() {
-  const { mode, id } = useLocalSearchParams<{ mode?: keyof typeof RESULT_COPY; id?: string }>();
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const item = getSubscriptionById(id);
-  const copy = RESULT_COPY[mode ?? 'added'] ?? RESULT_COPY.added;
-  const toneColor =
-    mode === 'cancelled'
-      ? colors.error
-      : mode === 'paused'
-        ? colors.warning
-        : colors.primaryDark;
+  const params = useLocalSearchParams<{ id?: string; mode?: SubscriptionResultMode }>();
+  const subscription =
+    subscriptionItems.find((item) => item.id === params.id) ?? subscriptionItems[0];
+  const mode = params.mode && params.mode in modeConfig ? params.mode : 'added';
+  const config = modeConfig[mode];
+  const accent = colors[config.accent];
+  const highlightLabel =
+    mode === 'added'
+      ? 'Added to recurring bills'
+      : mode === 'cancelled'
+        ? 'Removed from active plans'
+        : mode === 'updated'
+          ? 'Billing settings refreshed'
+          : mode === 'paused'
+            ? 'Renewals are currently paused'
+            : 'Renewals are active again';
 
   return (
-    <FinanceScreen title="Subscription Result" subtitle="Confirmation state after a create, update or lifecycle action." contentStyle={styles.contentStyle}>
-      <View style={styles.stack}>
-        <FinanceCard style={[styles.resultCard, { backgroundColor: hexToRgba(toneColor, 0.06) }]}>
-          <View style={[styles.resultBadge, { backgroundColor: hexToRgba(toneColor, 0.1) }]}>
-            <MaterialIcons name={copy.icon} size={42} color={toneColor} />
-          </View>
-          <Text style={[styles.resultTitle, { color: colors.text }]}>{copy.title}</Text>
-          <Text style={[styles.resultBody, { color: hexToRgba(colors.text, 0.56) }]}>{copy.body}</Text>
-          <View style={[styles.resultPill, { backgroundColor: colors.card, borderColor: hexToRgba(toneColor, 0.18) }]}>
-            <Text style={[styles.resultPillText, { color: toneColor }]}>
-              {mode === 'cancelled' ? 'Moved to inactive history' : mode === 'paused' ? 'Renewal flow paused' : 'Workspace updated'}
-            </Text>
-          </View>
-        </FinanceCard>
-
-        <FinanceCard>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Summary</Text>
-          <View style={styles.summaryStack}>
-            {[
-              { label: 'Subscription', value: item.service },
-              { label: 'Plan', value: item.plan },
-              { label: 'Next payment', value: item.nextPayment },
-              { label: 'Amount', value: formatCurrency(item.amount) },
-            ].map((row) => (
-              <View key={row.label} style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.52) }]}>{row.label}</Text>
-                <Text style={[styles.summaryValue, { color: colors.text }]}>{row.value}</Text>
-              </View>
-            ))}
-          </View>
-        </FinanceCard>
-
-        <View style={styles.actionStack}>
-          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.push({ pathname: '/(finance)/subscription/[id]', params: { id: item.id } })}>
-            <Text style={[styles.primaryButtonText, { color: colors.card }]}>Open details</Text>
-          </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.replace('/(finance)/subscriptions')}>
-            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Back to subscriptions</Text>
-          </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/(finance)/subscription-add')}>
-            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Add another subscription</Text>
-          </Pressable>
+    <View style={[styles.screen, { backgroundColor: colors.card }]}>
+      <View style={[styles.heroShell, { backgroundColor: hexToRgba(accent, 0.08) }]}>
+        <View
+          style={[
+            styles.iconShell,
+            { backgroundColor: hexToRgba(accent, 0.12) },
+          ]}
+        >
+          <MaterialIcons name={config.icon} size={42} color={accent} />
+        </View>
+        <View style={[styles.highlightPill, { backgroundColor: colors.card }]}>
+          <Text style={[styles.highlightText, { color: accent }]}>{highlightLabel}</Text>
         </View>
       </View>
-    </FinanceScreen>
+
+      <Text style={[styles.title, { color: colors.text }]}>{config.title}</Text>
+      <Text style={[styles.body, { color: hexToRgba(colors.text, 0.56) }]}>
+        {config.body(subscription.name)}
+      </Text>
+
+      <View
+        style={[
+          styles.summaryCard,
+          {
+            backgroundColor: colors.backgroundSoft,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <View style={styles.subscriptionHeader}>
+          <View style={[styles.subscriptionIconWrap, { backgroundColor: hexToRgba(accent, 0.12) }]}>
+            <MaterialIcons name={subscription.icon} size={20} color={accent} />
+          </View>
+          <View style={styles.subscriptionCopy}>
+            <Text style={[styles.subscriptionTitle, { color: colors.text }]}>{subscription.name}</Text>
+            <Text style={[styles.subscriptionMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+              {subscription.plan} • {subscription.category}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+            Renewal mode
+          </Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>
+            {subscription.autoRenew ? 'Automatic' : 'Manual'}
+          </Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+            Payment method
+          </Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>{subscription.paymentMethod}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+            Next payment
+          </Text>
+          <Text style={[styles.summaryValue, { color: accent }]}>{subscription.nextPayment}</Text>
+        </View>
+      </View>
+
+      <View style={styles.buttons}>
+        <ThemeButton
+          title="Open Details"
+          onPress={() =>
+            router.replace({
+              pathname: '/(finance)/subscription/[id]',
+              params: { id: subscription.id },
+            })
+          }
+          colorBackground={accent}
+          colorText={colors.card}
+          style={styles.button}
+        />
+        <ThemeButton
+          title="Back to subscriptions"
+          onPress={() => router.replace('/(finance)/subscriptions')}
+          colorBackground={colors.backgroundSoft}
+          colorText={colors.text}
+          style={styles.button}
+        />
+        <ThemeButton
+          title="Add another subscription"
+          onPress={() => router.replace('/(finance)/subscription-add')}
+          colorBackground={hexToRgba(colors.primaryDark, 0.1)}
+          colorText={colors.primaryDark}
+          style={styles.button}
+        />
+      </View>
+    </View>
   );
 }
 
-function createStyles(colors: ColorTheme) {
-  return StyleSheet.create({
-    contentStyle: { paddingBottom: 28 },
-    stack: { marginTop: 18, gap: 16 },
-    resultCard: { alignItems: 'center', paddingVertical: 28 },
-    resultBadge: { width: 88, height: 88, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
-    resultTitle: { marginTop: 16, fontSize: 20, fontWeight: '900', textAlign: 'center' },
-    resultBody: { marginTop: 8, fontSize: 13, lineHeight: 19, fontWeight: '500', textAlign: 'center' },
-    resultPill: { marginTop: 14, minHeight: 34, borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
-    resultPillText: { fontSize: 11, fontWeight: '800' },
-    sectionTitle: { fontSize: 15, fontWeight: '800' },
-    summaryStack: { marginTop: 16, gap: 14 },
-    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    summaryLabel: { fontSize: 12, fontWeight: '700' },
-    summaryValue: { fontSize: 13, fontWeight: '800', textAlign: 'right', flexShrink: 1 },
-    actionStack: { gap: 10 },
-    primaryButton: { minHeight: 50, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-    primaryButtonText: { fontSize: 14, fontWeight: '800' },
-    secondaryButton: { minHeight: 50, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-    secondaryButtonText: { fontSize: 14, fontWeight: '800' },
-  });
-}
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  heroShell: {
+    width: '100%',
+    borderRadius: 32,
+    paddingTop: 28,
+    paddingBottom: 22,
+    alignItems: 'center',
+  },
+  iconShell: {
+    width: 98,
+    height: 98,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  highlightPill: {
+    marginTop: 16,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  highlightText: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  title: {
+    marginTop: 24,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  body: {
+    marginTop: 10,
+    maxWidth: 340,
+    fontSize: Typography.body,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  summaryCard: {
+    width: '100%',
+    marginTop: 24,
+    borderWidth: 1,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  subscriptionHeader: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 2,
+  },
+  subscriptionIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subscriptionCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  subscriptionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  subscriptionMeta: {
+    marginTop: 4,
+    fontSize: Typography.body,
+  },
+  summaryRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  summaryLabel: {
+    fontSize: Typography.body,
+    fontWeight: '600',
+  },
+  summaryValue: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: Typography.body,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  buttons: {
+    width: '100%',
+    marginTop: 26,
+    gap: 12,
+  },
+  button: {
+    width: '100%',
+  },
+});

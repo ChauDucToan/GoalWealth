@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { firstChunkSteps, fourthChunkSteps, secondChunkSteps, thirdChunkSteps } from './_data';
+import { firstChunkSteps, fourthChunkSteps, secondChunkSteps, thirdChunkSteps } from '@/components/financial-assessment/data';
 
 export default function FinancialAssessmentEntryScreen() {
   const { colors } = useTheme();

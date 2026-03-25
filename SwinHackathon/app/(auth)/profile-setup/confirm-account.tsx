@@ -6,8 +6,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { avatars, banks, savingsAccounts } from './_data';
-import { ProfileSetupShell, SetupPrimaryButton } from './_shared';
+import { avatars, banks, savingsAccounts } from '@/components/profile-setup/data';
+import { ProfileSetupShell, SetupPrimaryButton } from '@/components/profile-setup/shared';
 
 export default function ConfirmAccountScreen() {
   const { colors } = useTheme();

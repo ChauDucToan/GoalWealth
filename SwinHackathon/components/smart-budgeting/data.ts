@@ -84,7 +84,7 @@ export const receiptPresets: SmartBudgetReceiptPreset[] = [
     total: 68.45,
     dateLabel: 'March 23, 2026',
     categoryId: 'food',
-    image: require('../../../assets/images/loading-budget-photo.png'),
+    image: require('../../assets/images/loading-budget-photo.png'),
     items: [
       { id: '1', label: 'Groceries', amount: 41.2 },
       { id: '2', label: 'Fruit & snacks', amount: 12.5 },
@@ -97,7 +97,7 @@ export const receiptPresets: SmartBudgetReceiptPreset[] = [
     total: 37.9,
     dateLabel: 'March 21, 2026',
     categoryId: 'transport',
-    image: require('../../../assets/images/loading-budget-photo.png'),
+    image: require('../../assets/images/loading-budget-photo.png'),
     items: [{ id: '1', label: 'Fuel refill', amount: 37.9 }],
   },
   {
@@ -106,7 +106,7 @@ export const receiptPresets: SmartBudgetReceiptPreset[] = [
     total: 24.3,
     dateLabel: 'March 20, 2026',
     categoryId: 'health',
-    image: require('../../../assets/images/loading-budget-photo.png'),
+    image: require('../../assets/images/loading-budget-photo.png'),
     items: [
       { id: '1', label: 'Medicine', amount: 18.4 },
       { id: '2', label: 'Toiletries', amount: 5.9 },
@@ -118,7 +118,7 @@ export const receiptPresets: SmartBudgetReceiptPreset[] = [
     total: 29.5,
     dateLabel: 'March 18, 2026',
     categoryId: 'fun',
-    image: require('../../../assets/images/loading-budget-photo.png'),
+    image: require('../../assets/images/loading-budget-photo.png'),
     items: [
       { id: '1', label: 'Tickets', amount: 22.0 },
       { id: '2', label: 'Snacks', amount: 7.5 },

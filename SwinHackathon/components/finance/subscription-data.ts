@@ -1,28 +1,23 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { FinanceIconName } from '@/components/home/mock-data';
 
-export type SubscriptionIconName = React.ComponentProps<typeof MaterialIcons>['name'];
-export type SubscriptionTone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral';
-export type SubscriptionCycle = 'Weekly' | 'Monthly' | 'Bi-Monthly' | 'Yearly';
-export type SubscriptionStatus = 'active' | 'paused' | 'cancelled';
+export type SubscriptionTone = 'primaryDark' | 'success' | 'warning' | 'error';
+export type SubscriptionCycle = 'Monthly' | 'Yearly';
+export type SubscriptionStatus = 'Active' | 'Paused';
 
 export type SubscriptionCharge = {
   id: string;
   label: string;
-  amount: number;
   date: string;
-  status: 'paid' | 'pending';
+  amount: number;
 };
 
 export type SubscriptionItem = {
   id: string;
-  service: string;
-  shortLabel: string;
-  icon: SubscriptionIconName;
-  accent: string;
+  name: string;
+  icon: FinanceIconName;
   tone: SubscriptionTone;
-  category: string;
-  type: string;
   plan: string;
+  category: string;
   amount: number;
   cycle: SubscriptionCycle;
   status: SubscriptionStatus;
@@ -34,162 +29,180 @@ export type SubscriptionItem = {
   charges: SubscriptionCharge[];
 };
 
+export type SubscriptionPaymentRow = SubscriptionCharge & {
+  subscriptionId: string;
+  subscriptionName: string;
+  plan: string;
+  paymentMethod: string;
+  tone: SubscriptionTone;
+  icon: FinanceIconName;
+  status: 'Paid' | 'Processing';
+};
+
+export type SubscriptionIntroHighlight = {
+  id: string;
+  title: string;
+  body: string;
+  icon: FinanceIconName;
+  tone: SubscriptionTone;
+};
+
 export const subscriptionItems: SubscriptionItem[] = [
   {
     id: 'netflix',
-    service: 'Netflix Entertainment',
-    shortLabel: 'Netflix',
-    icon: 'play-circle-outline',
-    accent: '#E11D48',
-    tone: 'danger',
-    category: 'Streaming',
-    type: 'Entertainment',
-    plan: 'Premium Plan',
+    name: 'Netflix Entertainment',
+    icon: 'smart-display',
+    tone: 'error',
+    plan: 'Premium 4K',
+    category: 'Entertainment',
     amount: 19.1,
     cycle: 'Monthly',
-    status: 'active',
-    nextPayment: 'May 28, 2023',
-    startedOn: 'Jan 07, 2023',
-    paymentMethod: 'Visa •• 9407',
+    status: 'Active',
+    nextPayment: 'Jun 12',
+    startedOn: 'Jan 2024',
+    paymentMethod: 'Visa •• 1260',
     autoRenew: true,
-    description: 'Shared entertainment plan with 4K streaming and multiple devices.',
+    description: 'Streaming video and family profiles for movie nights.',
     charges: [
-      { id: 'n1', label: 'Apr billing', amount: 19.1, date: 'Apr 28, 2023', status: 'paid' },
-      { id: 'n2', label: 'Mar billing', amount: 19.1, date: 'Mar 28, 2023', status: 'paid' },
-      { id: 'n3', label: 'Upcoming billing', amount: 19.1, date: 'May 28, 2023', status: 'pending' },
+      { id: 'n-1', label: 'May payment', date: 'May 12', amount: 19.1 },
+      { id: 'n-2', label: 'Apr payment', date: 'Apr 12', amount: 19.1 },
+      { id: 'n-3', label: 'Mar payment', date: 'Mar 12', amount: 19.1 },
     ],
   },
   {
     id: 'spotify',
-    service: 'Spotify',
-    shortLabel: 'Spotify',
+    name: 'Spotify',
     icon: 'graphic-eq',
-    accent: '#22C55E',
     tone: 'success',
-    category: 'Music',
-    type: 'Entertainment',
     plan: 'Duo',
-    amount: 8.99,
+    category: 'Music',
+    amount: 12.99,
     cycle: 'Monthly',
-    status: 'active',
-    nextPayment: 'Jun 02, 2023',
-    startedOn: 'Feb 11, 2023',
-    paymentMethod: 'Mastercard •• 7811',
+    status: 'Active',
+    nextPayment: 'Jun 18',
+    startedOn: 'Oct 2023',
+    paymentMethod: 'Main Wallet',
     autoRenew: true,
-    description: 'Music streaming for two listeners with offline downloads.',
+    description: 'Music and podcast streaming for daily commute and work.',
     charges: [
-      { id: 's1', label: 'May billing', amount: 8.99, date: 'May 02, 2023', status: 'paid' },
-      { id: 's2', label: 'Apr billing', amount: 8.99, date: 'Apr 02, 2023', status: 'paid' },
-    ],
-  },
-  {
-    id: 'gym',
-    service: 'Pulse Gym',
-    shortLabel: 'Gym',
-    icon: 'fitness-center',
-    accent: '#F59E0B',
-    tone: 'warning',
-    category: 'Health',
-    type: 'Fitness',
-    plan: 'Unlimited',
-    amount: 35,
-    cycle: 'Monthly',
-    status: 'paused',
-    nextPayment: 'Paused',
-    startedOn: 'Oct 14, 2022',
-    paymentMethod: 'Bank Debit',
-    autoRenew: false,
-    description: 'Gym membership including classes and weekend access.',
-    charges: [
-      { id: 'g1', label: 'Apr billing', amount: 35, date: 'Apr 14, 2023', status: 'paid' },
-      { id: 'g2', label: 'Paused on', amount: 0, date: 'May 11, 2023', status: 'pending' },
+      { id: 's-1', label: 'May payment', date: 'May 18', amount: 12.99 },
+      { id: 's-2', label: 'Apr payment', date: 'Apr 18', amount: 12.99 },
+      { id: 's-3', label: 'Mar payment', date: 'Mar 18', amount: 12.99 },
     ],
   },
   {
     id: 'notion',
-    service: 'Notion AI',
-    shortLabel: 'Notion',
-    icon: 'lightbulb-outline',
-    accent: '#6366F1',
-    tone: 'brand',
+    name: 'Notion AI',
+    icon: 'dashboard-customize',
+    tone: 'primaryDark',
+    plan: 'Plus + AI',
     category: 'Productivity',
-    type: 'Software',
-    plan: 'Pro + AI',
-    amount: 12,
+    amount: 8,
     cycle: 'Monthly',
-    status: 'active',
-    nextPayment: 'Jun 09, 2023',
-    startedOn: 'Mar 09, 2023',
-    paymentMethod: 'Visa •• 9407',
+    status: 'Active',
+    nextPayment: 'Jun 25',
+    startedOn: 'Feb 2025',
+    paymentMethod: 'Mastercard •• 4112',
     autoRenew: true,
-    description: 'Workspace subscription for notes, docs and AI assistance.',
+    description: 'Workspace planning, notes and AI drafting tools for projects.',
     charges: [
-      { id: 'no1', label: 'May billing', amount: 12, date: 'May 09, 2023', status: 'paid' },
-      { id: 'no2', label: 'Apr billing', amount: 12, date: 'Apr 09, 2023', status: 'paid' },
+      { id: 'o-1', label: 'May payment', date: 'May 25', amount: 8 },
+      { id: 'o-2', label: 'Apr payment', date: 'Apr 25', amount: 8 },
+      { id: 'o-3', label: 'Mar payment', date: 'Mar 25', amount: 8 },
+    ],
+  },
+  {
+    id: 'gym',
+    name: 'Pulse Gym',
+    icon: 'fitness-center',
+    tone: 'warning',
+    plan: 'Standard',
+    category: 'Health',
+    amount: 24,
+    cycle: 'Monthly',
+    status: 'Paused',
+    nextPayment: 'Paused',
+    startedOn: 'Sep 2024',
+    paymentMethod: 'Visa •• 1260',
+    autoRenew: false,
+    description: 'Workout classes and recovery sessions. Paused for this month.',
+    charges: [
+      { id: 'g-1', label: 'Apr payment', date: 'Apr 04', amount: 24 },
+      { id: 'g-2', label: 'Mar payment', date: 'Mar 04', amount: 24 },
+      { id: 'g-3', label: 'Feb payment', date: 'Feb 04', amount: 24 },
     ],
   },
 ];
 
-export const subscriptionServices = subscriptionItems.map((item) => ({
-  id: item.id,
-  service: item.service,
-  shortLabel: item.shortLabel,
-  icon: item.icon,
-  accent: item.accent,
-  type: item.type,
-  amount: item.amount,
-  cycle: item.cycle,
-}));
-
-export const subscriptionTypes = ['Entertainment', 'Software', 'Fitness', 'Delivery'] as const;
-export const subscriptionCycles: SubscriptionCycle[] = ['Weekly', 'Monthly', 'Bi-Monthly', 'Yearly'];
-export const subscriptionPaymentMethods = ['Visa •• 9407', 'Mastercard •• 7811', 'Bank Debit', 'Apple Pay'] as const;
-export const subscriptionCategories = ['Streaming', 'Music', 'Health', 'Productivity', 'Utilities'] as const;
-
 export const subscriptionCalendar = [
-  { label: 'May 21', amount: '$8.99', service: 'Spotify', accent: '#22C55E' },
-  { label: 'May 28', amount: '$19.10', service: 'Netflix', accent: '#E11D48' },
-  { label: 'Jun 02', amount: '$12.00', service: 'Notion AI', accent: '#6366F1' },
+  { id: 'c1', day: '12', month: 'Jun', title: 'Netflix', tone: 'error', status: 'Due today' },
+  { id: 'c2', day: '18', month: 'Jun', title: 'Spotify', tone: 'success', status: 'In 6 days' },
+  { id: 'c3', day: '25', month: 'Jun', title: 'Notion', tone: 'primaryDark', status: 'In 13 days' },
+  { id: 'c4', day: '04', month: 'Jul', title: 'Pulse Gym', tone: 'warning', status: 'Paused' },
+];
+
+export const subscriptionInsights = [
+  { id: 'insight-1', title: 'Potential yearly save', value: '$119', tone: 'success' as const },
+  { id: 'insight-2', title: 'Avg. renewal confidence', value: '92%', tone: 'primaryDark' as const },
+  { id: 'insight-3', title: 'Unused services', value: '1 paused', tone: 'warning' as const },
 ];
 
 export const subscriptionRecommendations = [
+  'Pause Pulse Gym until your current streak returns above 3 visits per week.',
+  'Bundle Netflix and Spotify renewals into the same card to simplify alerts.',
+  'Review yearly billing for Notion AI if you keep using it every week.',
+];
+
+export const subscriptionIntroHighlights: SubscriptionIntroHighlight[] = [
   {
-    id: 'trim-streaming',
-    title: 'Audit overlapping entertainment plans',
-    body: 'Streaming subscriptions account for the highest recurring outflow this month.',
+    id: 'intro-track',
+    title: 'Track every renewal',
+    body: 'See upcoming billing dates in one place instead of checking each service manually.',
+    icon: 'calendar-month',
+    tone: 'primaryDark',
   },
   {
-    id: 'pause-unused',
-    title: 'Keep paused services visible',
-    body: 'Paused plans still need a review date so they do not silently restart.',
+    id: 'intro-open',
+    title: 'Open any plan instantly',
+    body: 'Choose an existing plan first, then inspect details, history and controls.',
+    icon: 'folder-open',
+    tone: 'success',
   },
   {
-    id: 'optimize-method',
-    title: 'Move renewals to one payment method',
-    body: 'A single billing card makes failed renewals easier to catch before due day.',
+    id: 'intro-optimise',
+    title: 'Find savings faster',
+    body: 'Use insights, history and payment views to spot plans worth pausing or cancelling.',
+    icon: 'savings',
+    tone: 'warning',
   },
 ];
 
-export const subscriptionInsights = {
-  totalMonthly: 42.5,
-  yearlyProjection: 510,
-  activeCount: subscriptionItems.filter((item) => item.status === 'active').length,
-  pausedCount: subscriptionItems.filter((item) => item.status === 'paused').length,
-  nextChargeLabel: 'May 28',
-};
+export const subscriptionCategories = ['Entertainment', 'Music', 'Productivity', 'Health', 'Utilities'];
+export const subscriptionCycles: SubscriptionCycle[] = ['Monthly', 'Yearly'];
+export const subscriptionPaymentMethods = ['Main Wallet', 'Visa •• 1260', 'Mastercard •• 4112'];
+export const subscriptionDueDateOptions = ['Jun 12', 'Jun 18', 'Jun 25', 'Jul 04', 'Jul 11'];
 
-export const subscriptionHistoryRows = subscriptionItems.flatMap((item) =>
-  item.charges.map((charge) => ({
-    id: `${item.id}-${charge.id}`,
-    service: item.shortLabel,
-    amount: charge.amount,
-    date: charge.date,
-    status: charge.status,
-    accent: item.accent,
-    icon: item.icon,
-  }))
-);
+export function getSubscriptionById(id?: string | null) {
+  if (!id) {
+    return null;
+  }
 
-export function getSubscriptionById(id?: string) {
-  return subscriptionItems.find((item) => item.id === id) ?? subscriptionItems[0];
+  return subscriptionItems.find((item) => item.id === id) ?? null;
+}
+
+export function getSubscriptionPayments(): SubscriptionPaymentRow[] {
+  return subscriptionItems
+    .flatMap((item) =>
+      item.charges.map((charge, index) => ({
+        ...charge,
+        subscriptionId: item.id,
+        subscriptionName: item.name,
+        plan: item.plan,
+        paymentMethod: item.paymentMethod,
+        tone: item.tone,
+        icon: item.icon,
+        status: index === 0 && item.status === 'Paused' ? 'Processing' : 'Paid',
+      }))
+    )
+    .sort((left, right) => right.date.localeCompare(left.date));
 }

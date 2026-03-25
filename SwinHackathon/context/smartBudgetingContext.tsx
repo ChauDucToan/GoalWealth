@@ -4,7 +4,7 @@ import {
   receiptPresets,
   SmartBudgetCategory,
   SmartBudgetReceiptPreset,
-} from '@/app/(finance)/smart-budgeting/_data';
+} from '@/components/smart-budgeting/data';
 import React, { createContext, useMemo, useState } from 'react';
 
 export type ImportedReceipt = {

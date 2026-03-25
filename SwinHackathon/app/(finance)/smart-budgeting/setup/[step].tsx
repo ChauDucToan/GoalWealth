@@ -2,12 +2,11 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { goSmartBudgetBack } from '../_navigation';
-import { smartBudgetSetupSteps } from '../_data';
+import { smartBudgetSetupSteps } from '@/components/smart-budgeting/data';
 
 export default function SmartBudgetSetupStepScreen() {
   const { colors } = useTheme();
@@ -21,10 +20,6 @@ export default function SmartBudgetSetupStepScreen() {
   const [selectedOption, setSelectedOption] = useState(currentStep.options[0]?.id);
 
   const isLastStep = safeIndex === smartBudgetSetupSteps.length - 1;
-  const previousRoute: Href =
-    safeIndex === 0
-      ? '/(finance)/smart-budgeting/setup'
-      : `/(finance)/smart-budgeting/setup/${smartBudgetSetupSteps[safeIndex - 1].id}`;
 
   const onContinue = () => {
     if (isLastStep) {
@@ -42,11 +37,11 @@ export default function SmartBudgetSetupStepScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.content}>
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => goSmartBudgetBack(router, previousRoute)}
+            onPress={() => router.back()}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
@@ -112,7 +107,7 @@ export default function SmartBudgetSetupStepScreen() {
             </Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -123,10 +118,10 @@ function createStyles(colors: ColorTheme) {
       flex: 1,
     },
     content: {
-      flexGrow: 1,
+      flex: 1,
       paddingHorizontal: 22,
       paddingTop: 16,
-      paddingBottom: 28,
+      paddingBottom: 20,
     },
     headerRow: {
       flexDirection: 'row',
@@ -212,8 +207,8 @@ function createStyles(colors: ColorTheme) {
       justifyContent: 'center',
     },
     bottomArea: {
-      marginTop: 24,
-      paddingTop: 8,
+      marginTop: 'auto',
+      paddingTop: 18,
     },
     primaryButton: {
       minHeight: 50,

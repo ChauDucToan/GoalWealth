@@ -22,11 +22,9 @@ export type AssistantSettings = {
 };
 
 type AssistantContextValue = {
-  hasSeenAssistantIntro: boolean;
   activeScenarioId: string;
   conversation: AssistantMessage[];
   assistantSettings: AssistantSettings;
-  markAssistantIntroSeen: () => void;
   selectAssistantScenario: (id: string) => void;
   sendAssistantMessage: (text: string) => void;
   setAssistantSettings: (patch: Partial<AssistantSettings>) => void;
@@ -64,7 +62,6 @@ function buildConversationFromScenario(scenario: AssistantScenario | undefined) 
 }
 
 export function AssistantProvider({ children }: { children: React.ReactNode }) {
-  const [hasSeenAssistantIntro, setHasSeenAssistantIntro] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState(initialScenario?.id ?? 'overview');
   const [conversation, setConversation] = useState<AssistantMessage[]>(
     buildConversationFromScenario(initialScenario)
@@ -74,10 +71,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AssistantContextValue>(() => {
     const getAssistantScenario = (id: string) =>
       assistantScenarios.find((item) => item.id === id);
-
-    const markAssistantIntroSeen = () => {
-      setHasSeenAssistantIntro(true);
-    };
 
     const selectAssistantScenario = (id: string) => {
       const scenario = getAssistantScenario(id);
@@ -129,18 +122,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     };
 
     return {
-      hasSeenAssistantIntro,
       activeScenarioId,
       conversation,
       assistantSettings,
-      markAssistantIntroSeen,
       selectAssistantScenario,
       sendAssistantMessage,
       setAssistantSettings,
       resetAssistantMemory,
       getAssistantScenario,
     };
-  }, [activeScenarioId, assistantSettings, conversation, hasSeenAssistantIntro]);
+  }, [activeScenarioId, assistantSettings, conversation]);
 
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;
 }

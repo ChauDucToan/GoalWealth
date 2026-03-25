@@ -7,8 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { goSmartBudgetBack } from './_navigation';
-import { budgetInsights } from './_data';
+import { budgetInsights } from '@/components/smart-budgeting/data';
 
 const weeklyBars = [42, 68, 54, 80, 63, 59, 71];
 const weekLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -44,7 +43,6 @@ export default function BudgetInsightsScreen() {
       title="Budget Insights"
       subtitle="Live pacing, category pressure and the next corrective moves."
       contentStyle={styles.contentStyle}
-      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -251,24 +249,14 @@ export default function BudgetInsightsScreen() {
         <View style={styles.actionRow}>
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() =>
-              router.push({
-                pathname: '/(finance)/smart-budgeting/monthly-budget',
-                params: { returnTo: 'budget-insights' },
-              })
-            }
+            onPress={() => router.push('/(finance)/smart-budgeting/monthly-budget')}
           >
             <MaterialIcons name="pie-chart-outline" size={18} color={colors.card} />
             <Text style={[styles.actionButtonText, { color: colors.card }]}>Open Monthly Budget</Text>
           </Pressable>
           <Pressable
             style={[styles.actionButton, styles.actionButtonSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() =>
-              router.push({
-                pathname: '/(finance)/smart-budgeting/setup/receipt-gallery',
-                params: { returnTo: 'budget-insights' },
-              })
-            }
+            onPress={() => router.push('/(finance)/smart-budgeting/setup/receipt-gallery')}
           >
             <MaterialIcons name="receipt-long" size={18} color={colors.text} />
             <Text style={[styles.actionButtonText, { color: colors.text }]}>Import Receipt</Text>

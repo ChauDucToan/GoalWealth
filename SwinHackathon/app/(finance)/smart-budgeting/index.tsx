@@ -7,66 +7,75 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { budgetCategories, budgetSummary } from '@/components/smart-budgeting/data';
 
 export default function SmartBudgetingHomeScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const { categories, importedReceipts, hasCompletedSetup, totalBudget } = useSmartBudgeting();
-
-  const totalSpent = categories.reduce((sum, item) => sum + item.spent, 0);
-  const totalLeft = Number((totalBudget - totalSpent).toFixed(2));
-  const topPressure = [...categories]
-    .sort((left, right) => right.spent / right.limit - left.spent / left.limit)
-    .slice(0, 3);
-  const riskCount = categories.filter((item) => item.spent / item.limit >= 0.85).length;
-
-  const primaryActions = [
-    {
-      id: 'monthly',
-      title: hasCompletedSetup ? 'Open Monthly Budget' : 'Start Budget Setup',
-      body: hasCompletedSetup
-        ? 'Operate the active budget without returning to onboarding.'
-        : 'Complete the budget setup flow before operating the workspace.',
-      icon: hasCompletedSetup ? 'pie-chart-outline' : 'checklist',
-      route: hasCompletedSetup ? '/(finance)/smart-budgeting/monthly-budget' : '/(finance)/smart-budgeting/setup',
-    },
-    {
-      id: 'receipt',
-      title: 'Import Receipt',
-      body: 'Capture spend and apply it directly to the right category.',
-      icon: 'receipt-long',
-      route: '/(finance)/smart-budgeting/setup/receipt-gallery',
-    },
-  ] as const;
-
-  const workspaceActions = [
-    {
-      id: 'insights',
-      title: 'Budget Insights',
-      icon: 'query-stats',
-      route: '/(finance)/smart-budgeting/budget-insights',
-    },
-    {
-      id: 'categories',
-      title: 'Organize Categories',
-      icon: 'category',
-      route: '/(finance)/smart-budgeting/manage-categories',
-    },
-    {
-      id: 'share',
-      title: 'Invite & Share',
-      icon: 'group-add',
-      route: '/(finance)/smart-budgeting/share-budget',
-    },
-  ] as const;
+  const { hasCompletedSetup } = useSmartBudgeting();
+  const totalProgress = budgetSummary.spent / budgetSummary.total;
+  const quickDestinations = useMemo(
+    () => [
+      hasCompletedSetup
+        ? {
+            id: 'workspace',
+            title: 'Budget Workspace',
+            body: 'Setup is complete. Open the live budget instead of re-running onboarding.',
+            route: '/(finance)/smart-budgeting/monthly-budget',
+            icon: 'task-alt' as const,
+          }
+        : {
+            id: 'setup',
+            title: 'Budget Setup',
+            body: 'Walk through the onboarding questions from the left side of the kit.',
+            route: '/(finance)/smart-budgeting/setup',
+            icon: 'checklist' as const,
+          },
+      {
+        id: 'receipt',
+        title: 'Import Receipt',
+        body: 'Open receipt capture and apply spending directly into the budget.',
+        route: '/(finance)/smart-budgeting/setup/receipt-gallery',
+        icon: 'receipt-long' as const,
+      },
+      {
+        id: 'monthly',
+        title: 'Monthly Budget',
+        body: 'See the ring, breakdown and active budget progress.',
+        route: '/(finance)/smart-budgeting/monthly-budget',
+        icon: 'pie-chart-outline' as const,
+      },
+      {
+        id: 'insights',
+        title: 'Budget Insights',
+        body: 'Open recommendations, pacing and monthly patterns.',
+        route: '/(finance)/smart-budgeting/budget-insights',
+        icon: 'insights' as const,
+      },
+      {
+        id: 'categories',
+        title: 'Organize Category',
+        body: 'Create, edit and reorder budget categories.',
+        route: '/(finance)/smart-budgeting/manage-categories',
+        icon: 'category' as const,
+      },
+      {
+        id: 'share',
+        title: 'Budget Together Easily',
+        body: 'Share by QR and invite members into the plan.',
+        route: '/(finance)/smart-budgeting/share-budget',
+        icon: 'group-add' as const,
+      },
+    ],
+    [hasCompletedSetup]
+  );
 
   return (
     <FinanceScreen
       title="Smart Budgeting"
-      subtitle="Plan, review and operate the monthly budget from a single finance workspace."
+      subtitle="A routed flow that matches the budgeting kit: dashboard, insights, categories and sharing."
       contentStyle={styles.contentStyle}
-      onBackPress={() => router.replace('/(tabs)/home')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -78,129 +87,101 @@ export default function SmartBudgetingHomeScreen() {
     >
       <View style={styles.stack}>
         <FinanceCard style={[styles.heroCard, { backgroundColor: colors.primaryDark }]}>
-          <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.72) }]}>
-            {hasCompletedSetup ? 'LIVE BUDGET WORKSPACE' : 'SMART BUDGET SETUP'}
+          <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.74) }]}>
+            {hasCompletedSetup ? 'Budget Workspace' : 'Budget Set Up'}
           </Text>
           <Text style={[styles.heroTitle, { color: colors.card }]}>
             {hasCompletedSetup
-              ? 'The budget is ready. Run monthly control, receipts and category adjustments from here.'
-              : 'Build the budget first, then turn it into a working month-by-month control panel.'}
+              ? "Your budget is ready. You can operate it directly without re-running setup."
+              : "Let's set up your budget and keep every category on pace."}
           </Text>
           <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.82) }]}>
             {hasCompletedSetup
-              ? 'Receipt import, category management and insights now work as separate operational flows.'
-              : 'The onboarding path is still available, but the end goal is this central operating dashboard.'}
+              ? 'Receipt import, category management and monthly budget review are now independent flows.'
+              : 'The design kit shows this flow as a sequence. This screen is the operational hub to open each step directly.'}
           </Text>
 
-          <View style={styles.heroStatRow}>
-            <View style={[styles.heroStatCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Spent</Text>
-              <Text style={[styles.heroStatValue, { color: colors.card }]}>${totalSpent.toFixed(0)}</Text>
+          <View style={[styles.progressTrack, { backgroundColor: hexToRgba(colors.card, 0.16) }]}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.min(totalProgress * 100, 100)}%`, backgroundColor: colors.card },
+              ]}
+            />
+          </View>
+
+          <View style={styles.heroMetaRow}>
+            <View>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.74) }]}>Spent</Text>
+              <Text style={[styles.heroStatValue, { color: colors.card }]}>${budgetSummary.spent.toFixed(2)}</Text>
             </View>
-            <View style={[styles.heroStatCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Left</Text>
-              <Text style={[styles.heroStatValue, { color: colors.card }]}>${totalLeft.toFixed(0)}</Text>
-            </View>
-            <View style={[styles.heroStatCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Imports</Text>
-              <Text style={[styles.heroStatValue, { color: colors.card }]}>{importedReceipts.length}</Text>
+            <View>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.74) }]}>Left</Text>
+              <Text style={[styles.heroStatValue, { color: colors.card }]}>${budgetSummary.left.toFixed(0)}</Text>
             </View>
           </View>
 
-          <View style={styles.heroActionRow}>
+          <Pressable
+            style={[styles.heroButton, { backgroundColor: colors.card }]}
+            onPress={() =>
+              router.push(
+                hasCompletedSetup
+                  ? '/(finance)/smart-budgeting/monthly-budget'
+                  : '/(finance)/smart-budgeting/setup'
+              )
+            }
+          >
+            <Text style={[styles.heroButtonText, { color: colors.primaryDark }]}>
+              {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Budget Setup'}
+            </Text>
+          </Pressable>
+
+          {hasCompletedSetup ? (
             <Pressable
-              style={[styles.heroButton, { backgroundColor: colors.card }]}
-              onPress={() =>
-                router.push(
-                  hasCompletedSetup
-                    ? '/(finance)/smart-budgeting/monthly-budget'
-                    : '/(finance)/smart-budgeting/setup'
-                )
-              }
-            >
-              <Text style={[styles.heroButtonText, { color: colors.primaryDark }]}>
-                {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Budget Setup'}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.heroGhostButton, { borderColor: hexToRgba(colors.card, 0.22) }]}
+              style={[styles.heroSecondaryButton, { borderColor: hexToRgba(colors.card, 0.18) }]}
               onPress={() => router.push('/(finance)/smart-budgeting/setup/receipt-gallery')}
             >
-              <Text style={[styles.heroGhostButtonText, { color: colors.card }]}>Import Receipt</Text>
+              <Text style={[styles.heroSecondaryButtonText, { color: colors.card }]}>Import Receipt</Text>
             </Pressable>
-          </View>
+          ) : null}
         </FinanceCard>
 
-        <View style={styles.primaryGrid}>
-          {primaryActions.map((item) => (
+        <View style={styles.grid}>
+          {quickDestinations.map((item) => (
             <Pressable
               key={item.id}
-              style={[styles.primaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.navCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => router.push(item.route)}
             >
-              <View style={[styles.primaryIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
+              <View style={[styles.navIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
                 <MaterialIcons name={item.icon} size={20} color={colors.primaryDark} />
               </View>
-              <Text style={[styles.primaryTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.primaryBody, { color: hexToRgba(colors.text, 0.56) }]}>{item.body}</Text>
+              <Text style={[styles.navTitle, { color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.navBody, { color: hexToRgba(colors.text, 0.56) }]}>{item.body}</Text>
             </Pressable>
           ))}
         </View>
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Operate the workspace</Text>
-            <Text style={[styles.sectionMeta, { color: hexToRgba(colors.text, 0.46) }]}>3 core tools</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>At a glance</Text>
+            <Pressable onPress={() => router.push('/(finance)/smart-budgeting/budget-insights')}>
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>See insights</Text>
+            </Pressable>
           </View>
 
-          <View style={styles.workspaceActionRow}>
-            {workspaceActions.map((item) => (
-              <Pressable
-                key={item.id}
-                style={[styles.workspaceActionCard, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
-                onPress={() => router.push(item.route)}
-              >
-                <View style={[styles.workspaceActionIcon, { backgroundColor: colors.card }]}>
-                  <MaterialIcons name={item.icon} size={18} color={colors.primaryDark} />
-                </View>
-                <Text style={[styles.workspaceActionTitle, { color: colors.text }]}>{item.title}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </FinanceCard>
-
-        <FinanceCard>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Pressure map</Text>
-            <Text style={[styles.sectionMeta, { color: riskCount > 0 ? colors.error : colors.primaryDark }]}>
-              {riskCount > 0 ? `${riskCount} categories at risk` : 'All categories stable'}
-            </Text>
-          </View>
-
-          <View style={styles.pressureStack}>
-            {topPressure.map((item) => {
+          <View style={styles.peekStack}>
+            {budgetCategories.slice(0, 3).map((item) => {
               const progress = item.spent / item.limit;
-              const remaining = Math.max(item.limit - item.spent, 0);
-              const tone = progress >= 0.85 ? colors.error : progress >= 0.7 ? colors.warning : colors.primaryDark;
-
               return (
-                <View key={item.id} style={styles.pressureCard}>
-                  <View style={styles.pressureRow}>
-                    <View style={styles.pressureHead}>
-                      <View style={[styles.pressureDot, { backgroundColor: item.accent }]} />
-                      <View>
-                        <Text style={[styles.pressureTitle, { color: colors.text }]}>{item.name}</Text>
-                        <Text style={[styles.pressureBody, { color: hexToRgba(colors.text, 0.5) }]}>
-                          ${item.spent.toFixed(0)} / ${item.limit.toFixed(0)} used
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.pressurePercent, { color: tone }]}>{Math.round(progress * 100)}%</Text>
+                <View key={item.id} style={styles.peekRow}>
+                  <View style={styles.peekHead}>
+                    <View style={[styles.peekDot, { backgroundColor: item.accent }]} />
+                    <Text style={[styles.peekTitle, { color: colors.text }]}>{item.name}</Text>
                   </View>
-                  <View style={[styles.track, { backgroundColor: hexToRgba(item.accent, 0.12) }]}>
-                    <View style={[styles.fill, { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: item.accent }]} />
-                  </View>
-                  <Text style={[styles.pressureHint, { color: hexToRgba(colors.text, 0.5) }]}>${remaining.toFixed(0)} remaining before limit</Text>
+                  <Text style={[styles.peekValue, { color: progress > 0.85 ? colors.error : colors.primaryDark }]}>
+                    {Math.round(progress * 100)}%
+                  </Text>
                 </View>
               );
             })}
@@ -213,8 +194,13 @@ export default function SmartBudgetingHomeScreen() {
 
 function createStyles(colors: ColorTheme) {
   return StyleSheet.create({
-    contentStyle: { paddingBottom: 28 },
-    stack: { marginTop: 18, gap: 16 },
+    contentStyle: {
+      paddingBottom: 28,
+    },
+    stack: {
+      marginTop: 18,
+      gap: 16,
+    },
     headerAction: {
       width: 38,
       height: 38,
@@ -223,41 +209,143 @@ function createStyles(colors: ColorTheme) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroCard: { borderWidth: 0, gap: 16 },
-    heroEyebrow: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
-    heroTitle: { fontSize: 28, lineHeight: 34, fontWeight: '900', letterSpacing: -0.7 },
-    heroBody: { fontSize: Typography.body, lineHeight: 20 },
-    heroStatRow: { flexDirection: 'row', gap: 10 },
-    heroStatCard: { flex: 1, borderRadius: 18, padding: 12 },
-    heroStatLabel: { fontSize: 11, fontWeight: '700' },
-    heroStatValue: { marginTop: 4, fontSize: 17, fontWeight: '900' },
-    heroActionRow: { flexDirection: 'row', gap: 10 },
-    heroButton: { flex: 1, minHeight: 48, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-    heroButtonText: { fontSize: 13, fontWeight: '800' },
-    heroGhostButton: { minWidth: 126, minHeight: 48, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
-    heroGhostButtonText: { fontSize: 13, fontWeight: '800' },
-    primaryGrid: { flexDirection: 'row', gap: 12 },
-    primaryCard: { flex: 1, borderWidth: 1, borderRadius: 24, padding: 16 },
-    primaryIcon: { width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-    primaryTitle: { marginTop: 14, fontSize: 16, fontWeight: '800' },
-    primaryBody: { marginTop: 8, fontSize: 12, lineHeight: 18, fontWeight: '500' },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    sectionTitle: { fontSize: 16, fontWeight: '800' },
-    sectionMeta: { fontSize: 12, fontWeight: '700' },
-    workspaceActionRow: { marginTop: 16, flexDirection: 'row', gap: 10 },
-    workspaceActionCard: { flex: 1, borderWidth: 1, borderRadius: 20, padding: 14, alignItems: 'center' },
-    workspaceActionIcon: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    workspaceActionTitle: { marginTop: 10, fontSize: 12, fontWeight: '800', textAlign: 'center' },
-    pressureStack: { marginTop: 16, gap: 14 },
-    pressureCard: { gap: 8 },
-    pressureRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    pressureHead: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    pressureDot: { width: 10, height: 10, borderRadius: 5 },
-    pressureTitle: { fontSize: 14, fontWeight: '800' },
-    pressureBody: { marginTop: 3, fontSize: 11, fontWeight: '600' },
-    pressurePercent: { fontSize: 13, fontWeight: '800' },
-    track: { height: 10, borderRadius: 999, overflow: 'hidden' },
-    fill: { height: '100%', borderRadius: 999 },
-    pressureHint: { fontSize: 11, fontWeight: '600' },
+    heroCard: {
+      borderWidth: 0,
+      gap: 14,
+    },
+    heroEyebrow: {
+      fontSize: 12,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    heroTitle: {
+      fontSize: 28,
+      lineHeight: 34,
+      fontWeight: '900',
+      letterSpacing: -0.7,
+    },
+    heroBody: {
+      fontSize: Typography.body,
+      lineHeight: 20,
+    },
+    progressTrack: {
+      height: 10,
+      borderRadius: 999,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 999,
+    },
+    heroMetaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 16,
+    },
+    heroStatLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    heroStatValue: {
+      marginTop: 4,
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    heroButton: {
+      minHeight: 46,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    heroButtonText: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    heroSecondaryButton: {
+      minHeight: 44,
+      borderRadius: 18,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroSecondaryButtonText: {
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    navCard: {
+      width: '48%',
+      minHeight: 150,
+      borderRadius: 22,
+      borderWidth: 1,
+      padding: 16,
+      gap: 10,
+    },
+    navIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    navTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      letterSpacing: -0.2,
+    },
+    navBody: {
+      fontSize: 12,
+      lineHeight: 18,
+      fontWeight: '500',
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      letterSpacing: -0.3,
+    },
+    sectionLink: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    peekStack: {
+      marginTop: 14,
+      gap: 14,
+    },
+    peekRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    peekHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    peekDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    peekTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    peekValue: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
   });
 }
