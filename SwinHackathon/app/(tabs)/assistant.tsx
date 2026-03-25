@@ -12,11 +12,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '@/constants/theme';
 
 export default function AssistantTabScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const {
     hasSeenAssistantIntro,
     activeScenarioId,
@@ -147,7 +149,10 @@ export default function AssistantTabScreen() {
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingBottom: Math.max(insets.bottom + 120, 148) },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.content}>

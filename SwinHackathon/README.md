@@ -47,10 +47,17 @@ Lưu ý:
 Scripts trong [`package.json`](./package.json):
 
 - `npm run start`
+- `npm run start:lan`
+- `npm run start:clear`
 - `npm run android`
 - `npm run ios`
 - `npm run web`
 - `npm run lint`
+
+Lưu ý để mở bằng `Expo Go` trên điện thoại:
+
+- `npm run start` hiện chạy bằng `--tunnel` mặc định để giảm lỗi quét QR nhưng không vào được app khi máy tính và điện thoại khác mạng nội bộ hoặc bị firewall/router chặn LAN.
+- nếu bạn đang ở cùng một mạng Wi-Fi ổn định và muốn nhanh hơn, có thể dùng `npm run start:lan`.
 
 Typecheck đang dùng:
 
