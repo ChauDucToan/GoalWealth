@@ -7,6 +7,7 @@ import {
 } from '@/components/finance/finance-utils';
 import { budgetCategories, spendingInsights } from '@/components/home/mock-data';
 import { useFinance } from '@/hooks/use-finance';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -21,6 +22,7 @@ function formatSignedPercent(value: number) {
 export default function InsightsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const { stocks, stockHoldings, watchlistSymbols, displayCurrency, defaultStockSymbol } =
     useFinance();
   const [selectedActivityDay, setSelectedActivityDay] = React.useState(
@@ -54,7 +56,10 @@ export default function InsightsScreen() {
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(110, tabBarFloatingClearance) },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.heroCard, { backgroundColor: colors.primaryDark }]}>
@@ -303,7 +308,7 @@ export default function InsightsScreen() {
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Categories</Text>
-          <Pressable onPress={() => router.push('/(finance)/smart-budgeting')}>
+          <Pressable onPress={() => router.push('/(tabs)/smart-budgeting')}>
             <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open planner</Text>
           </Pressable>
         </View>

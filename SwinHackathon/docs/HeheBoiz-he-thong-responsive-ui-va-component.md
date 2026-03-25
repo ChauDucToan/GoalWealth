@@ -7,6 +7,7 @@ Tài liệu này tập trung vào phần “cách app được làm để hiển
 Phạm vi:
 
 - hook responsive
+- hook tránh `AppTabBar` che nội dung
 - theme token
 - button/input/scaffold dùng chung
 - grid responsive
@@ -121,6 +122,40 @@ Vai trò:
 - chứa scaffold và helper UI cho auth
 - cung cấp `hexToRgba(...)` đang được dùng rộng trong repo
 
+### 4.4. Shared UI cho `Profile Setup`
+
+Files:
+
+- `components/profile-setup/shared.tsx`
+- `components/profile-setup/data.ts`
+
+Vai trò:
+
+- cung cấp shell riêng cho flow `Profile Setup & Account Completion`
+- chuẩn hóa progress header, section title, surface card, pill và code preview
+
+Lợi ích:
+
+- các step onboarding auth có visual rõ ràng hơn
+- có thể gộp nhiều state vào một màn nhưng vẫn giữ được chất lượng UI
+
+### 4.5. Shared UI cho `Profile Settings`
+
+Files:
+
+- `components/profile-settings/ui.tsx`
+- `components/profile-settings/data.ts`
+
+Vai trò:
+
+- làm primitive riêng cho `Profile Settings`
+- gồm card, row, switch row, option chip, pill, stat, banner
+
+Lợi ích:
+
+- tab `profile` và các màn `/(profile)` dùng cùng một ngôn ngữ UI
+- bổ sung được nhiều card đẹp theo board mà không phải đổi hệ button chính
+
 ## 5. Scaffold theo domain
 
 ### 5.1. `FinanceScaffold`
@@ -156,6 +191,21 @@ Lợi ích:
 
 - giữ các màn assistant có chung khung nhìn
 - đỡ lệch spacing khi mỗi màn có nội dung khác nhau
+
+### 5.3. `use-tab-bar-clearance`
+
+File:
+
+- `hooks/use-tab-bar-clearance.ts`
+
+Vai trò:
+
+- tính khoảng đệm an toàn theo `AppTabBar` đang floating ở đáy màn hình
+
+Lợi ích:
+
+- tránh việc nút cuối hoặc CTA bị tab bar che
+- xử lý tập trung cho các tab root thay vì vá từng màn riêng
 
 ## 6. `ResponsiveGrid` là gì và tại sao quan trọng
 
@@ -202,6 +252,7 @@ Kết quả:
 - `app/(finance)/investments.tsx`
 - `app/(finance)/subscriptions.tsx`
 - `app/(finance)/subscription-add.tsx`
+- `app/(tabs)/profile.tsx` dùng cùng tinh thần responsive card/stat dù không phải mọi khối đều đi qua `ResponsiveGrid`
 
 ## 7. Các đợt responsive đã diễn ra theo tiến trình
 
@@ -255,6 +306,7 @@ Phạm vi lớn:
 - `achievements`
 - `profile`
 - `search-notifications`
+- `smart-budgeting`
 
 ### Nhóm finance
 
@@ -268,6 +320,21 @@ Phạm vi lớn:
 - `receipt-scan`
 - `voice`
 
+### Nhóm auth/profile
+
+- `profile-setup/avatar`
+- `profile-setup/link-bank`
+- `profile-setup/face-id`
+- `profile-setup/confirm-account`
+- `profile-setup/financial-score`
+- `profile-setup/pick-plan`
+- `profile`
+- `profile/account`
+- `profile/notifications`
+- `profile/security`
+- `profile/linked-accounts`
+- `profile/support`
+
 ## 9. Pattern UI nên tiếp tục dùng về sau
 
 Nếu tiếp tục mở rộng app, nên giữ các nguyên tắc sau:
@@ -277,6 +344,7 @@ Nếu tiếp tục mở rộng app, nên giữ các nguyên tắc sau:
 3. Với 2 CTA cạnh nhau, dùng `flexWrap` và `flexBasis`.
 4. Với shared screen, đi qua scaffold domain thay vì tự viết layout mới hoàn toàn.
 5. Với màu, đi qua `useTheme()` và `constants/theme.ts`, tránh hardcode màu mới nếu không thật cần thiết.
+6. Với flow có nhiều state nhỏ như onboarding hoặc settings, ưu tiên dựng primitive `Pill`, `Stat`, `Banner`, `Surface` để tăng chất lượng UI mà không làm nổ số route.
 
 ## 10. Liên hệ với flow `Subscription Management`
 

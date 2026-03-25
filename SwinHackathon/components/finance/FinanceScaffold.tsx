@@ -14,27 +14,35 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function FinanceScreen({
   title,
   subtitle,
   children,
+  leftAccessory,
   rightAccessory,
   contentStyle,
   scroll = true,
   onBackPress,
+  hideBackButton = false,
+  bottomInsetSpacing = 44,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  leftAccessory?: React.ReactNode;
   rightAccessory?: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
   onBackPress?: () => void;
+  hideBackButton?: boolean;
+  bottomInsetSpacing?: number;
 }) {
   const { colors } = useTheme();
   const { scale, verticalScale, scaleFont } = useResponsive();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const body = (
     <View
       style={[
@@ -47,21 +55,45 @@ export function FinanceScreen({
       ]}
     >
       <View style={styles.headerRow}>
-        <Pressable
-          style={[
-            styles.backButton,
-            {
-              backgroundColor: colors.card,
-              borderColor: hexToRgba(colors.primaryDark, 0.08),
-              width: scale(38, 0.78),
-              height: scale(38, 0.78),
-              borderRadius: scale(13, 0.72),
-            },
-          ]}
-          onPress={onBackPress ?? (() => router.back())}
-        >
-          <MaterialIcons name="arrow-back" size={scale(22, 0.72)} color={colors.text} />
-        </Pressable>
+        {leftAccessory ? (
+          <View
+            style={[
+              styles.leftAccessoryWrap,
+              {
+                width: scale(38, 0.78),
+                minHeight: scale(38, 0.78),
+              },
+            ]}
+          >
+            {leftAccessory}
+          </View>
+        ) : hideBackButton ? (
+          <View
+            style={[
+              styles.backButtonSpacer,
+              {
+                width: scale(38, 0.78),
+                height: scale(38, 0.78),
+              },
+            ]}
+          />
+        ) : (
+          <Pressable
+            style={[
+              styles.backButton,
+              {
+                backgroundColor: colors.card,
+                borderColor: hexToRgba(colors.primaryDark, 0.08),
+                width: scale(38, 0.78),
+                height: scale(38, 0.78),
+                borderRadius: scale(13, 0.72),
+              },
+            ]}
+            onPress={onBackPress ?? (() => router.back())}
+          >
+            <MaterialIcons name="arrow-back" size={scale(22, 0.72)} color={colors.text} />
+          </Pressable>
+        )}
 
         <View style={styles.headerText}>
           <Text style={[styles.title, { color: colors.text, fontSize: scaleFont(24, 0.74) }]}>
@@ -105,7 +137,10 @@ export function FinanceScreen({
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingBottom: Math.max(bottomInsetSpacing, insets.bottom + 16) },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {body}
@@ -159,6 +194,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  leftAccessoryWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonSpacer: {},
   headerText: {
     flex: 1,
     minWidth: 0,

@@ -8,18 +8,19 @@ import {
 } from '@/components/assistant/mock-data';
 import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useAssistant } from '@/hooks/use-assistant';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '@/constants/theme';
 
 export default function AssistantTabScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { tabBarFloatingClearance } = useTabBarClearance();
+  const threadIconName: React.ComponentProps<typeof MaterialIcons>['name'] = 'forum';
   const {
     hasSeenAssistantIntro,
     isIntroPreferencesReady,
@@ -57,7 +58,14 @@ export default function AssistantTabScreen() {
     const isLastSlide = introIndex === assistantIntroSlides.length - 1;
 
     return (
-      <View style={[styles.introScreen, { backgroundColor: colors.backgroundSoft }]}>
+      <ScrollView
+        style={[styles.introScreen, { backgroundColor: colors.backgroundSoft }]}
+        contentContainerStyle={[
+          styles.introScrollContent,
+          { paddingBottom: Math.max(tabBarFloatingClearance, 148) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View
           style={[
             styles.introOrbLarge,
@@ -150,7 +158,7 @@ export default function AssistantTabScreen() {
             </Pressable>
           ) : null}
         </View>
-      </View>
+      </ScrollView>
     );
   }
 
@@ -159,7 +167,7 @@ export default function AssistantTabScreen() {
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
       contentContainerStyle={[
         styles.scrollContent,
-        { paddingBottom: Math.max(insets.bottom + 120, 148) },
+        { paddingBottom: Math.max(tabBarFloatingClearance, 148) },
       ]}
       showsVerticalScrollIndicator={false}
     >
@@ -296,10 +304,18 @@ export default function AssistantTabScreen() {
                   <View
                     style={[
                       styles.threadIcon,
-                      { backgroundColor: hexToRgba(scenario.accent, 0.14) },
+                      {
+                        backgroundColor: selected
+                          ? hexToRgba(colors.primaryDark, 0.12)
+                          : hexToRgba(colors.primaryDark, 0.08),
+                      },
                     ]}
                   >
-                    <MaterialIcons name={scenario.icon} size={20} color={scenario.accent} />
+                    <MaterialIcons
+                      name={threadIconName}
+                      size={20}
+                      color={selected ? colors.primaryDark : hexToRgba(colors.text, 0.54)}
+                    />
                   </View>
 
                   <View style={styles.threadCopy}>
@@ -318,31 +334,6 @@ export default function AssistantTabScreen() {
                     >
                       {preview}
                     </Text>
-
-                    <View style={styles.threadFooter}>
-                      <View
-                        style={[
-                          styles.threadTag,
-                          { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
-                        ]}
-                      >
-                        <Text style={[styles.threadTagText, { color: colors.primaryDark }]}>
-                          {scenario.chipLabel}
-                        </Text>
-                      </View>
-                      {selected ? (
-                        <View
-                          style={[
-                            styles.threadTag,
-                            { backgroundColor: hexToRgba(colors.success, 0.14) },
-                          ]}
-                        >
-                          <Text style={[styles.threadTagText, { color: colors.success }]}>
-                            Active
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
                   </View>
 
                   <MaterialIcons name="chevron-right" size={24} color={hexToRgba(colors.text, 0.36)} />
@@ -414,6 +405,9 @@ const styles = StyleSheet.create({
   introScreen: {
     flex: 1,
   },
+  introScrollContent: {
+    flexGrow: 1,
+  },
   introOrbLarge: {
     position: 'absolute',
     top: -80,
@@ -431,7 +425,7 @@ const styles = StyleSheet.create({
     borderRadius: 56,
   },
   introContent: {
-    flex: 1,
+    flexGrow: 1,
     paddingTop: 82,
     paddingHorizontal: 24,
     paddingBottom: 40,
@@ -664,19 +658,5 @@ const styles = StyleSheet.create({
   threadPreview: {
     fontSize: Typography.body,
     lineHeight: 19,
-  },
-  threadFooter: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  threadTag: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  threadTagText: {
-    fontSize: Typography.body,
-    fontWeight: '700',
   },
 });

@@ -1,5 +1,6 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -148,6 +149,7 @@ const segments = ['Badges', 'Leaderboard', 'Stats'] as const;
 
 export default function AchievementsScreen() {
   const { colors } = useTheme();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [selectedSegment, setSelectedSegment] = useState<(typeof segments)[number]>('Badges');
@@ -156,7 +158,13 @@ export default function AchievementsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(110, tabBarFloatingClearance) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
           <Pressable
             style={styles.headerIconButton}

@@ -1,142 +1,95 @@
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme, Typography } from '@/constants/theme';
+import {
+  ProfileSettingsBanner,
+  ProfileSettingsCard,
+  ProfileSettingsPill,
+  ProfileSettingsRow,
+  ProfileSettingsSectionTitle,
+  ProfileSettingsStat,
+  ProfileSettingsSwitchRow,
+} from '@/components/profile-settings/ui';
+import { premiumPerks } from '@/components/profile-settings/data';
+import { Typography } from '@/constants/theme';
+import { useProfileSettings } from '@/context/profileSettingsContext';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type MenuItem = {
-  id: string;
-  label: string;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  type?: 'link' | 'external' | 'toggle';
-};
-
-type MenuSection = {
-  id: string;
-  title: string;
-  items: MenuItem[];
-};
-
-const sections: MenuSection[] = [
-  {
-    id: 'general',
-    title: 'General Settings',
-    items: [
-      { id: 'account', label: 'Account', icon: 'person-outline' },
-      { id: 'appearance', label: 'Display Appearance', icon: 'palette' },
-      { id: 'language', label: 'Language', icon: 'language' },
-      { id: 'currency', label: 'Currency', icon: 'currency-exchange' },
-      { id: 'about', label: 'About Us', icon: 'info-outline' },
-    ],
-  },
-  {
-    id: 'notification',
-    title: 'Notifications',
-    items: [
-      { id: 'push', label: 'Push Notification', icon: 'notifications-none', type: 'toggle' },
-      { id: 'sound', label: 'Sound Notification', icon: 'volume-up', type: 'toggle' },
-      { id: 'email-notification', label: 'Email Notification', icon: 'email', type: 'toggle' },
-    ],
-  },
-  {
-    id: 'payments',
-    title: 'Payment & Transactions',
-    items: [
-      { id: 'methods', label: 'Payment Methods', icon: 'payment' },
-      { id: 'cards', label: 'Linked Accounts & Cards', icon: 'credit-card' },
-    ],
-  },
-  {
-    id: 'security',
-    title: 'Security',
-    items: [
-      { id: 'password', label: 'Change Password', icon: 'lock-outline' },
-      { id: 'pin', label: 'Change PIN', icon: 'pin' },
-      { id: 'bio', label: 'Biometric Login', icon: 'fingerprint' },
-    ],
-  },
-  {
-    id: 'help',
-    title: 'Help & Support',
-    items: [
-      { id: 'chat', label: 'Live Chat', icon: 'chat-bubble-outline' },
-      { id: 'report', label: 'Feature Request', icon: 'report-problem', type: 'external' },
-      { id: 'help-center', label: 'Help Center', icon: 'support-agent', type: 'external' },
-    ],
-  },
-];
-
-const overviewMetrics = [
-  { id: 'accounts', label: 'Accounts', value: '4' },
-  { id: 'goals', label: 'Goals', value: '5 active' },
-  { id: 'alerts', label: 'Alerts', value: '3 today' },
-];
+const quickActionItems = [
+  { id: 'account', label: 'Account', icon: 'person-outline', route: '/(profile)/account' },
+  { id: 'preferences', label: 'Preferences', icon: 'tune', route: '/(profile)/preferences' },
+  { id: 'security', label: 'Security', icon: 'shield', route: '/(profile)/security' },
+  { id: 'support', label: 'Support', icon: 'support-agent', route: '/(profile)/support' },
+] as const;
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const [notificationState, setNotificationState] = useState({
-    push: true,
-    sound: true,
-    'email-notification': false,
-  });
+  const { profile, notifications, security, display, linkedAccounts, invite, updateNotifications } =
+    useProfileSettings();
 
-  const renderMenuArrow = (type: MenuItem['type']) => {
-    if (type === 'toggle') {
-      return null;
-    }
-
-    if (type === 'external') {
-      return <MaterialIcons name="open-in-new" size={16} color={hexToRgba(colors.text, 0.38)} />;
-    }
-
-    return <MaterialIcons name="chevron-right" size={20} color={hexToRgba(colors.text, 0.38)} />;
-  };
+  const enabledNotifications = Object.values(notifications).filter(Boolean).length;
+  const activeAccounts = linkedAccounts.filter((item) => item.status === 'Active').length;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(120, tabBarFloatingClearance) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <Pressable style={styles.editButton}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.headerEyebrow}>Profile Settings</Text>
+            <Text style={styles.headerTitle}>Profile</Text>
+          </View>
+          <Pressable style={styles.editButton} onPress={() => router.push('/(profile)/account')}>
             <MaterialIcons name="edit" size={16} color={hexToRgba(colors.text, 0.7)} />
           </Pressable>
         </View>
 
-        <View style={styles.profileCard}>
+        <ProfileSettingsCard style={styles.profileCard}>
           <ImageBackground
             source={require('../../assets/images/loading-budget-photo.png')}
             style={styles.cover}
             imageStyle={styles.coverImage}
           >
+            <View style={styles.coverOverlay} />
             <View style={styles.profileHead}>
               <View style={styles.avatar}>
-                <MaterialIcons name="person" size={34} color={hexToRgba(colors.text, 0.72)} />
+                <Text style={styles.avatarText}>{profile.avatarInitial}</Text>
               </View>
               <View style={styles.userNameWrap}>
-                <Text style={styles.userLabel}>Account Holder</Text>
-                <Text style={styles.userName}>Jane Doe Watson</Text>
-                <Text style={styles.userMeta}>Premium Member</Text>
+                <Text style={styles.userLabel}>{profile.planLabel}</Text>
+                <Text style={styles.userName}>{profile.name}</Text>
+                <Text style={styles.userMeta}>{profile.city}</Text>
               </View>
             </View>
           </ImageBackground>
 
           <View style={styles.streakBox}>
             <View style={styles.streakCopy}>
-              <Text style={styles.streakTitle}>Longest Streak: 22</Text>
-              <Text style={styles.streakSubTitle}>Keep going, you are on your best run</Text>
+              <ProfileSettingsPill label={profile.planLabel} icon="workspace-premium" tone="warning" />
+              <Text style={styles.streakTitle}>{profile.streakLabel}</Text>
+              <Text style={styles.streakSubTitle}>
+                Strong consistency across goals, subscriptions and reminders.
+              </Text>
             </View>
             <View style={styles.streakBadge}>
               <MaterialIcons name="local-fire-department" size={18} color={colors.warning} />
@@ -144,90 +97,177 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.metricsRow}>
-            {overviewMetrics.map((item, index) => (
+            <View style={styles.metricItem}>
+              <ProfileSettingsStat value={`${activeAccounts} active`} label="Linked sources" icon="credit-card" />
+            </View>
+            <View style={styles.metricItem}>
+              <ProfileSettingsStat value={`${enabledNotifications} on`} label="Alert channels" icon="notifications-active" tone="success" />
+            </View>
+            <View style={styles.metricItem}>
+              <ProfileSettingsStat value={`${invite.successfulInvites} sent`} label="Referral invites" icon="group-add" tone="warning" />
+            </View>
+            <View style={styles.metricItem}>
+              <ProfileSettingsStat value={profile.memberSince.replace('Joined ', '')} label="Member since" icon="calendar-month" tone="soft" />
+            </View>
+          </View>
+        </ProfileSettingsCard>
+
+        <ProfileSettingsBanner
+          eyebrow="Premium Workspace"
+          title="Everything important is now surfaced here"
+          body={`You have ${activeAccounts} active connections, ${enabledNotifications} alert channels enabled and ${premiumPerks.length} premium perks ready to use.`}
+          icon="verified-user"
+          tone="success"
+        />
+
+        <Text style={styles.sectionLabel}>Shortcuts</Text>
+        <ResponsiveGrid minItemWidth={140} horizontalPadding={20} gap={12} maxColumns={2}>
+          {quickActionItems.map((item) => (
+            <Pressable
+              key={item.id}
+              style={[styles.actionCard, { backgroundColor: colors.card }]}
+              onPress={() => router.push(item.route)}
+            >
               <View
-                key={item.id}
                 style={[
-                  styles.metricCard,
-                  index !== overviewMetrics.length - 1 ? styles.metricCardDivider : undefined,
+                  styles.actionIconWrap,
+                  { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
                 ]}
               >
-                <Text style={styles.metricValue}>{item.value}</Text>
-                <Text style={styles.metricLabel}>{item.label}</Text>
+                <MaterialIcons name={item.icon} size={22} color={colors.primaryDark} />
               </View>
-            ))}
-          </View>
-        </View>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>{item.label}</Text>
+            </Pressable>
+          ))}
+        </ResponsiveGrid>
 
-        {sections.map((section) => (
-          <View key={section.id}>
-            <Text style={styles.sectionLabel}>{section.title}</Text>
-            <View style={styles.sectionCard}>
-              {section.items.map((item, index) => {
-                const isToggle = item.type === 'toggle';
-                const isActive = notificationState[item.id as keyof typeof notificationState];
-
-                return (
-                  <Pressable
-                    key={item.id}
-                    style={[
-                      styles.itemRow,
-                      index !== section.items.length - 1 ? styles.rowDivider : undefined,
-                    ]}
-                  >
-                    <View style={styles.itemLeading}>
-                      <View style={styles.itemIconWrap}>
-                        <MaterialIcons name={item.icon} size={16} color={hexToRgba(colors.text, 0.72)} />
-                      </View>
-                      <Text style={styles.itemLabel}>{item.label}</Text>
-                    </View>
-                    {isToggle ? (
-                      <Switch
-                        value={Boolean(isActive)}
-                        onValueChange={(value) =>
-                          setNotificationState((prev) => ({
-                            ...prev,
-                            [item.id]: value,
-                          }))
-                        }
-                        thumbColor={colors.card}
-                        trackColor={{ false: colors.border, true: colors.primaryDark }}
-                      />
-                    ) : (
-                      renderMenuArrow(item.type)
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
+        <ProfileSettingsCard>
+          <ProfileSettingsSectionTitle title="Quick controls" />
+          <View style={styles.sectionStack}>
+            <ProfileSettingsSwitchRow
+              icon="notifications-none"
+              label="Push notifications"
+              summary="Transactions, reminders and activity"
+              value={notifications.push}
+              onValueChange={(value) => updateNotifications({ push: value })}
+            />
+            <ProfileSettingsSwitchRow
+              icon="volume-up"
+              label="Sound alerts"
+              summary="Audio feedback for important actions"
+              value={notifications.sound}
+              onValueChange={(value) => updateNotifications({ sound: value })}
+            />
+            <ProfileSettingsSwitchRow
+              icon="email"
+              label="Email summaries"
+              summary="Digest and support follow-up"
+              value={notifications.email}
+              onValueChange={(value) => updateNotifications({ email: value })}
+            />
           </View>
-        ))}
+        </ProfileSettingsCard>
+
+        <Text style={styles.sectionLabel}>Workspace</Text>
+        <ProfileSettingsCard>
+          <View style={styles.sectionStack}>
+            <ProfileSettingsRow
+              icon="person-outline"
+              label="Account"
+              summary={`${profile.email} • ${profile.phone}`}
+              onPress={() => router.push('/(profile)/account')}
+            />
+            <ProfileSettingsRow
+              icon="tune"
+              label="Preferences"
+              summary={`${display.appearance} • ${display.language} • ${display.currency}`}
+              onPress={() => router.push('/(profile)/preferences')}
+            />
+            <ProfileSettingsRow
+              icon="notifications-active"
+              label="Notification Settings"
+              summary={`${enabledNotifications} alerts enabled`}
+              onPress={() => router.push('/(profile)/notifications')}
+            />
+            <ProfileSettingsRow
+              icon="credit-card"
+              label="Linked Accounts & Cards"
+              summary={`${activeAccounts} active sources`}
+              onPress={() => router.push('/(profile)/linked-accounts')}
+            />
+          </View>
+        </ProfileSettingsCard>
+
+        <Text style={styles.sectionLabel}>Protection</Text>
+        <ProfileSettingsCard>
+          <View style={styles.sectionStack}>
+            <ProfileSettingsRow
+              icon="shield"
+              label="Security Settings"
+              summary={
+                security.biometrics
+                  ? 'Biometrics on • Login alerts on'
+                  : 'Review passcode, password and trusted devices'
+              }
+              onPress={() => router.push('/(profile)/security')}
+            />
+            <ProfileSettingsRow
+              icon="lock-outline"
+              label="Change Password"
+              summary="Refresh account credentials"
+              onPress={() => router.push('/(profile)/password')}
+            />
+            <ProfileSettingsRow
+              icon="pin"
+              label="Passcode Protection"
+              summary={security.passcodeEnabled ? '4-digit passcode enabled' : 'Set local unlock code'}
+              onPress={() => router.push('/(profile)/passcode')}
+            />
+          </View>
+        </ProfileSettingsCard>
+
+        <Text style={styles.sectionLabel}>Support & Rewards</Text>
+        <ProfileSettingsCard>
+          <View style={styles.sectionStack}>
+            <ProfileSettingsRow
+              icon="support-agent"
+              label="Help & Support"
+              summary="Feedback, live chat, rating and about"
+              onPress={() => router.push('/(profile)/support')}
+            />
+            <ProfileSettingsRow
+              icon="group-add"
+              label="Invite Friends"
+              summary={`${invite.rewardLabel} • code ${invite.referralCode}`}
+              onPress={() => router.push('/(profile)/support')}
+            />
+          </View>
+        </ProfileSettingsCard>
 
         <Text style={styles.sectionLabel}>Danger Zone</Text>
-        <View style={styles.sectionCard}>
-          <Pressable style={[styles.itemRow, styles.rowDivider]}>
-            <View style={styles.itemLeading}>
-              <View style={[styles.itemIconWrap, styles.dangerIconWrap]}>
-                <MaterialIcons name="delete-outline" size={16} color={colors.error} />
-              </View>
-              <Text style={styles.dangerText}>Close Account</Text>
-            </View>
-          </Pressable>
-          <Pressable style={styles.itemRow} onPress={() => router.replace('/(auth)/signIn')}>
-            <View style={styles.itemLeading}>
-              <View style={[styles.itemIconWrap, styles.dangerIconWrap]}>
-                <MaterialIcons name="logout" size={16} color={colors.error} />
-              </View>
-              <Text style={styles.dangerText}>Sign Out</Text>
-            </View>
-          </Pressable>
-        </View>
+        <ProfileSettingsCard>
+          <View style={styles.sectionStack}>
+            <ProfileSettingsRow
+              icon="delete-outline"
+              label="Close Account"
+              summary="Disable access and start the offboarding flow"
+              danger
+            />
+            <ProfileSettingsRow
+              icon="logout"
+              label="Sign Out"
+              summary="Return to authentication"
+              danger
+              onPress={() => router.replace('/(auth)/signIn')}
+            />
+          </View>
+        </ProfileSettingsCard>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function createStyles(colors: ColorTheme) {
+function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
   return StyleSheet.create({
     screen: {
       flex: 1,
@@ -243,20 +283,30 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      flexWrap: 'wrap',
-      gap: 8,
-      marginBottom: 6,
+      gap: 12,
+    },
+    headerCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    headerEyebrow: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: colors.primaryDark,
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
     },
     headerTitle: {
+      marginTop: 4,
       fontSize: 28,
       fontWeight: '800',
       color: colors.text,
       letterSpacing: -0.4,
     },
     editButton: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.card,
@@ -264,209 +314,146 @@ function createStyles(colors: ColorTheme) {
       borderColor: colors.border,
     },
     profileCard: {
-      borderRadius: 20,
+      padding: 0,
       overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.12,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 10 },
-      elevation: 5,
     },
     cover: {
-      height: 134,
-      paddingHorizontal: 18,
-      paddingVertical: 14,
+      height: 150,
       justifyContent: 'flex-end',
+      paddingHorizontal: 18,
+      paddingBottom: 18,
     },
     coverImage: {
       resizeMode: 'cover',
     },
+    coverOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(12,24,41,0.18)',
+    },
     profileHead: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      flexWrap: 'wrap',
+      alignItems: 'flex-end',
       gap: 12,
     },
     avatar: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: hexToRgba(colors.card, 0.92),
+      width: 70,
+      height: 70,
+      borderRadius: 26,
+      backgroundColor: hexToRgba(colors.card, 0.94),
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 2,
       borderColor: colors.card,
     },
+    avatarText: {
+      fontSize: 30,
+      fontWeight: '900',
+      color: colors.primaryDark,
+    },
     userNameWrap: {
       flex: 1,
       minWidth: 0,
       paddingHorizontal: 14,
-      paddingVertical: 10,
+      paddingVertical: 12,
       borderRadius: 18,
-      backgroundColor: hexToRgba(colors.card, 0.92),
+      backgroundColor: hexToRgba(colors.card, 0.94),
       borderWidth: 1,
       borderColor: hexToRgba(colors.text, 0.08),
     },
     userLabel: {
-      fontSize: 12,
+      fontSize: 11,
       color: hexToRgba(colors.text, 0.48),
       fontWeight: '700',
       textTransform: 'uppercase',
-      letterSpacing: 0.8,
+      letterSpacing: 0.7,
     },
     userName: {
       marginTop: 2,
-      fontSize: 16,
+      fontSize: 18,
       color: colors.text,
       fontWeight: '800',
     },
     userMeta: {
+      marginTop: 2,
       fontSize: Typography.body,
       color: hexToRgba(colors.text, 0.6),
-      marginTop: 2,
     },
     streakBox: {
       margin: 14,
       marginTop: 14,
-      borderRadius: 16,
+      borderRadius: 18,
       backgroundColor: hexToRgba(colors.primaryDark, 0.12),
       paddingHorizontal: 16,
       paddingVertical: 14,
       borderWidth: 1,
-      borderColor: hexToRgba(colors.primaryDark, 0.3),
+      borderColor: hexToRgba(colors.primaryDark, 0.2),
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      flexWrap: 'wrap',
       gap: 12,
     },
     streakCopy: {
       flex: 1,
       minWidth: 0,
-    },
-    metricsRow: {
-      marginHorizontal: 14,
-      marginBottom: 14,
-      borderRadius: 16,
-      overflow: 'hidden',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      backgroundColor: colors.backgroundSoft,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    metricCard: {
-      flex: 1,
-      flexBasis: 100,
-      minWidth: 0,
-      minHeight: 72,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 8,
-      paddingVertical: 12,
-    },
-    metricCardDivider: {
-      borderRightWidth: 1,
-      borderRightColor: hexToRgba(colors.text, 0.08),
-    },
-    metricValue: {
-      fontSize: 18,
-      fontWeight: '800',
-      color: colors.text,
-      textAlign: 'center',
-    },
-    metricLabel: {
-      marginTop: 4,
-      fontSize: Typography.body,
-      fontWeight: '600',
-      color: hexToRgba(colors.text, 0.56),
-      textAlign: 'center',
+      gap: 8,
     },
     streakTitle: {
       fontSize: Typography.body,
-      fontWeight: '700',
+      fontWeight: '800',
       color: colors.text,
     },
     streakSubTitle: {
-      marginTop: 2,
+      marginTop: 4,
       fontSize: Typography.body,
-      color: hexToRgba(colors.text, 0.6),
-      flexShrink: 1,
+      lineHeight: 18,
+      color: hexToRgba(colors.text, 0.58),
     },
     streakBadge: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: hexToRgba(colors.warning, 0.2),
     },
+    metricsRow: {
+      marginHorizontal: 14,
+      marginBottom: 14,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    metricItem: {
+      width: '47%',
+    },
+    actionCard: {
+      width: '100%',
+      borderRadius: 20,
+      padding: 16,
+      gap: 12,
+    },
+    actionIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionTitle: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
     sectionLabel: {
       marginTop: 2,
-      marginBottom: 4,
-      fontSize: Typography.body,
-      letterSpacing: 0.2,
+      marginBottom: -4,
+      fontSize: 12,
+      letterSpacing: 0.3,
       textTransform: 'uppercase',
       color: hexToRgba(colors.text, 0.55),
       fontWeight: '700',
     },
-    sectionCard: {
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
-      overflow: 'hidden',
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.1,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 4,
-    },
-    itemRow: {
-      minHeight: 58,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    rowDivider: {
-      borderBottomWidth: 1,
-      borderBottomColor: hexToRgba(colors.text, 0.07),
-    },
-    itemLeading: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      flex: 1,
-      minWidth: 0,
-    },
-    itemIconWrap: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: hexToRgba(colors.text, 0.07),
-    },
-    dangerIconWrap: {
-      backgroundColor: hexToRgba(colors.error, 0.14),
-    },
-    itemLabel: {
-      fontSize: Typography.body,
-      color: colors.text,
-      fontWeight: '500',
-      flexShrink: 1,
-    },
-    dangerText: {
-      fontSize: Typography.body,
-      color: colors.error,
-      fontWeight: '600',
-      flexShrink: 1,
+    sectionStack: {
+      gap: 6,
     },
   });
 }

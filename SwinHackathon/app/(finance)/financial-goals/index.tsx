@@ -1,31 +1,155 @@
+import { ResponsiveGrid } from '@/components/ResponsiveGrid';
+import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import {
+  financialGoalInsights,
+  financialGoalIntroHighlights,
+  financialGoals,
+  getGoalTransferSummary,
+} from '@/components/financial-goals/data';
+import { GoalHistoryCard, GoalProgressRing } from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
-import { ColorTheme, Typography } from '@/constants/theme';
+import { Typography } from '@/constants/theme';
+import { useIntroPreferences } from '@/context/introPreferencesContext';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { financialGoals } from '@/components/financial-goals/data';
 
 export default function FinancialGoalsScreen() {
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isSmallPhone } = useResponsive();
   const router = useRouter();
-  const totalSaved = financialGoals.reduce((sum, item) => sum + item.saved, 0);
-  const totalTarget = financialGoals.reduce((sum, item) => sum + item.target, 0);
-  const totalContribution = financialGoals.reduce((sum, item) => sum + item.monthlyContribution, 0);
-  const overallProgress = totalSaved / totalTarget;
+  const {
+    hasSeenFinancialGoalsIntro,
+    isIntroPreferencesReady,
+    markFinancialGoalsIntroSeen,
+  } = useIntroPreferences();
+  const summary = getGoalTransferSummary();
+  const overallProgress = summary.totalSaved / summary.totalTarget;
+  const leadGoal = financialGoals[0];
+
+  if (!isIntroPreferencesReady) {
+    return (
+      <FinanceScreen
+        title="Financial Goals"
+        subtitle="Track goal progress, recurring contributions and account-linked savings plans."
+      >
+        <View />
+      </FinanceScreen>
+    );
+  }
+
+  if (!hasSeenFinancialGoalsIntro) {
+    return (
+      <FinanceScreen
+        title="Financial Goals"
+        subtitle="Create, fund and review each savings target from one clean workspace."
+      >
+        <View style={styles.stack}>
+          <FinanceCard
+            style={[
+              styles.introCard,
+              {
+                backgroundColor: hexToRgba(colors.success, 0.1),
+                borderColor: hexToRgba(colors.success, 0.16),
+              },
+            ]}
+          >
+            <View style={styles.introTop}>
+              <View style={styles.introCopy}>
+                <Text style={[styles.introEyebrow, { color: colors.success }]}>Goal center</Text>
+                <Text style={[styles.introTitle, { color: colors.text }]}>
+                  Keep every goal visible and easier to fund.
+                </Text>
+                <Text style={[styles.introBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                  This flow now combines creation, savings account selection, transfer setup,
+                  history and delete states into fewer, clearer screens.
+                </Text>
+              </View>
+
+              <View style={[styles.introBadge, { backgroundColor: colors.card }]}>
+                <MaterialIcons name="flag-circle" size={20} color={colors.success} />
+                <Text style={[styles.introBadgeText, { color: colors.text }]}>3 active goals</Text>
+              </View>
+            </View>
+
+            <View style={styles.introHighlightStack}>
+              {financialGoalIntroHighlights.map((item) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.introHighlight,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: hexToRgba(colors.primaryDark, 0.08),
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.introHighlightIcon,
+                      { backgroundColor: hexToRgba(item.accent, 0.12) },
+                    ]}
+                  >
+                    <MaterialIcons name={item.icon} size={18} color={item.accent} />
+                  </View>
+                  <View style={styles.introHighlightCopy}>
+                    <Text style={[styles.introHighlightTitle, { color: colors.text }]}>
+                      {item.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.introHighlightBody,
+                        { color: hexToRgba(colors.text, 0.54) },
+                      ]}
+                    >
+                      {item.body}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.introActions}>
+              <ThemeButton
+                title="Create Goal"
+                onPress={() => {
+                  markFinancialGoalsIntroSeen();
+                  router.push('/(finance)/financial-goals/create');
+                }}
+                colorBackground={colors.success}
+                colorText={colors.card}
+                style={styles.introActionButton}
+              />
+              <ThemeButton
+                title="Open Dashboard"
+                onPress={markFinancialGoalsIntroSeen}
+                colorBackground={colors.card}
+                colorText={colors.text}
+                style={[styles.introActionButton, { borderWidth: 1, borderColor: colors.border }]}
+              />
+            </View>
+          </FinanceCard>
+        </View>
+      </FinanceScreen>
+    );
+  }
 
   return (
     <FinanceScreen
       title="Financial Goals"
-      subtitle="Track saving targets, milestone pacing and the next move for each goal."
+      subtitle="Track goal progress, recurring contributions and account-linked savings plans."
       contentStyle={styles.contentStyle}
       rightAccessory={
         <Pressable
-          style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[
+            styles.headerAction,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
           onPress={() => router.push('/(finance)/financial-goals/create')}
         >
           <MaterialIcons name="add" size={20} color={colors.text} />
@@ -33,40 +157,105 @@ export default function FinancialGoalsScreen() {
       }
     >
       <View style={styles.stack}>
-        <FinanceCard style={[styles.heroCard, { backgroundColor: colors.primaryDark }]}>
-          <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.74) }]}>GOAL WORKSPACE</Text>
-          <Text style={[styles.heroTitle, { color: colors.card }]}>Keep long-term plans visible and measurable.</Text>
-          <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.82) }]}>
-            A tighter goals view reduces scattered saving behavior and makes monthly tradeoffs easier to decide.
-          </Text>
+        <FinanceCard
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: hexToRgba(colors.success, 0.1),
+              borderColor: hexToRgba(colors.success, 0.16),
+            },
+          ]}
+        >
+          <View style={[styles.heroHeader, isSmallPhone && styles.heroHeaderCompact]}>
+            <View style={styles.heroCopy}>
+              <Text style={[styles.heroEyebrow, { color: colors.success }]}>Goal overview</Text>
+              <Text style={[styles.heroTitle, { color: colors.text }]}>
+                {formatCurrency(summary.totalSaved)}
+              </Text>
+              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                saved across {summary.activeGoals} active goals with {formatCurrency(summary.monthlyContribution)}
+                {' '}moving automatically each month
+              </Text>
+            </View>
 
-          <View style={[styles.heroTrack, { backgroundColor: hexToRgba(colors.card, 0.18) }]}>
-            <View
-              style={[
-                styles.heroFill,
-                { width: `${Math.min(overallProgress * 100, 100)}%`, backgroundColor: colors.card },
-              ]}
+            <GoalProgressRing
+              accent={colors.success}
+              progress={overallProgress}
+              centerValue={`${Math.round(overallProgress * 100)}%`}
+              caption="Portfolio funded"
+              size={isSmallPhone ? 158 : 182}
+              strokeWidth={isSmallPhone ? 14 : 16}
             />
           </View>
 
-          <View style={styles.heroMetrics}>
-            <View>
-              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>Saved</Text>
-              <Text style={[styles.heroMetricValue, { color: colors.card }]}>{formatCurrency(totalSaved)}</Text>
+          <ResponsiveGrid
+            minItemWidth={isSmallPhone ? 128 : 148}
+            horizontalPadding={18}
+            gap={10}
+            maxColumns={isSmallPhone ? 2 : 3}
+            style={styles.heroMetricGrid}
+          >
+            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroMetricValue, { color: colors.primaryDark }]}>
+                {formatCurrency(summary.totalLeft)}
+              </Text>
+              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                left to fund
+              </Text>
             </View>
-            <View>
-              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>Monthly pace</Text>
-              <Text style={[styles.heroMetricValue, { color: colors.card }]}>{formatCurrency(totalContribution)}</Text>
+            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroMetricValue, { color: colors.success }]}>
+                {leadGoal.targetMonth}
+              </Text>
+              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                next target month
+              </Text>
+            </View>
+            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroMetricValue, { color: colors.warning }]}>
+                {summary.activeGoals}
+              </Text>
+              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                active goals
+              </Text>
+            </View>
+          </ResponsiveGrid>
+
+          <View style={styles.heroActions}>
+            <View style={styles.heroActionWrap}>
+              <ThemeButton
+                title="Add Goal"
+                onPress={() => router.push('/(finance)/financial-goals/create')}
+                colorBackground={colors.success}
+                colorText={colors.card}
+                style={styles.heroActionButton}
+              />
+            </View>
+            <View style={styles.heroActionWrap}>
+              <ThemeButton
+                title="Open History"
+                onPress={() => router.push('/(finance)/financial-goals/history')}
+                colorBackground={colors.card}
+                colorText={colors.text}
+                style={[styles.heroActionButton, { borderWidth: 1, borderColor: colors.border }]}
+              />
             </View>
           </View>
         </FinanceCard>
 
+        <GoalHistoryCard
+          title="Balance History"
+          points={leadGoal.history}
+          accent={leadGoal.accent}
+          footer={`${leadGoal.title} has the strongest visible momentum right now.`}
+        />
+
         <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Active goals</Text>
-            <Text style={[styles.sectionMeta, { color: hexToRgba(colors.text, 0.5) }]}>
-              {financialGoals.length} goals
-            </Text>
+            <Pressable onPress={() => router.push('/(finance)/financial-goals/create')}>
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>New goal</Text>
+            </Pressable>
           </View>
 
           <View style={styles.goalStack}>
@@ -76,7 +265,10 @@ export default function FinancialGoalsScreen() {
               return (
                 <Pressable
                   key={goal.id}
-                  style={[styles.goalCard, { borderColor: colors.border }]}
+                  style={[
+                    styles.goalCard,
+                    { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                  ]}
                   onPress={() =>
                     router.push({
                       pathname: '/(finance)/financial-goals/[goalId]',
@@ -84,19 +276,19 @@ export default function FinancialGoalsScreen() {
                     })
                   }
                 >
-                  <View style={styles.goalRow}>
-                    <View style={[styles.goalIcon, { backgroundColor: hexToRgba(goal.accent, 0.14) }]}>
+                  <View style={styles.goalHeader}>
+                    <View style={[styles.goalIcon, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}>
                       <MaterialIcons name={goal.icon} size={20} color={goal.accent} />
                     </View>
 
                     <View style={styles.goalCopy}>
                       <Text style={[styles.goalTitle, { color: colors.text }]}>{goal.title}</Text>
-                      <Text style={[styles.goalSubtitle, { color: hexToRgba(colors.text, 0.52) }]}>
+                      <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}>
                         {goal.category} • {goal.dueLabel}
                       </Text>
                     </View>
 
-                    <Text style={[styles.goalProgressLabel, { color: goal.accent }]}>
+                    <Text style={[styles.goalProgress, { color: goal.accent }]}>
                       {Math.round(progress * 100)}%
                     </Text>
                   </View>
@@ -105,19 +297,16 @@ export default function FinancialGoalsScreen() {
                     <View
                       style={[
                         styles.goalFill,
-                        {
-                          width: `${Math.min(progress * 100, 100)}%`,
-                          backgroundColor: goal.accent,
-                        },
+                        { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: goal.accent },
                       ]}
                     />
                   </View>
 
-                  <View style={styles.goalMetaRow}>
-                    <Text style={[styles.goalMeta, { color: colors.text }]}>
+                  <View style={styles.goalFooter}>
+                    <Text style={[styles.goalValue, { color: colors.text }]}>
                       {formatCurrency(goal.saved)} of {formatCurrency(goal.target)}
                     </Text>
-                    <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}>
+                    <Text style={[styles.goalContribution, { color: hexToRgba(colors.text, 0.52) }]}>
                       +{formatCurrency(goal.monthlyContribution)}/mo
                     </Text>
                   </View>
@@ -127,202 +316,272 @@ export default function FinancialGoalsScreen() {
           </View>
         </FinanceCard>
 
-        <View style={styles.bottomRow}>
-          <FinanceCard style={styles.halfCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Top milestone</Text>
-            <Text style={[styles.miniTitle, { color: colors.text }]}>Book flights</Text>
-            <Text style={[styles.miniBody, { color: hexToRgba(colors.text, 0.56) }]}>
-              Summer Trip will be fully flight-ready once it crosses $1,800.
-            </Text>
-          </FinanceCard>
-
-          <FinanceCard style={styles.halfCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Next action</Text>
-            <Text style={[styles.miniTitle, { color: colors.text }]}>Create a new target</Text>
-            <Text style={[styles.miniBody, { color: hexToRgba(colors.text, 0.56) }]}>
-              Start a focused plan for debt payoff, home or investing.
-            </Text>
-            <Pressable
-              style={[styles.inlineButton, { backgroundColor: colors.primaryDark }]}
-              onPress={() => router.push('/(finance)/financial-goals/create')}
-            >
-              <Text style={[styles.inlineButtonText, { color: colors.card }]}>New goal</Text>
-            </Pressable>
-          </FinanceCard>
-        </View>
+        <ResponsiveGrid minItemWidth={190} horizontalPadding={18} gap={12} maxColumns={2}>
+          {financialGoalInsights.map((item) => (
+            <FinanceCard key={item.id}>
+              <Text style={[styles.insightValue, { color: colors[item.tone] }]}>{item.value}</Text>
+              <Text style={[styles.insightTitle, { color: colors.text }]}>{item.title}</Text>
+              <Text style={[styles.insightBody, { color: hexToRgba(colors.text, 0.56) }]}>
+                {item.body}
+              </Text>
+            </FinanceCard>
+          ))}
+        </ResponsiveGrid>
       </View>
     </FinanceScreen>
   );
 }
 
-function createStyles(colors: ColorTheme) {
-  return StyleSheet.create({
-    contentStyle: {
-      paddingBottom: 28,
-    },
-    stack: {
-      marginTop: 18,
-      gap: 16,
-    },
-    headerAction: {
-      width: 38,
-      height: 38,
-      borderRadius: 13,
-      borderWidth: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    heroCard: {
-      borderWidth: 0,
-    },
-    heroEyebrow: {
-      fontSize: 12,
-      fontWeight: '800',
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
-    },
-    heroTitle: {
-      marginTop: 10,
-      fontSize: 28,
-      lineHeight: 33,
-      fontWeight: '900',
-      letterSpacing: -0.7,
-    },
-    heroBody: {
-      marginTop: 10,
-      fontSize: Typography.body,
-      lineHeight: 20,
-      fontWeight: '500',
-    },
-    heroTrack: {
-      marginTop: 18,
-      height: 10,
-      borderRadius: 999,
-      overflow: 'hidden',
-    },
-    heroFill: {
-      height: '100%',
-      borderRadius: 999,
-    },
-    heroMetrics: {
-      marginTop: 18,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    heroMetricLabel: {
-      fontSize: 11,
-      fontWeight: '700',
-      textTransform: 'uppercase',
-      letterSpacing: 0.7,
-    },
-    heroMetricValue: {
-      marginTop: 4,
-      fontSize: 18,
-      fontWeight: '800',
-    },
-    sectionHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: 12,
-    },
-    sectionTitle: {
-      fontSize: 15,
-      fontWeight: '800',
-    },
-    sectionMeta: {
-      fontSize: 12,
-      fontWeight: '700',
-    },
-    goalStack: {
-      marginTop: 16,
-      gap: 14,
-    },
-    goalCard: {
-      borderWidth: 1,
-      borderRadius: 20,
-      padding: 14,
-    },
-    goalRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    goalIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    goalCopy: {
-      flex: 1,
-    },
-    goalTitle: {
-      fontSize: 15,
-      fontWeight: '800',
-    },
-    goalSubtitle: {
-      marginTop: 3,
-      fontSize: 12,
-      lineHeight: 17,
-      fontWeight: '500',
-    },
-    goalProgressLabel: {
-      fontSize: 13,
-      fontWeight: '800',
-    },
-    goalTrack: {
-      marginTop: 14,
-      height: 9,
-      borderRadius: 999,
-      overflow: 'hidden',
-    },
-    goalFill: {
-      height: '100%',
-      borderRadius: 999,
-    },
-    goalMetaRow: {
-      marginTop: 10,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 8,
-    },
-    goalMeta: {
-      fontSize: 12,
-      fontWeight: '600',
-    },
-    bottomRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    halfCard: {
-      flex: 1,
-      minHeight: 168,
-    },
-    miniTitle: {
-      marginTop: 12,
-      fontSize: 18,
-      lineHeight: 24,
-      fontWeight: '800',
-    },
-    miniBody: {
-      marginTop: 8,
-      fontSize: 12,
-      lineHeight: 18,
-      fontWeight: '500',
-    },
-    inlineButton: {
-      marginTop: 14,
-      minHeight: 40,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    inlineButtonText: {
-      fontSize: 13,
-      fontWeight: '800',
-    },
-  });
-}
+const styles = StyleSheet.create({
+  contentStyle: {
+    paddingBottom: 30,
+  },
+  stack: {
+    marginTop: 18,
+    gap: 16,
+  },
+  headerAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  introCard: {
+    borderWidth: 1,
+  },
+  introTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  introCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  introEyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  introTitle: {
+    marginTop: 8,
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '900',
+    letterSpacing: -0.7,
+  },
+  introBody: {
+    marginTop: 10,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  introBadge: {
+    minWidth: 78,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  introBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  introHighlightStack: {
+    marginTop: 18,
+    gap: 12,
+  },
+  introHighlight: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+  },
+  introHighlightIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  introHighlightCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  introHighlightTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  introHighlightBody: {
+    marginTop: 4,
+    fontSize: Typography.body,
+    lineHeight: 19,
+  },
+  introActions: {
+    marginTop: 18,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  introActionButton: {
+    flex: 1,
+  },
+  heroCard: {
+    borderWidth: 1,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 14,
+  },
+  heroHeaderCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  heroCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  heroEyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  heroTitle: {
+    marginTop: 8,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.9,
+  },
+  heroBody: {
+    marginTop: 10,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  heroMetricGrid: {
+    marginTop: 18,
+  },
+  heroMetricCard: {
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  heroMetricValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  heroMetricLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroActions: {
+    marginTop: 16,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  heroActionWrap: {
+    flex: 1,
+  },
+  heroActionButton: {
+    width: '100%',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  sectionLink: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  goalStack: {
+    marginTop: 16,
+    gap: 12,
+  },
+  goalCard: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 14,
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  goalIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  goalTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  goalMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  goalProgress: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  goalTrack: {
+    marginTop: 16,
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  goalFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  goalFooter: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  goalValue: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  goalContribution: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  insightValue: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  insightTitle: {
+    marginTop: 10,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  insightBody: {
+    marginTop: 6,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+});

@@ -1,6 +1,7 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useMemo, useState } from 'react';
@@ -135,6 +136,7 @@ const recentSearches = ['Groceries this week', 'Dining over $40', 'Spotify recur
 
 export default function SearchNotificationsScreen() {
   const { colors } = useTheme();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [surface, setSurface] = useState<SurfaceTab>('notifications');
   const [notificationPreview, setNotificationPreview] = useState<NotificationPreview>('inbox');
@@ -159,7 +161,13 @@ export default function SearchNotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(120, tabBarFloatingClearance) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.pageHeader}>
           <View style={styles.pageHeaderCopy}>
             <Text style={styles.pageTitle}>Search & Notifications</Text>

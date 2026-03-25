@@ -19,6 +19,7 @@ import {
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useResponsive } from '@/hooks/use-responsive';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -39,6 +40,7 @@ export default function FinanceCommunityScreen() {
     isIntroPreferencesReady,
     markCommunityIntroSeen,
   } = useIntroPreferences();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const { scale, verticalScale, scaleFont, isCompact } = useResponsive();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -102,7 +104,7 @@ export default function FinanceCommunityScreen() {
             {
               paddingHorizontal: scale(20, 0.8),
               paddingTop: verticalScale(10, 0.76),
-              paddingBottom: verticalScale(132, 0.76),
+              paddingBottom: Math.max(verticalScale(132, 0.76), tabBarFloatingClearance),
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -204,7 +206,7 @@ export default function FinanceCommunityScreen() {
             {
               paddingHorizontal: scale(18, 0.8),
               paddingTop: verticalScale(12, 0.76),
-              paddingBottom: verticalScale(156, 0.76),
+              paddingBottom: Math.max(verticalScale(156, 0.76), tabBarFloatingClearance),
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -408,12 +410,12 @@ export default function FinanceCommunityScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          {
-            paddingHorizontal: scale(20, 0.8),
-            paddingTop: verticalScale(16, 0.76),
-            paddingBottom: verticalScale(132, 0.76),
-          },
-        ]}
+            {
+              paddingHorizontal: scale(20, 0.8),
+              paddingTop: verticalScale(16, 0.76),
+              paddingBottom: Math.max(verticalScale(132, 0.76), tabBarFloatingClearance),
+            },
+          ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroWrap}>

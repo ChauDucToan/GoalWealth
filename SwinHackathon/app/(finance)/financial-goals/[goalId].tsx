@@ -1,22 +1,33 @@
+import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import {
+  getFinancialGoalById,
+  getGoalAccountById,
+} from '@/components/financial-goals/data';
+import {
+  GoalHistoryCard,
+  GoalProgressRing,
+  GoalTransferList,
+} from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
-import { ColorTheme, Typography } from '@/constants/theme';
+import { Typography } from '@/constants/theme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { financialGoals } from '@/components/financial-goals/data';
 
 export default function FinancialGoalDetailScreen() {
-  const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { isSmallPhone } = useResponsive();
+  const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const router = useRouter();
-  const goal = financialGoals.find((item) => item.id === goalId) ?? financialGoals[0];
+  const goal = getFinancialGoalById(goalId);
+  const account = getGoalAccountById(goal.accountId);
   const progress = goal.saved / goal.target;
-  const left = goal.target - goal.saved;
+  const left = Math.max(goal.target - goal.saved, 0);
 
   return (
     <FinanceScreen
@@ -25,223 +36,386 @@ export default function FinancialGoalDetailScreen() {
       contentStyle={styles.contentStyle}
       rightAccessory={
         <Pressable
-          style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => router.push('/(finance)/financial-goals/create')}
+          style={[
+            styles.headerAction,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+          onPress={() =>
+            router.push({
+              pathname: '/(finance)/financial-goals/create',
+              params: { goalId: goal.id, mode: 'edit' },
+            })
+          }
         >
           <MaterialIcons name="edit" size={18} color={colors.text} />
         </Pressable>
       }
     >
       <View style={styles.stack}>
-        <FinanceCard style={[styles.heroCard, { backgroundColor: goal.accent }]}>
-          <View style={styles.heroTop}>
-            <View>
-              <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.76) }]}>Goal progress</Text>
-              <Text style={[styles.heroValue, { color: colors.card }]}>{Math.round(progress * 100)}%</Text>
+        <FinanceCard
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: hexToRgba(goal.accent, 0.12),
+              borderColor: hexToRgba(goal.accent, 0.2),
+            },
+          ]}
+        >
+          <View style={[styles.heroTop, isSmallPhone && styles.heroTopCompact]}>
+            <View style={styles.heroCopy}>
+              <Text style={[styles.heroEyebrow, { color: goal.accent }]}>Goal health</Text>
+              <Text style={[styles.heroTitle, { color: colors.text }]}>
+                {formatCurrency(goal.saved)}
+              </Text>
+              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                {goal.note}
+              </Text>
             </View>
-            <View style={[styles.ringWrap, { borderColor: hexToRgba(colors.card, 0.24) }]}>
-              <View style={[styles.ringCore, { backgroundColor: colors.card }]}>
-                <MaterialIcons name={goal.icon} size={26} color={goal.accent} />
-              </View>
-            </View>
-          </View>
 
-          <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.84) }]}>
-            {goal.note}
-          </Text>
+            <GoalProgressRing
+              accent={goal.accent}
+              progress={progress}
+              centerValue={`${Math.round(progress * 100)}%`}
+              caption="funded"
+              size={isSmallPhone ? 154 : 176}
+              strokeWidth={isSmallPhone ? 14 : 16}
+            />
+          </View>
 
           <View style={styles.heroStats}>
-            <View>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Saved</Text>
-              <Text style={[styles.heroStatValue, { color: colors.card }]}>{formatCurrency(goal.saved)}</Text>
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroStatValue, { color: goal.accent }]}>
+                {formatCurrency(left)}
+              </Text>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                still left
+              </Text>
             </View>
-            <View>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Left</Text>
-              <Text style={[styles.heroStatValue, { color: colors.card }]}>{formatCurrency(left)}</Text>
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroStatValue, { color: colors.success }]}>
+                {formatCurrency(goal.monthlyContribution)}
+              </Text>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                monthly transfer
+              </Text>
             </View>
-            <View>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Monthly</Text>
-              <Text style={[styles.heroStatValue, { color: colors.card }]}>{formatCurrency(goal.monthlyContribution)}</Text>
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroStatValue, { color: colors.primaryDark }]}>
+                {goal.targetDate}
+              </Text>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                target date
+              </Text>
             </View>
           </View>
+        </FinanceCard>
+
+        <View style={styles.actionRow}>
+          <View style={styles.actionButtonWrap}>
+            <ThemeButton
+              title="Add Money"
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/transfer',
+                  params: { goalId: goal.id, mode: 'topup', accountId: account.id },
+                })
+              }
+              colorBackground={colors.primaryDark}
+              colorText={colors.card}
+              style={styles.actionButton}
+            />
+          </View>
+          <View style={styles.actionButtonWrap}>
+            <ThemeButton
+              title="Recurring"
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/transfer',
+                  params: { goalId: goal.id, mode: 'recurring', accountId: account.id },
+                })
+              }
+              colorBackground={colors.card}
+              colorText={colors.text}
+              style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}
+            />
+          </View>
+        </View>
+
+        <GoalHistoryCard
+          title="Balance History"
+          points={goal.history}
+          accent={goal.accent}
+          footer={`${goal.title} is pacing toward ${goal.targetDate}.`}
+        />
+
+        <FinanceCard>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Savings account</Text>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/account',
+                  params: {
+                    origin: 'detail',
+                    goalId: goal.id,
+                    accountId: account.id,
+                  },
+                })
+              }
+            >
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Switch</Text>
+            </Pressable>
+          </View>
+
+          <View
+            style={[
+              styles.accountCard,
+              { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+            ]}
+          >
+            <View style={[styles.accountAccent, { backgroundColor: account.accent }]} />
+            <View style={styles.accountCopy}>
+              <Text style={[styles.accountTitle, { color: colors.text }]}>{account.label}</Text>
+              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                {account.subtitle} • {account.mask}
+              </Text>
+              <Text style={[styles.accountHint, { color: colors.primaryDark }]}>
+                {goal.recurringLabel}
+              </Text>
+            </View>
+            <Text style={[styles.accountBalance, { color: colors.text }]}>
+              {formatCurrency(account.balance)}
+            </Text>
+          </View>
+        </FinanceCard>
+
+        <FinanceCard>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent activity</Text>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/history',
+                  params: { goalId: goal.id },
+                })
+              }
+            >
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Full history</Text>
+            </Pressable>
+          </View>
+          <GoalTransferList rows={goal.transfers} />
         </FinanceCard>
 
         <FinanceCard>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Milestones</Text>
           <View style={styles.milestoneStack}>
-            {goal.milestones.map((item, index) => (
-              <View key={item} style={styles.milestoneRow}>
+            {goal.milestones.map((milestone, index) => (
+              <View key={milestone} style={styles.milestoneRow}>
                 <View style={[styles.milestoneIndex, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}>
-                  <Text style={[styles.milestoneIndexText, { color: goal.accent }]}>{index + 1}</Text>
+                  <Text style={[styles.milestoneIndexText, { color: goal.accent }]}>
+                    {index + 1}
+                  </Text>
                 </View>
-                <Text style={[styles.milestoneText, { color: colors.text }]}>{item}</Text>
+                <Text style={[styles.milestoneText, { color: colors.text }]}>{milestone}</Text>
               </View>
             ))}
           </View>
         </FinanceCard>
 
-        <View style={styles.bottomRow}>
-          <FinanceCard style={styles.halfCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Contribution rhythm</Text>
-            <Text style={[styles.cardValue, { color: colors.text }]}>{formatCurrency(goal.monthlyContribution)}</Text>
-            <Text style={[styles.cardBody, { color: hexToRgba(colors.text, 0.56) }]}>
-              Monthly transfer currently assumed for this goal.
-            </Text>
-          </FinanceCard>
-
-          <FinanceCard style={styles.halfCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Completion gap</Text>
-            <Text style={[styles.cardValue, { color: colors.text }]}>{formatCurrency(left)}</Text>
-            <Text style={[styles.cardBody, { color: hexToRgba(colors.text, 0.56) }]}>
-              Remaining amount before this target is fully funded.
-            </Text>
-          </FinanceCard>
+        <View style={styles.footerActions}>
+          <ThemeButton
+            title="Edit Goal"
+            onPress={() =>
+              router.push({
+                pathname: '/(finance)/financial-goals/create',
+                params: { goalId: goal.id, mode: 'edit' },
+              })
+            }
+            colorBackground={colors.card}
+            colorText={colors.text}
+            style={[styles.footerButton, { borderWidth: 1, borderColor: colors.border }]}
+          />
+          <ThemeButton
+            title="Delete Goal"
+            onPress={() =>
+              router.push({
+                pathname: '/(finance)/financial-goals/delete',
+                params: { goalId: goal.id },
+              })
+            }
+            colorBackground={colors.error}
+            colorText={colors.card}
+            style={styles.footerButton}
+          />
         </View>
-
-        <Pressable
-          style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-          onPress={() => router.push('/(finance)/financial-goals/create')}
-        >
-          <Text style={[styles.primaryButtonText, { color: colors.card }]}>Adjust goal</Text>
-        </Pressable>
       </View>
     </FinanceScreen>
   );
 }
 
-function createStyles(colors: ColorTheme) {
-  return StyleSheet.create({
-    contentStyle: { paddingBottom: 28 },
-    headerAction: {
-      width: 38,
-      height: 38,
-      borderRadius: 13,
-      borderWidth: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stack: {
-      marginTop: 18,
-      gap: 16,
-    },
-    heroCard: {
-      borderWidth: 0,
-    },
-    heroTop: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: 12,
-    },
-    heroEyebrow: {
-      fontSize: 12,
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      letterSpacing: 0.7,
-    },
-    heroValue: {
-      marginTop: 6,
-      fontSize: 42,
-      fontWeight: '900',
-      letterSpacing: -1.2,
-    },
-    ringWrap: {
-      width: 92,
-      height: 92,
-      borderRadius: 46,
-      borderWidth: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    ringCore: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    heroBody: {
-      marginTop: 16,
-      fontSize: Typography.body,
-      lineHeight: 20,
-      fontWeight: '500',
-    },
-    heroStats: {
-      marginTop: 18,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    heroStatLabel: {
-      fontSize: 11,
-      fontWeight: '700',
-      textTransform: 'uppercase',
-      letterSpacing: 0.7,
-    },
-    heroStatValue: {
-      marginTop: 4,
-      fontSize: 16,
-      fontWeight: '800',
-    },
-    sectionTitle: {
-      fontSize: 15,
-      fontWeight: '800',
-    },
-    milestoneStack: {
-      marginTop: 16,
-      gap: 12,
-    },
-    milestoneRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    milestoneIndex: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    milestoneIndexText: {
-      fontSize: 12,
-      fontWeight: '800',
-    },
-    milestoneText: {
-      flex: 1,
-      fontSize: 14,
-      lineHeight: 19,
-      fontWeight: '600',
-    },
-    bottomRow: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    halfCard: {
-      flex: 1,
-      minHeight: 150,
-    },
-    cardValue: {
-      marginTop: 10,
-      fontSize: 24,
-      fontWeight: '900',
-      letterSpacing: -0.6,
-    },
-    cardBody: {
-      marginTop: 8,
-      fontSize: 12,
-      lineHeight: 18,
-      fontWeight: '500',
-    },
-    primaryButton: {
-      minHeight: 50,
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    primaryButtonText: {
-      fontSize: 14,
-      fontWeight: '800',
-    },
-  });
-}
+const styles = StyleSheet.create({
+  contentStyle: {
+    paddingBottom: 30,
+  },
+  headerAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stack: {
+    marginTop: 18,
+    gap: 16,
+  },
+  heroCard: {
+    borderWidth: 1,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 14,
+  },
+  heroTopCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  heroCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  heroEyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  heroTitle: {
+    marginTop: 8,
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+  },
+  heroBody: {
+    marginTop: 10,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  heroStats: {
+    marginTop: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  heroStatCard: {
+    flex: 1,
+    minWidth: 110,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  heroStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  heroStatLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButtonWrap: {
+    flex: 1,
+  },
+  actionButton: {
+    width: '100%',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  sectionLink: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  accountCard: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  accountAccent: {
+    width: 10,
+    height: 46,
+    borderRadius: 999,
+  },
+  accountCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  accountTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  accountMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  accountHint: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  accountBalance: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  milestoneStack: {
+    marginTop: 16,
+    gap: 12,
+  },
+  milestoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  milestoneIndex: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  milestoneIndexText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  milestoneText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '600',
+  },
+  footerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  footerButton: {
+    flex: 1,
+  },
+});

@@ -3,6 +3,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { groupTransactionsByDate } from '@/components/finance/finance-utils';
 import { merchantHighlights, overviewStats } from '@/components/home/mock-data';
 import { useFinance } from '@/hooks/use-finance';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ function formatCurrency(value: number) {
 export default function TransactionsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const { transactions, categories } = useFinance();
   const [filter, setFilter] = useState<FilterKey>('all');
 
@@ -41,7 +43,10 @@ export default function TransactionsScreen() {
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(120, tabBarFloatingClearance) },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.headerCard, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>

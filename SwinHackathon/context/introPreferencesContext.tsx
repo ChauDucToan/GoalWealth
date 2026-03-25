@@ -5,6 +5,7 @@ type IntroPreferenceFlags = {
   hasSeenWelcome: boolean;
   hasSeenAssistantIntro: boolean;
   hasSeenSubscriptionIntro: boolean;
+  hasSeenFinancialGoalsIntro: boolean;
   hasSeenCommunityIntro: boolean;
   hasSeenSmartBudgetSetupIntro: boolean;
 };
@@ -14,6 +15,7 @@ type IntroPreferencesContextValue = IntroPreferenceFlags & {
   markWelcomeSeen: () => void;
   markAssistantIntroSeen: () => void;
   markSubscriptionIntroSeen: () => void;
+  markFinancialGoalsIntroSeen: () => void;
   markCommunityIntroSeen: () => void;
   markSmartBudgetSetupIntroSeen: () => void;
 };
@@ -24,6 +26,7 @@ const defaultFlags: IntroPreferenceFlags = {
   hasSeenWelcome: false,
   hasSeenAssistantIntro: false,
   hasSeenSubscriptionIntro: false,
+  hasSeenFinancialGoalsIntro: false,
   hasSeenCommunityIntro: false,
   hasSeenSmartBudgetSetupIntro: false,
 };
@@ -97,6 +100,10 @@ export function IntroPreferencesProvider({ children }: { children: React.ReactNo
     () => markFlagSeen('hasSeenSubscriptionIntro'),
     [markFlagSeen]
   );
+  const markFinancialGoalsIntroSeen = useCallback(
+    () => markFlagSeen('hasSeenFinancialGoalsIntro'),
+    [markFlagSeen]
+  );
   const markCommunityIntroSeen = useCallback(
     () => markFlagSeen('hasSeenCommunityIntro'),
     [markFlagSeen]
@@ -113,6 +120,7 @@ export function IntroPreferencesProvider({ children }: { children: React.ReactNo
       markWelcomeSeen,
       markAssistantIntroSeen,
       markSubscriptionIntroSeen,
+      markFinancialGoalsIntroSeen,
       markCommunityIntroSeen,
       markSmartBudgetSetupIntroSeen,
     }),
@@ -121,6 +129,7 @@ export function IntroPreferencesProvider({ children }: { children: React.ReactNo
       isIntroPreferencesReady,
       markAssistantIntroSeen,
       markCommunityIntroSeen,
+      markFinancialGoalsIntroSeen,
       markSmartBudgetSetupIntroSeen,
       markSubscriptionIntroSeen,
       markWelcomeSeen,

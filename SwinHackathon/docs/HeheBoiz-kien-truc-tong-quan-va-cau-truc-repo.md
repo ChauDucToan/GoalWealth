@@ -39,14 +39,17 @@ Root layout đang bọc app theo thứ tự:
 
 1. `ThemeProvider`
 2. `MyUserProvider`
-3. `AssistantProvider`
-4. `FinanceProvider`
-5. `Stack`
+3. `ProfileSettingsProvider`
+4. `SmartBudgetingProvider`
+5. `IntroPreferencesProvider`
+6. `AssistantProvider`
+7. `FinanceProvider`
+8. `Stack`
 
 Điều này cho thấy:
 
 - theme là lớp ngoài cùng
-- state user, assistant và finance đều có scope toàn app
+- state user, profile settings, smart budgeting, intro preferences, assistant và finance đều có scope toàn app
 - routing được quản lý bằng `Stack` của Expo Router
 
 ### 3.2. Các nhóm route chính
@@ -59,6 +62,7 @@ Từ `app/_layout.tsx`, app hiện có các tuyến lớn:
 - `(tabs)`
 - `(finance)`
 - `(assistant)`
+- `(profile)`
 
 Nói ngắn gọn:
 
@@ -68,6 +72,7 @@ Nói ngắn gọn:
 - `(tabs)` là vùng sử dụng chính của app
 - `(finance)` là nhóm flow chi tiết của nghiệp vụ tài chính
 - `(assistant)` là nhóm flow chi tiết của trợ lý AI
+- `(profile)` là nhóm detail screen của `Profile Settings`
 
 ## 4. Cấu trúc route theo nhóm
 
@@ -180,6 +185,30 @@ Lưu ý kiến trúc quan trọng:
 - các màn `news-resources` cũ vẫn còn trong nhóm route này
 - nhưng tab root `app/(tabs)/news-resources.tsx` hiện đang render community flow
 
+### 4.6. Nhóm `app/(profile)`
+
+Layout:
+
+- `app/(profile)/_layout.tsx`
+
+Nhóm này hiện chứa:
+
+- `account`
+- `preferences`
+- `notifications`
+- `security`
+- `password`
+- `passcode`
+- `linked-accounts`
+- `support`
+- `result`
+
+Vai trò:
+
+- giữ các detail screen của tab `Profile`
+- tách phần hub `profile` và phần stack settings ra rõ ràng
+- cho phép mở rộng `Profile Settings` mà không làm tab root phình to quá mức
+
 ## 5. Tầng state management
 
 ### 5.1. `ThemeProvider`
@@ -253,7 +282,58 @@ Các hành vi chính:
 - Hiện vẫn thiên về mock/demo logic.
 - Conversation được build từ `assistantScenarios` trong mock data.
 
-### 5.4. `FinanceProvider`
+### 5.4. `ProfileSettingsProvider`
+
+File:
+
+- `context/profileSettingsContext.tsx`
+
+Vai trò:
+
+- quản lý toàn bộ state cho flow `Profile Settings`
+
+Những state chính:
+
+- `profile`
+- `notifications`
+- `security`
+- `display`
+- `linkedAccounts`
+- `invite`
+- `appRating`
+- `exportStatusLabel`
+- `feedbackDraft`
+
+Ý nghĩa:
+
+- tab `profile` và các màn trong `/(profile)` chia sẻ một nguồn state duy nhất
+- phù hợp với hướng app đang đi: dùng context mock để đẩy nhanh frontend flow
+
+### 5.5. `IntroPreferencesProvider`
+
+File:
+
+- `context/introPreferencesContext.tsx`
+
+Vai trò:
+
+- lưu các cờ “đã xem intro chưa” bằng `AsyncStorage`
+
+Các cờ hiện có:
+
+- `hasSeenWelcome`
+- `hasSeenAssistantIntro`
+- `hasSeenSubscriptionIntro`
+- `hasSeenFinancialGoalsIntro`
+- `hasSeenCommunityIntro`
+- `hasSeenSmartBudgetSetupIntro`
+
+Ý nghĩa:
+
+- các màn landing/intro không lặp lại ở mỗi lần mở app
+- cải thiện UX cho các flow như `welcome`, `assistant`, `subscriptions`, `financial goals`, `community`, `smart budgeting`
+
+### 5.6. `FinanceProvider`
 
 File:
 
@@ -298,14 +378,18 @@ Các hook hiện có:
 
 - `hooks/use-assistant.tsx`
 - `hooks/use-finance.tsx`
+- `hooks/use-profile-setup.tsx`
 - `hooks/use-responsive.ts`
+- `hooks/use-tab-bar-clearance.ts`
 - `hooks/use-theme-colors.tsx`
 
 Ý nghĩa:
 
 - `use-assistant` và `use-finance` đóng vai trò wrapper để truy cập context tương ứng.
+- `use-profile-setup` là wrapper cho flow onboarding `Profile Setup & Account Completion`.
 - `use-theme-colors` là nguồn theme thực tế cho UI.
 - `use-responsive` là nền tảng cho toàn bộ logic scale/responsive được tăng cường ở các đợt sau.
+- `use-tab-bar-clearance` giúp các tab root có khoảng đệm an toàn để nội dung cuối không bị `AppTabBar` che.
 
 ## 7. Tầng component
 

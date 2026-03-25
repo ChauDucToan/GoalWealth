@@ -84,7 +84,36 @@ Vai trò:
 
 - màn tạo tài khoản mới
 
-### 4.3. `forgetPassword` và `passwordResent`
+Điểm điều hướng quan trọng:
+
+- sau khi nhập email/password hợp lệ và bấm `Create Account`, app đi vào:
+  - `/(auth)/profile-setup/avatar`
+
+### 4.3. `Profile Setup & Account Completion`
+
+Đây là flow onboarding sau `signUp`, hiện đã được tinh gọn lại mạnh so với bản cũ.
+
+Điểm vào:
+
+- `/(auth)/profile-setup/avatar`
+
+Thứ tự flow hiện tại:
+
+1. `avatar`
+2. `link-bank`
+3. `face-id`
+4. `confirm-account`
+5. `financial-score`
+6. `pick-plan`
+7. `premium-success`
+
+Ý nghĩa:
+
+- flow cũ nhiều màn nhỏ như `choose-avatar`, `bank-search`, `otp`, `privacy-policy`, `free-trial` vẫn còn route
+- nhưng chúng đã trở thành redirect để quay về trục flow mới
+- người dùng mới không còn bị đưa qua từng màn trạng thái vụn
+
+### 4.4. `forgetPassword` và `passwordResent`
 
 Vai trò:
 
@@ -292,7 +321,26 @@ Các màn vẫn còn trong repo:
 ### 11.1. `profile`
 
 - là tab riêng
-- đóng vai trò màn thông tin người dùng / cài đặt cá nhân
+- đóng vai trò hub `Profile Settings`
+- từ đây có thể đi vào route group `/(profile)`
+
+Các route con chính:
+
+- `account`
+- `preferences`
+- `notifications`
+- `security`
+- `password`
+- `passcode`
+- `linked-accounts`
+- `support`
+- `result`
+
+Ý nghĩa:
+
+- tab `profile` là điểm vào
+- nhóm `/(profile)` là vùng detail settings
+- kiến trúc này giúp giữ tab root gọn nhưng vẫn có không gian mở rộng cho settings
 
 ### 11.2. `achievements`
 

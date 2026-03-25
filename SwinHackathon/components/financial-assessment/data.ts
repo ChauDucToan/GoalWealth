@@ -61,6 +61,15 @@ export type AssessmentChallengeOption = {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
 };
 
+export type AssessmentFlowBlock = {
+  id: 'essentials' | 'income' | 'planning' | 'resilience' | 'commitment';
+  label: string;
+  helper: string;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  route: string;
+  stepCount: number;
+};
+
 export const firstChunkSteps = [
   'Your name',
   'App purpose',
@@ -93,6 +102,49 @@ export const fourthChunkSteps = [
   'Commitment words',
   'Voice confirmation',
 ] as const;
+
+export const assessmentFlowBlocks: AssessmentFlowBlock[] = [
+  {
+    id: 'essentials',
+    label: 'Identity & purpose',
+    helper: 'Name, work context and the reason you want Finpal to guide you.',
+    icon: 'badge',
+    route: '/(finance)/financial-assessment/essentials',
+    stepCount: 3,
+  },
+  {
+    id: 'income',
+    label: 'Income snapshot',
+    helper: 'Primary source, monthly income, savings rate and pay cadence.',
+    icon: 'payments',
+    route: '/(finance)/financial-assessment/income-profile',
+    stepCount: 4,
+  },
+  {
+    id: 'planning',
+    label: 'Spending & goals',
+    helper: 'Pressure categories, debt load, target goal and tracking habits.',
+    icon: 'insights',
+    route: '/(finance)/financial-assessment/planning',
+    stepCount: 5,
+  },
+  {
+    id: 'resilience',
+    label: 'Resilience profile',
+    helper: 'Retirement, dependents, current situation and emergency buffer.',
+    icon: 'shield',
+    route: '/(finance)/financial-assessment/resilience',
+    stepCount: 6,
+  },
+  {
+    id: 'commitment',
+    label: 'Challenge & commitment',
+    helper: 'Your biggest blocker plus the closing commitment treatment.',
+    icon: 'mic',
+    route: '/(finance)/financial-assessment/commitment',
+    stepCount: 3,
+  },
+];
 
 export const assessmentPurposeOptions: AssessmentPurposeOption[] = [
   {
@@ -289,3 +341,5 @@ export const biggestChallengeOptions: AssessmentChallengeOption[] = [
     icon: 'alt-route',
   },
 ] as const;
+
+export const commitmentWaveform = [18, 10, 26, 16, 34, 20, 40, 22, 14, 28, 18, 36, 20, 12, 24, 16] as const;

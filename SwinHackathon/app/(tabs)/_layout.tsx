@@ -19,6 +19,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="insights" />
       <Tabs.Screen name="assistant" />
       <Tabs.Screen name="profile" />
+      <Tabs.Screen name="smart-budgeting" />
     </Tabs>
   );
 }

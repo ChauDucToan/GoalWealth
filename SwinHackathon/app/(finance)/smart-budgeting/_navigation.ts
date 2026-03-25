@@ -11,5 +11,5 @@ export function resolveSmartBudgetReturnRoute(returnTo?: string | string[]): Hre
     return '/(finance)/smart-budgeting/budget-insights';
   }
 
-  return '/(finance)/smart-budgeting';
+  return '/(tabs)/smart-budgeting';
 }

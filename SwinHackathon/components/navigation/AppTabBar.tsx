@@ -13,6 +13,7 @@ type TabRouteName =
   | 'transactions'
   | 'assistant'
   | 'profile'
+  | 'smart-budgeting'
   | 'insights'
   | 'achievements'
   | 'news-resources'
@@ -32,9 +33,10 @@ const routeMeta: Record<
   transactions: { label: 'Transactions', icon: 'receipt-long' },
   assistant: { label: 'Assistant', icon: 'smart-toy' },
   profile: { label: 'Profile', icon: 'person-outline' },
+  'smart-budgeting': { label: 'Budgeting', icon: 'savings' },
   insights: { label: 'Insights', icon: 'bar-chart' },
   achievements: { label: 'Achievements', icon: 'emoji-events' },
-  'news-resources': { label: 'Resources', icon: 'newspaper' },
+  'news-resources': { label: 'News', icon: 'newspaper' },
   'search-notifications': { label: 'Search', icon: 'search' },
 };
 
@@ -73,6 +75,27 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
       navigation.navigate(name as never);
     }
   };
+
+  const featuredActions = [
+    {
+      id: 'smart-budgeting',
+      label: 'Smart Budgeting',
+      body: 'Open the budget workspace, setup and receipt import flows.',
+      icon: routeMeta['smart-budgeting'].icon,
+      onPress: () => navigateTo('smart-budgeting'),
+      active: currentRouteName === 'smart-budgeting',
+    },
+    {
+      id: 'news',
+      label: 'News',
+      body: 'Jump straight to news, resources and community updates.',
+      icon: routeMeta['news-resources'].icon,
+      onPress: () => navigateTo('news-resources'),
+      active: currentRouteName === 'news-resources',
+    },
+  ] as const;
+
+  const overflowMenuTabs = overflowTabs.filter((name) => name !== 'news-resources');
 
   const renderPrimaryTab = (name: TabRouteName) => {
     const active = currentRouteName === name;
@@ -133,57 +156,124 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
             },
           ]}
         >
-          {overflowTabs.map((name) => {
-            const active = currentRouteName === name;
-            const meta = routeMeta[name];
-
-            return (
+          <View style={styles.featuredRow}>
+            {featuredActions.map((item) => (
               <Pressable
-                key={name}
-                onPress={() => navigateTo(name)}
+                key={item.id}
+                onPress={item.onPress}
                 style={[
-                  styles.moreItem,
+                  styles.featuredCard,
                   {
-                    backgroundColor: colors.card,
-                    borderColor: active ? hexToRgba(colors.primaryDark, 0.18) : colors.border,
+                    backgroundColor: item.active ? colors.primaryLight : colors.card,
+                    borderColor: item.active ? hexToRgba(colors.primaryDark, 0.22) : colors.border,
                     borderRadius: scale(18, 0.72),
-                    paddingHorizontal: scale(12, 0.78),
+                    paddingHorizontal: scale(14, 0.78),
                     paddingVertical: verticalScale(12, 0.76),
                   },
                 ]}
               >
                 <View
                   style={[
-                    styles.moreIconShell,
+                    styles.featuredIconShell,
                     {
-                      backgroundColor: active ? colors.primaryLight : colors.backgroundSoft,
-                      width: scale(38, 0.72),
-                      height: scale(38, 0.72),
+                      backgroundColor: item.active
+                        ? hexToRgba(colors.primaryDark, 0.12)
+                        : colors.backgroundSoft,
+                      width: scale(42, 0.72),
+                      height: scale(42, 0.72),
                       borderRadius: scale(14, 0.72),
                     },
                   ]}
                 >
                   <MaterialIcons
-                    name={meta.icon}
+                    name={item.icon}
                     size={scale(20, 0.72)}
-                    color={active ? colors.primaryDark : hexToRgba(colors.text, 0.5)}
+                    color={item.active ? colors.primaryDark : hexToRgba(colors.text, 0.5)}
                   />
                 </View>
-                <Text
-                  numberOfLines={1}
+                <View style={styles.featuredCopy}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.featuredLabel,
+                      {
+                        color: item.active ? colors.primaryDark : colors.text,
+                        fontSize: scaleFont(Typography.body, 0.78),
+                      },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      styles.featuredBody,
+                      {
+                        color: hexToRgba(colors.text, 0.54),
+                        fontSize: scaleFont(12, 0.78),
+                      },
+                    ]}
+                  >
+                    {item.body}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={styles.moreGrid}>
+            {overflowMenuTabs.map((name) => {
+              const active = currentRouteName === name;
+              const meta = routeMeta[name];
+
+              return (
+                <Pressable
+                  key={name}
+                  onPress={() => navigateTo(name)}
                   style={[
-                    styles.moreLabel,
+                    styles.moreItem,
                     {
-                      color: active ? colors.primaryDark : colors.text,
-                      fontSize: scaleFont(Typography.body, 0.78),
+                      backgroundColor: colors.card,
+                      borderColor: active ? hexToRgba(colors.primaryDark, 0.18) : colors.border,
+                      borderRadius: scale(18, 0.72),
+                      paddingHorizontal: scale(12, 0.78),
+                      paddingVertical: verticalScale(12, 0.76),
                     },
                   ]}
                 >
-                  {meta.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <View
+                    style={[
+                      styles.moreIconShell,
+                      {
+                        backgroundColor: active ? colors.primaryLight : colors.backgroundSoft,
+                        width: scale(38, 0.72),
+                        height: scale(38, 0.72),
+                        borderRadius: scale(14, 0.72),
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={meta.icon}
+                      size={scale(20, 0.72)}
+                      color={active ? colors.primaryDark : hexToRgba(colors.text, 0.5)}
+                    />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.moreLabel,
+                      {
+                        color: active ? colors.primaryDark : colors.text,
+                        fontSize: scaleFont(Typography.body, 0.78),
+                      },
+                    ]}
+                  >
+                    {meta.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       ) : null}
 
@@ -223,7 +313,10 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
           style={[
             styles.centerButton,
             {
-              backgroundColor: isMoreOpen || isOverflowActive ? colors.primaryDark : colors.card,
+              backgroundColor:
+                isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
+                  ? colors.primaryDark
+                  : colors.card,
               borderColor: hexToRgba(colors.primaryDark, 0.12),
               shadowColor: colors.shadow,
               width: scale(64, 0.76),
@@ -237,7 +330,11 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
           <MaterialIcons
             name="apps"
             size={scale(26, 0.72)}
-            color={isMoreOpen || isOverflowActive ? colors.card : colors.primaryDark}
+            color={
+              isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
+                ? colors.card
+                : colors.primaryDark
+            }
           />
         </Pressable>
       </View>
@@ -258,13 +355,39 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 20,
     borderWidth: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
     shadowOpacity: 0.14,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
     elevation: 6,
+  },
+  featuredRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  featuredCard: {
+    flex: 1,
+    borderWidth: 1,
+    gap: 10,
+  },
+  featuredIconShell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredCopy: {
+    gap: 4,
+  },
+  featuredLabel: {
+    fontWeight: '800',
+  },
+  featuredBody: {
+    lineHeight: 16,
+    fontWeight: '500',
+  },
+  moreGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   moreItem: {
     flexBasis: 140,

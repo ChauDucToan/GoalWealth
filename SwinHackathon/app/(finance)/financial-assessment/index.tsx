@@ -1,5 +1,13 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { ColorTheme, Typography } from '@/constants/theme';
+import {
+  assessmentFlowBlocks,
+  biggestChallengeOptions,
+  financialGoalOptions,
+  financeSituationOptions,
+  incomeSourceOptions,
+  payFrequencyOptions,
+} from '@/components/financial-assessment/data';
+import { Typography } from '@/constants/theme';
 import { useFinancialAssessment } from '@/hooks/use-financial-assessment';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -7,91 +15,190 @@ import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { firstChunkSteps, fourthChunkSteps, secondChunkSteps, thirdChunkSteps } from '@/components/financial-assessment/data';
 
 export default function FinancialAssessmentEntryScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { state, restartFirstChunk } = useFinancialAssessment();
-  const implementedSteps = [...firstChunkSteps, ...secondChunkSteps, ...thirdChunkSteps, ...fourthChunkSteps];
-  const nextRoute = !state.isFirstChunkComplete
-    ? '/(finance)/financial-assessment/full-name'
-    : !state.isSecondChunkComplete
-    ? '/(finance)/financial-assessment/pay-frequency'
-    : !state.isThirdChunkComplete
-    ? '/(finance)/financial-assessment/retirement-age'
-    : !state.isFourthChunkComplete
-    ? '/(finance)/financial-assessment/biggest-challenge'
-    : '/(finance)/financial-assessment/full-name';
-  const primaryLabel = !state.isFirstChunkComplete
-    ? 'Start first block'
-    : !state.isSecondChunkComplete
-    ? 'Continue assessment'
-    : !state.isThirdChunkComplete
-    ? 'Continue next block'
-    : !state.isFourthChunkComplete
-    ? 'Finish assessment'
-    : 'Review assessment';
+
+  const sectionCompletion = {
+    essentials: Boolean(state.fullName.trim() && state.purposeId && state.occupation.trim()),
+    income: Boolean(state.incomeSourceId && state.payFrequencyId),
+    planning: Boolean(
+      state.spendingCategoryIds.length > 0 &&
+        state.financialGoalId &&
+        state.goalDeadlineLabel &&
+        state.expenseTrackingId
+    ),
+    resilience: Boolean(
+      state.financeSituationId && state.emergencyFundId && state.spendingBehaviourScore
+    ),
+    commitment: Boolean(state.isFourthChunkComplete),
+  } as const;
+
+  const completedBlocks = assessmentFlowBlocks.filter((item) => sectionCompletion[item.id]).length;
+  const totalPrompts = assessmentFlowBlocks.reduce((sum, item) => sum + item.stepCount, 0);
+  const nextBlock = assessmentFlowBlocks.find((item) => !sectionCompletion[item.id]);
+  const nextRoute = nextBlock?.route ?? '/(finance)/financial-assessment/essentials';
+  const primaryLabel = nextBlock
+    ? completedBlocks === 0
+      ? 'Start assessment'
+      : `Continue with ${nextBlock.label}`
+    : 'Review condensed flow';
+
+  const incomeSourceLabel =
+    incomeSourceOptions.find((item) => item.id === state.incomeSourceId)?.label ?? 'Income pending';
+  const payFrequencyLabel =
+    payFrequencyOptions.find((item) => item.id === state.payFrequencyId)?.label ?? 'Pay cycle pending';
+  const goalLabel =
+    financialGoalOptions.find((item) => item.id === state.financialGoalId)?.label ?? 'Goal pending';
+  const situationLabel =
+    financeSituationOptions.find((item) => item.id === state.financeSituationId)?.label ??
+    'Situation pending';
+  const challengeLabel =
+    biggestChallengeOptions.find((item) => item.id === state.biggestChallengeId)?.label ??
+    'Challenge pending';
+
+  const sectionSummary = {
+    essentials: state.fullName.trim()
+      ? `${state.fullName} • ${state.occupation || 'occupation pending'}`
+      : 'Name, work context and purpose',
+    income: `${incomeSourceLabel} • ${payFrequencyLabel}`,
+    planning: `${state.spendingCategoryIds.length || 0} categories • ${goalLabel}`,
+    resilience:
+      state.emergencyFundId === 'yes'
+        ? `${situationLabel} • ${state.emergencyFundMonths} months covered`
+        : `${situationLabel} • emergency fund pending`,
+    commitment: challengeLabel,
+  } as const;
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.heroOrb, { backgroundColor: hexToRgba(colors.primaryDark, 0.1) }]}>
-          <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
-            <MaterialIcons name="analytics" size={36} color={colors.primaryDark} />
-          </View>
-        </View>
-
-        <Text style={[styles.eyebrow, { color: colors.primaryDark }]}>COMPREHENSIVE ASSESSMENT</Text>
-        <Text style={[styles.title, { color: colors.text }]}>Start your financial assessment.</Text>
-        <Text style={[styles.body, { color: hexToRgba(colors.text, 0.58) }]}>
-          This release now covers the first 21 assessment screens: profile basics, income structure, goals, behavior signals and final commitment screens.
-        </Text>
-
-        <View style={styles.stepStack}>
-          {implementedSteps.map((label, index) => (
-            <View key={label} style={[styles.stepRow, { borderBottomColor: colors.border }]}>
-              <View style={[styles.stepIndex, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
-                <Text style={[styles.stepIndexText, { color: colors.primaryDark }]}>{index + 1}</Text>
-              </View>
-              <Text style={[styles.stepTitle, { color: colors.text }]}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {state.isFirstChunkComplete ? (
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.summaryTitle, { color: colors.text }]}>Saved answers</Text>
-            <Text style={[styles.summaryBody, { color: hexToRgba(colors.text, 0.56) }]}>
-              {state.fullName || 'Unnamed profile'} • ${state.monthlyIncome.toLocaleString()} monthly • {state.savingsRate}% saved
+        <View style={[styles.heroCard, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
+          <View style={styles.heroCopy}>
+            <Text style={[styles.eyebrow, { color: colors.primaryDark }]}>
+              COMPREHENSIVE ASSESSMENT
             </Text>
-            {state.isSecondChunkComplete ? (
-              <Text style={[styles.summaryBody, { color: hexToRgba(colors.text, 0.56) }]}>
-                {state.spendingCategoryIds.length || 0} spending areas • {state.goalDeadlineLabel || 'No goal date'} • {state.expenseTrackingId || 'tracking not set'}
-              </Text>
-            ) : null}
-            {state.isThirdChunkComplete ? (
-              <Text style={[styles.summaryBody, { color: hexToRgba(colors.text, 0.56) }]}>
-                Retire at {state.retirementAge} • {state.dependentCount} dependents • {state.emergencyFundMonths} months buffer
-              </Text>
-            ) : null}
-            {state.isFourthChunkComplete ? (
-              <Text style={[styles.summaryBody, { color: hexToRgba(colors.text, 0.56) }]}>
-                Challenge: {state.biggestChallengeId || 'not set'} • final commitment complete
-              </Text>
-            ) : null}
+            <Text style={[styles.title, { color: colors.text }]}>
+              21 prompts, streamlined into 5 focused blocks.
+            </Text>
+            <Text style={[styles.body, { color: hexToRgba(colors.text, 0.58) }]}>
+              The original UI kit spreads this onboarding across many screens. The current flow keeps the same information, but groups related prompts to reduce churn and make the logic easier to follow on mobile.
+            </Text>
           </View>
-        ) : null}
-
-        <View style={[styles.scopeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.scopeTitle, { color: colors.text }]}>Current scope</Text>
-          <Text style={[styles.scopeBody, { color: hexToRgba(colors.text, 0.56) }]}>
-            The assessment currently covers 21 screens from the full design board. This includes the final challenge and voice commitment screens shown at the end of the design.
-          </Text>
+          <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
+            <Text style={[styles.heroBadgeValue, { color: colors.primaryDark }]}>
+              {completedBlocks}/{assessmentFlowBlocks.length}
+            </Text>
+            <Text style={[styles.heroBadgeLabel, { color: hexToRgba(colors.text, 0.55) }]}>
+              blocks ready
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.actionGroup}>
+        <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.statRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>{totalPrompts}</Text>
+              <Text style={[styles.statLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                original prompts
+              </Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>5</Text>
+              <Text style={[styles.statLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                optimized blocks
+              </Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: colors.text }]}>{state.fullName ? 'Live' : 'New'}</Text>
+              <Text style={[styles.statLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                profile state
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.sectionList}>
+          {assessmentFlowBlocks.map((item) => {
+            const completed = sectionCompletion[item.id];
+
+            return (
+              <Pressable
+                key={item.id}
+                style={[
+                  styles.sectionCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: completed ? hexToRgba(colors.primaryDark, 0.24) : colors.border,
+                  },
+                ]}
+                onPress={() => router.push(item.route)}
+              >
+                <View
+                  style={[
+                    styles.sectionIconWrap,
+                    {
+                      backgroundColor: completed
+                        ? hexToRgba(colors.primaryDark, 0.12)
+                        : colors.backgroundSoft,
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={completed ? 'check-circle' : item.icon}
+                    size={22}
+                    color={completed ? colors.primaryDark : hexToRgba(colors.text, 0.56)}
+                  />
+                </View>
+
+                <View style={styles.sectionCopy}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>{item.label}</Text>
+                    <View
+                      style={[
+                        styles.statusPill,
+                        {
+                          backgroundColor: completed
+                            ? hexToRgba(colors.primaryDark, 0.08)
+                            : colors.backgroundSoft,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: completed ? colors.primaryDark : hexToRgba(colors.text, 0.56) },
+                        ]}
+                      >
+                        {completed ? 'Ready' : `${item.stepCount} prompts`}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.sectionHelper, { color: hexToRgba(colors.text, 0.54) }]}>
+                    {item.helper}
+                  </Text>
+                  <Text style={[styles.sectionSummary, { color: colors.text }]}>
+                    {sectionSummary[item.id]}
+                  </Text>
+                </View>
+
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color={hexToRgba(colors.text, 0.34)}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={[styles.actionGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
             onPress={() => router.push(nextRoute)}
@@ -99,9 +206,9 @@ export default function FinancialAssessmentEntryScreen() {
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>{primaryLabel}</Text>
           </Pressable>
 
-          {state.isFirstChunkComplete ? (
+          {completedBlocks > 0 ? (
             <Pressable
-              style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
               onPress={restartFirstChunk}
             >
               <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Reset answers</Text>
@@ -113,33 +220,34 @@ export default function FinancialAssessmentEntryScreen() {
   );
 }
 
-function createStyles(colors: ColorTheme) {
+function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
   return StyleSheet.create({
-    screen: { flex: 1 },
-    content: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 16, paddingBottom: 24 },
-    heroOrb: {
-      alignSelf: 'center',
-      width: 128,
-      height: 128,
-      borderRadius: 64,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 6,
+    screen: {
+      flex: 1,
     },
-    heroBadge: {
-      width: 76,
-      height: 76,
-      borderRadius: 24,
+    content: {
+      flexGrow: 1,
+      paddingHorizontal: 22,
+      paddingTop: 16,
+      paddingBottom: 28,
+      gap: 16,
+    },
+    heroCard: {
+      borderRadius: 30,
+      padding: 20,
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      gap: 16,
+    },
+    heroCopy: {
+      flex: 1,
+      minWidth: 0,
     },
     eyebrow: {
-      marginTop: 18,
       fontSize: 12,
       fontWeight: '800',
-      textTransform: 'uppercase',
       letterSpacing: 0.8,
-      textAlign: 'center',
+      textTransform: 'uppercase',
     },
     title: {
       marginTop: 10,
@@ -147,67 +255,150 @@ function createStyles(colors: ColorTheme) {
       lineHeight: 36,
       fontWeight: '900',
       letterSpacing: -0.7,
-      textAlign: 'center',
     },
     body: {
       marginTop: 10,
       fontSize: Typography.body,
       lineHeight: 21,
+    },
+    heroBadge: {
+      width: 110,
+      height: 110,
+      borderRadius: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    heroBadgeValue: {
+      fontSize: 26,
+      fontWeight: '900',
+      letterSpacing: -0.8,
       textAlign: 'center',
     },
-    stepStack: { marginTop: 16, gap: 2 },
-    stepRow: {
-      minHeight: 50,
-      borderBottomWidth: 1,
+    heroBadgeLabel: {
+      marginTop: 4,
+      fontSize: 11,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      textAlign: 'center',
+    },
+    statsCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      padding: 16,
+    },
+    statRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
-      paddingVertical: 8,
+      justifyContent: 'space-between',
+      gap: 14,
     },
-    stepIndex: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 0,
+    },
+    statDivider: {
+      width: 1,
+      height: 38,
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: '900',
+    },
+    statLabel: {
+      marginTop: 4,
+      fontSize: 11,
+      fontWeight: '700',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    sectionList: {
+      gap: 12,
+    },
+    sectionCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+    },
+    sectionIconWrap: {
+      width: 46,
+      height: 46,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    stepIndexText: { fontSize: 13, fontWeight: '800' },
-    stepTitle: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '800' },
-    summaryCard: {
-      marginTop: 16,
-      borderRadius: 20,
-      borderWidth: 1,
-      padding: 16,
+    sectionCopy: {
+      flex: 1,
+      minWidth: 0,
     },
-    summaryTitle: { fontSize: 14, fontWeight: '800' },
-    summaryBody: { marginTop: 4, fontSize: 12, lineHeight: 18, fontWeight: '500' },
-    scopeCard: {
-      marginTop: 14,
-      borderRadius: 20,
-      borderWidth: 1,
-      padding: 16,
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
     },
-    scopeTitle: { fontSize: 14, fontWeight: '800' },
-    scopeBody: { marginTop: 4, fontSize: 12, lineHeight: 18, fontWeight: '500' },
+    sectionTitle: {
+      flex: 1,
+      minWidth: 0,
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    statusPill: {
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+    },
+    statusText: {
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    sectionHelper: {
+      marginTop: 6,
+      fontSize: 12,
+      lineHeight: 18,
+      fontWeight: '500',
+    },
+    sectionSummary: {
+      marginTop: 6,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight: '700',
+    },
     actionGroup: {
-      marginTop: 18,
-      paddingTop: 6,
+      borderRadius: 24,
+      borderWidth: 1,
+      padding: 16,
+      gap: 12,
     },
     primaryButton: {
-      minHeight: 50,
+      minHeight: 52,
       borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    primaryButtonText: { fontSize: 14, fontWeight: '800' },
+    primaryButtonText: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
     secondaryButton: {
-      marginTop: 12,
-      minHeight: 50,
+      minHeight: 52,
       borderRadius: 22,
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    secondaryButtonText: { fontSize: 14, fontWeight: '800' },
+    secondaryButtonText: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
   });
 }

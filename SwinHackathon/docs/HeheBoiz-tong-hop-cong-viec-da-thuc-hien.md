@@ -21,6 +21,15 @@ Tài liệu này hiện đã được mở rộng để bao toàn bộ các mố
 6. Giai đoạn tối ưu `welcome` và tạo nền responsive dùng chung.
 7. Đợt cải thiện responsive cho mobile và bổ sung cơ chế layout dạng grid linh hoạt.
 8. Đợt bổ sung luồng `Finance Community`, làm mới `News & Resources` và dựng flow `Subscription Management`.
+9. Đợt mở rộng `Financial Assessment`, `Financial Goals`, đưa `Smart Budgeting` ra tab hub dễ vào hơn, và xử lý khoảng đệm tránh `AppTabBar` che nội dung.
+10. Đợt refactor `Profile Setup & Account Completion` từ nhiều màn nhỏ sang flow tinh gọn hơn.
+11. Đợt hoàn thiện tiếp `Profile Settings` theo board design nhưng giữ nguyên hệ button chính hiện có.
+
+Lưu ý quan trọng:
+
+- file này thiên về lịch sử và các mốc lớn
+- nếu cần đọc nhanh toàn bộ snapshot worktree gần đây, nên đọc thêm:
+  - `docs/HeheBoiz-cap-nhat-worktree-va-cac-thay-doi-gan-day.md`
 
 ## 2. Bối cảnh kỹ thuật và trạng thái repo tại thời điểm viết tài liệu
 
@@ -44,26 +53,46 @@ Tài liệu này hiện đã được mở rộng để bao toàn bộ các mố
 - Message: `feat(community): add finance community and refresh news resources`
 - Thời gian: `19:44:13`, ngày `22/03/2026`
 
-### 2.3. Trạng thái worktree hiện tại tại thời điểm viết tài liệu
+#### Các mốc gần hơn hiện còn thấy trong git log
 
-Các thay đổi hiện đang có trong worktree và chưa commit:
+- `6a2f00e` - `feat: refine smart budgeting collaboration screens`
+- `1065446` - `feat: improve expo startup and assistant tab spacing`
+- `1b34ab9` - `feat: handle conflict`
+- `249ab4a` - `feat: update backend docs`
+- `97bcdd8` - `fix(smart-budgeting): update moved data imports`
 
-- `app/(tabs)/home.tsx`
-- `app/(finance)/subscriptions.tsx`
-- `app/(finance)/subscription/[id].tsx`
-- `app/(finance)/subscription-add.tsx`
-- `app/(finance)/subscription-confirm.tsx`
-- `app/(finance)/subscription-history.tsx`
-- `app/(finance)/subscription-payments.tsx`
-- `app/(finance)/subscription-result.tsx`
-- `app/(finance)/subscription-stats.tsx`
-- `app/(finance)/subscription-upcoming.tsx`
-- `components/finance/subscription-data.ts`
+### 2.3. Trạng thái worktree hiện tại tại thời điểm cập nhật tài liệu
+
+Worktree hiện tại đã khác khá xa so với snapshot ban đầu của tài liệu này. Ở thời điểm cập nhật mới nhất, worktree đang có thêm một đợt thay đổi lớn chưa commit, tập trung vào các nhóm sau:
+
+- `Profile Setup & Account Completion`
+- `Profile Settings`
+- `Financial Assessment`
+- `Financial Goals`
+- `Smart Budgeting`
+- một số tinh chỉnh tab root, app layout, scaffold và context dùng chung
+
+Các cụm file nổi bật đang thay đổi:
+
+- `app/(auth)/profile-setup/*`
+- `components/profile-setup/*`
+- `context/profileSetupContext.tsx`
+- `app/(tabs)/profile.tsx`
+- `app/(profile)/*`
+- `components/profile-settings/*`
+- `context/profileSettingsContext.tsx`
+- `app/(finance)/financial-assessment/*`
+- `components/financial-assessment/*`
+- `app/(finance)/financial-goals/*`
+- `components/financial-goals/*`
+- `app/(tabs)/smart-budgeting.tsx`
+- `components/smart-budgeting/SmartBudgetingHomeScreen.tsx`
+- `hooks/use-tab-bar-clearance.ts`
 
 Nói ngắn gọn:
 
-- Hai commit lớn trước đó đã nằm trong lịch sử git.
-- Riêng flow `Subscription Management` hiện tại đang là phần frontend mới trong worktree, chưa được commit vào git ở thời điểm tài liệu này được tạo.
+- snapshot cũ “subscription đang là phần worktree chính” không còn đúng nữa
+- worktree hiện tại thiên về hoàn thiện sâu hơn cho onboarding, profile, goals, assessment và tab experience
 
 ### 2.4. Ghi chú về cách tổng hợp các mốc cũ hơn
 
@@ -79,6 +108,14 @@ Phần mở rộng “trước hai commit gần nhất” trong phiên bản c�
 - các phần xa hơn trong lịch sử được mô tả lại theo git history, nên sẽ bám rất sát phạm vi file và ý nghĩa kỹ thuật, thay vì bám theo từng câu trao đổi cũ
 
 ## 2.5. Các giai đoạn trước hai commit lớn gần nhất trong lịch sử repo
+
+### 2.5.0. Ghi chú về độ mới của tài liệu tổng hợp này
+
+Phần lớn các mục phía dưới vẫn hữu ích để đọc lại theo tiến trình lịch sử, nhưng tài liệu gốc được viết ở một snapshot cũ hơn. Vì vậy:
+
+- các commit cũ và các giai đoạn nền vẫn đúng về mặt lịch sử
+- phần “trạng thái worktree hiện tại” đã được cập nhật lại ở mục `2.3`
+- các hạng mục mới nhất về `Profile Setup`, `Profile Settings`, `Financial Assessment`, `Financial Goals` và `Smart Budgeting` được mô tả bổ sung ở các tài liệu `HeheBoiz-*` riêng để dễ tra cứu hơn
 
 ### 2.5.1. Giai đoạn nền backend/AWS/test/CI
 

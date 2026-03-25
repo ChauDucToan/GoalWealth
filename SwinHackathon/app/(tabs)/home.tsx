@@ -19,6 +19,7 @@ import {
   walletAccounts,
 } from '@/components/home/mock-data';
 import { useFinance } from '@/hooks/use-finance';
+import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,7 @@ import { Typography } from '@/constants/theme';
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { tabBarFloatingClearance } = useTabBarClearance();
   const {
     categories,
     transactions,
@@ -71,7 +73,10 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(114, tabBarFloatingClearance) },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.hero, { backgroundColor: colors.primaryDark }]}>
@@ -458,7 +463,7 @@ export default function HomeScreen() {
         <View style={styles.sectionBlock}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Goals</Text>
-            <Pressable onPress={() => router.push('/(tabs)/insights')}>
+            <Pressable onPress={() => router.push('/(finance)/financial-goals')}>
               <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Track</Text>
             </Pressable>
           </View>
@@ -472,9 +477,15 @@ export default function HomeScreen() {
               const progress = goal.saved / goal.target;
 
               return (
-                <View
+                <Pressable
                   key={goal.id}
                   style={[styles.goalCard, { backgroundColor: colors.card }]}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(finance)/financial-goals/[goalId]',
+                      params: { goalId: goal.id },
+                    })
+                  }
                 >
                   <View style={styles.rowBetween}>
                     <View
@@ -517,7 +528,7 @@ export default function HomeScreen() {
                       ]}
                     />
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </ScrollView>
