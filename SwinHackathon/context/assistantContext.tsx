@@ -39,6 +39,7 @@ export type ReceiptImportDraft = {
   ocrRawText?: string;
   ocrStatus?: 'idle' | 'running' | 'success' | 'error';
   ocrError?: string | null;
+  ocrProvider?: 'mlkit' | 'manual-review';
 };
 
 type AssistantContextValue = {

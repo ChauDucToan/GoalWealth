@@ -8,6 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetReceiptScanScreen() {
   const { colors } = useTheme();
@@ -15,6 +16,7 @@ export default function SmartBudgetReceiptScanScreen() {
   const router = useRouter();
   const { receiptId, returnTo } = useLocalSearchParams<{ receiptId?: string; returnTo?: string }>();
   const { activeReceiptDraft, startReceiptDraft, getReceiptPreset } = useSmartBudgeting();
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
   const receipt =
     activeReceiptDraft?.id === receiptId
       ? activeReceiptDraft
@@ -35,7 +37,8 @@ export default function SmartBudgetReceiptScanScreen() {
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Receipt not found</Text>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery')}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery'))}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Back to receipts</Text>
           </Pressable>
@@ -76,11 +79,14 @@ export default function SmartBudgetReceiptScanScreen() {
         <View style={styles.buttonStack}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            disabled={isNavigating}
             onPress={() =>
-              router.push({
-                pathname: '/(finance)/smart-budgeting/setup/receipt-processing',
-                params: { receiptId: receipt.id, returnTo },
-              })
+              runNavigation(() =>
+                router.push({
+                  pathname: '/(finance)/smart-budgeting/setup/receipt-processing',
+                  params: { receiptId: receipt.id, returnTo },
+                })
+              )
             }
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Process receipt</Text>

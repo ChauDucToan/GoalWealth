@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { goSmartBudgetBack } from '../_navigation';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const calendarDays = Array.from({ length: 31 }, (_, index) => index + 1);
@@ -16,6 +17,7 @@ export default function SmartBudgetStartDateScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [selectedDay, setSelectedDay] = useState(1);
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
@@ -98,7 +100,10 @@ export default function SmartBudgetStartDateScreen() {
         <View style={styles.bottomArea}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.replace('/(finance)/smart-budgeting/setup/budget-generated')}
+            disabled={isNavigating}
+            onPress={() =>
+              runNavigation(() => router.replace('/(finance)/smart-budgeting/setup/budget-generated'))
+            }
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Continue</Text>
           </Pressable>

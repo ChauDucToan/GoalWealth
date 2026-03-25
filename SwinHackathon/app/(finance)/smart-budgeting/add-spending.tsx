@@ -16,6 +16,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSetupNavigationDebounce } from './setup/use-setup-navigation-debounce';
 
 export default function SmartBudgetingAddSpendingScreen() {
   const { colors } = useTheme();
@@ -24,6 +25,7 @@ export default function SmartBudgetingAddSpendingScreen() {
   const { resetTransactionDraft, updateTransactionDraft } = useFinance();
   const { setReceiptImportDraft } = useAssistant();
   const [activeSource, setActiveSource] = useState<ImportSourceKey | null>(null);
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   const recentImports = useMemo(() => importedReceipts.slice(0, 3), [importedReceipts]);
 
@@ -37,7 +39,7 @@ export default function SmartBudgetingAddSpendingScreen() {
       ignoreFromBudgets: false,
       dateLabel: 'Today',
     });
-    router.push('/(finance)/add-transaction');
+    runNavigation(() => router.push('/(finance)/add-transaction'));
   };
 
   return (
@@ -94,10 +96,14 @@ export default function SmartBudgetingAddSpendingScreen() {
                     },
                   ]}
                   onPress={() => {
+                    if (activeSource || isNavigating) {
+                      return;
+                    }
+
                     setActiveSource(item.id);
                     void importReceiptFromSource(item.id, (draft) => {
                       setReceiptImportDraft(draft);
-                      router.push('/(finance)/smart-budgeting/receipt-scan');
+                      runNavigation(() => router.push('/(finance)/smart-budgeting/receipt-scan'));
                     }).finally(() => {
                       setActiveSource(null);
                     });
@@ -132,6 +138,7 @@ export default function SmartBudgetingAddSpendingScreen() {
             colorBackground={colors.primaryDark}
             colorText={colors.card}
             style={styles.manualButton}
+            disabled={isNavigating || activeSource !== null}
           />
         </FinanceCard>
 

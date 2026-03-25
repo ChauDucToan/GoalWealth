@@ -1,16 +1,17 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
+import { getReceiptOcrAvailability, recognizeReceiptText } from '@/components/smart-budgeting/receipt-ocr';
 import { Typography } from '@/constants/theme';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { recognizeText } from '@infinitered/react-native-mlkit-text-recognition';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSetupNavigationDebounce } from './setup/use-setup-navigation-debounce';
 
 function prettifyReceiptName(name?: string) {
   if (!name) {
@@ -97,16 +98,8 @@ export default function SmartBudgetingReceiptScanScreen() {
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { receiptImportDraft, setReceiptImportDraft } = useAssistant();
   const { categories, updateTransactionDraft } = useFinance();
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
   const importedName = prettifyReceiptName(receiptImportDraft?.name);
-  const rawOcrText = receiptImportDraft?.ocrRawText?.trim() ?? '';
-  const detectedAmount = extractAmountFromRawText(rawOcrText);
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    guessCategoryName(
-      importedName,
-      categories.map((item) => item.name)
-    )
-  );
-
   const sourceLabel =
     receiptImportDraft?.source === 'camera'
       ? 'Camera capture'
@@ -115,6 +108,18 @@ export default function SmartBudgetingReceiptScanScreen() {
         : receiptImportDraft?.source === 'files'
           ? 'Files import'
           : 'Imported file';
+  const rawOcrText = receiptImportDraft?.ocrRawText?.trim() ?? '';
+  const detectedAmount = extractAmountFromRawText(rawOcrText);
+  const ocrAvailability = useMemo(
+    () => getReceiptOcrAvailability(receiptImportDraft?.kind ?? 'mock'),
+    [receiptImportDraft?.kind]
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    guessCategoryName(
+      importedName,
+      categories.map((item) => item.name)
+    )
+  );
   const receiptSourceRoute =
     returnTo === 'budget-setup'
       ? '/(finance)/smart-budgeting/setup/receipt-gallery'
@@ -122,8 +127,8 @@ export default function SmartBudgetingReceiptScanScreen() {
 
   useEffect(() => {
     if (
-      !receiptImportDraft?.uri ||
-      receiptImportDraft.kind !== 'image' ||
+      !receiptImportDraft ||
+      !receiptImportDraft.uri ||
       receiptImportDraft.ocrStatus === 'running' ||
       receiptImportDraft.ocrStatus === 'success'
     ) {
@@ -138,41 +143,19 @@ export default function SmartBudgetingReceiptScanScreen() {
       ocrError: null,
     });
 
-    const run = async () => {
-      console.log("Vao quet OCR");
-      try {
-        const result = await recognizeText(receiptImportDraft.uri!);
-        const jsonResult = {
-          raw_text: result.text ?? 'khomh co',
-        };
-
-        console.log(JSON.stringify(jsonResult, null, 2));
-        if (cancelled) {
-          return;
-        }
-
-        setReceiptImportDraft({
-          ...receiptImportDraft,
-          ocrRawText: jsonResult.raw_text,
-          ocrStatus: 'success',
-          ocrError: null,
-        });
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        console.log(JSON.stringify({ raw_text: '' }, null, 2));
-        setReceiptImportDraft({
-          ...receiptImportDraft,
-          ocrRawText: '',
-          ocrStatus: 'error',
-          ocrError: error instanceof Error ? error.message : 'OCR failed on this receipt image.',
-        });
+    void recognizeReceiptText(receiptImportDraft.uri, receiptImportDraft.kind).then((result) => {
+      if (cancelled) {
+        return;
       }
-    };
 
-    void run();
+      setReceiptImportDraft({
+        ...receiptImportDraft,
+        ocrRawText: result.text,
+        ocrStatus: result.status === 'success' || result.status === 'empty' ? 'success' : 'error',
+        ocrError: result.error,
+        ocrProvider: result.provider,
+      });
+    });
 
     return () => {
       cancelled = true;
@@ -192,7 +175,9 @@ export default function SmartBudgetingReceiptScanScreen() {
             ? 'Scanning text…'
             : receiptImportDraft?.ocrStatus === 'success'
               ? rawOcrText
-                ? 'Text captured'
+                ? receiptImportDraft?.ocrProvider === 'mlkit'
+                  ? 'Text captured'
+                  : 'Manual review ready'
                 : 'No text found'
               : receiptImportDraft?.ocrError ?? 'Not started',
       },
@@ -202,6 +187,7 @@ export default function SmartBudgetingReceiptScanScreen() {
       importedName,
       rawOcrText,
       receiptImportDraft?.ocrError,
+      receiptImportDraft?.ocrProvider,
       receiptImportDraft?.ocrStatus,
       selectedCategory,
       sourceLabel,
@@ -214,9 +200,10 @@ export default function SmartBudgetingReceiptScanScreen() {
         <View style={styles.emptyState}>
           <ThemeButton
             title={returnTo === 'budget-setup' ? 'Back to receipt import' : 'Back to add spending'}
-            onPress={() => router.replace(receiptSourceRoute)}
+            onPress={() => runNavigation(() => router.replace(receiptSourceRoute))}
             colorBackground={colors.primaryDark}
             colorText={colors.card}
+            disabled={isNavigating}
           />
         </View>
       </FinanceScreen>
@@ -238,7 +225,7 @@ export default function SmartBudgetingReceiptScanScreen() {
       ignoreFromBudgets: false,
     });
     setReceiptImportDraft(null);
-    router.replace('/(finance)/add-transaction');
+    runNavigation(() => router.replace('/(finance)/add-transaction'));
   };
 
   return (
@@ -275,7 +262,9 @@ export default function SmartBudgetingReceiptScanScreen() {
           <View style={styles.previewMeta}>
             <Text style={[styles.previewTitle, { color: colors.card }]}>{importedName}</Text>
             <Text style={[styles.previewBody, { color: hexToRgba(colors.card, 0.76) }]}>
-              Review OCR output, adjust category and send the draft into spending.
+              {ocrAvailability.available
+                ? 'Run OCR, review the extracted text, then send the draft into spending.'
+                : 'Review the imported draft manually, then send it into spending.'}
             </Text>
           </View>
         </FinanceCard>
@@ -297,7 +286,9 @@ export default function SmartBudgetingReceiptScanScreen() {
         <FinanceCard>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>OCR output</Text>
           <Text style={[styles.sectionBody, { color: hexToRgba(colors.text, 0.56) }]}>
-            Raw text captured from the receipt image before you send the draft into spending.
+            {ocrAvailability.available
+              ? 'ML Kit reads text from the receipt image before you confirm the draft.'
+              : ocrAvailability.reason}
           </Text>
           <View style={[styles.ocrBox, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}>
             <Text style={[styles.ocrText, { color: colors.text }]}>
@@ -343,11 +334,12 @@ export default function SmartBudgetingReceiptScanScreen() {
             title="Choose another"
             onPress={() => {
               setReceiptImportDraft(null);
-              router.replace(receiptSourceRoute);
+              runNavigation(() => router.replace(receiptSourceRoute));
             }}
             colorBackground={colors.card}
             colorText={colors.primaryDark}
             style={styles.button}
+            disabled={isNavigating}
           />
           <ThemeButton
             title="Open spending draft"
@@ -355,6 +347,7 @@ export default function SmartBudgetingReceiptScanScreen() {
             colorBackground={colors.primaryDark}
             colorText={colors.card}
             style={styles.button}
+            disabled={isNavigating}
           />
         </View>
       </View>

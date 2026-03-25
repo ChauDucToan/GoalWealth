@@ -25,6 +25,7 @@ function buildReceiptImportDraft(
     ocrRawText: '',
     ocrStatus: draft.kind === 'image' ? 'idle' : 'error',
     ocrError: draft.kind === 'image' ? null : 'OCR only runs on image receipts.',
+    ocrProvider: draft.kind === 'image' ? 'manual-review' : 'manual-review',
   };
 }
 

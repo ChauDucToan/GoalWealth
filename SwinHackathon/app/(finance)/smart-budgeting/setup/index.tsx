@@ -9,12 +9,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { smartBudgetSetupSteps } from '@/components/smart-budgeting/data';
 import { goSmartBudgetBack } from '../_navigation';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetSetupIntroScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { hasCompletedSetup } = useSmartBudgeting();
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
   const nextRoute = hasCompletedSetup
     ? '/(finance)/smart-budgeting/monthly-budget'
     : '/(finance)/smart-budgeting/setup/goal';
@@ -98,7 +100,8 @@ export default function SmartBudgetSetupIntroScreen() {
         <View style={styles.buttonStack}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.push(nextRoute)}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.push(nextRoute))}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>
               {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Setup'}
@@ -240,6 +243,7 @@ function createStyles(colors: ColorTheme) {
       borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
+      opacity: 1,
     },
     primaryButtonText: {
       fontSize: 14,

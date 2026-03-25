@@ -7,12 +7,14 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetGeneratedScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { completeSetup } = useSmartBudgeting();
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   useEffect(() => {
     completeSetup();
@@ -33,12 +35,17 @@ export default function SmartBudgetGeneratedScreen() {
         </Text>
 
         <View style={styles.buttonStack}>
-          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.replace('/(finance)/smart-budgeting/monthly-budget')}>
+          <Pressable
+            style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.replace('/(finance)/smart-budgeting/monthly-budget'))}
+          >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Open Monthly Budget</Text>
           </Pressable>
           <Pressable
             style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery')}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery'))}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Import Receipt</Text>
           </Pressable>

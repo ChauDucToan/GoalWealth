@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { goSmartBudgetBack } from '../_navigation';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 const housingOptions = ['Rent', 'Mortgage', 'Family Home'] as const;
 
@@ -15,6 +16,7 @@ export default function SmartBudgetHousingScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [selected, setSelected] = useState<(typeof housingOptions)[number]>('Mortgage');
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
@@ -72,7 +74,11 @@ export default function SmartBudgetHousingScreen() {
         </View>
 
         <View style={styles.bottomArea}>
-          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.push('/(finance)/smart-budgeting/setup/planning')}>
+          <Pressable
+            style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.push('/(finance)/smart-budgeting/setup/planning'))}
+          >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Continue</Text>
           </Pressable>
         </View>

@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { goSmartBudgetBack } from '../_navigation';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 const categoryPresets = [4, 6, 8, 10];
 const memberPresets = [1, 2, 3, 4];
@@ -17,6 +18,7 @@ export default function SmartBudgetCategoriesMembersScreen() {
   const router = useRouter();
   const [categoryCount, setCategoryCount] = useState(6);
   const [memberCount, setMemberCount] = useState(2);
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
@@ -155,7 +157,8 @@ export default function SmartBudgetCategoriesMembersScreen() {
         <View style={styles.bottomArea}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.push('/(finance)/smart-budgeting/setup/amount')}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.push('/(finance)/smart-budgeting/setup/amount'))}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Continue</Text>
           </Pressable>

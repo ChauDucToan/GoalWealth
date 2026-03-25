@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { smartBudgetSetupSteps } from '@/components/smart-budgeting/data';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetSetupStepScreen() {
   const { colors } = useTheme();
@@ -18,17 +19,20 @@ export default function SmartBudgetSetupStepScreen() {
   const safeIndex = currentIndex >= 0 ? currentIndex : 0;
   const currentStep = smartBudgetSetupSteps[safeIndex];
   const [selectedOption, setSelectedOption] = useState(currentStep.options[0]?.id);
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   const isLastStep = safeIndex === smartBudgetSetupSteps.length - 1;
 
   const onContinue = () => {
-    if (isLastStep) {
-      router.push('/(finance)/smart-budgeting/setup/categories-members');
-      return;
-    }
+    runNavigation(() => {
+      if (isLastStep) {
+        router.push('/(finance)/smart-budgeting/setup/categories-members');
+        return;
+      }
 
-    const nextStep = smartBudgetSetupSteps[safeIndex + 1];
-    router.push(`/(finance)/smart-budgeting/setup/${nextStep.id}`);
+      const nextStep = smartBudgetSetupSteps[safeIndex + 1];
+      router.push(`/(finance)/smart-budgeting/setup/${nextStep.id}`);
+    });
   };
 
   useEffect(() => {
@@ -104,7 +108,11 @@ export default function SmartBudgetSetupStepScreen() {
         </View>
 
         <View style={styles.bottomArea}>
-          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={onContinue}>
+          <Pressable
+            style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            disabled={isNavigating}
+            onPress={onContinue}
+          >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>
               Continue
             </Text>

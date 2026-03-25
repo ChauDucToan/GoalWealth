@@ -1,6 +1,7 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { ColorTheme } from '@/constants/theme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -16,6 +17,7 @@ const cycleLength = 31;
 
 export default function BudgetInsightsScreen() {
   const { colors } = useTheme();
+  const { isSmallPhone } = useResponsive();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { categories, importedReceipts, totalBudget } = useSmartBudgeting();
@@ -246,7 +248,7 @@ export default function BudgetInsightsScreen() {
           </View>
         </FinanceCard>
 
-        <View style={styles.actionRow}>
+        <View style={[styles.actionRow, isSmallPhone && styles.actionRowStacked]}>
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.primaryDark }]}
             onPress={() => router.push('/(finance)/smart-budgeting/monthly-budget')}
@@ -559,6 +561,9 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       gap: 12,
     },
+    actionRowStacked: {
+      flexDirection: 'column',
+    },
     actionButton: {
       flex: 1,
       minHeight: 50,
@@ -575,6 +580,9 @@ function createStyles(colors: ColorTheme) {
     actionButtonText: {
       fontSize: 13,
       fontWeight: '800',
+      lineHeight: 18,
+      textAlign: 'center',
+      flexShrink: 1,
     },
   });
 }

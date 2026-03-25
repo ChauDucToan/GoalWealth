@@ -8,6 +8,7 @@ import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetReceiptReviewScreen() {
   const { colors } = useTheme();
@@ -16,6 +17,7 @@ export default function SmartBudgetReceiptReviewScreen() {
   const { receiptId, returnTo } = useLocalSearchParams<{ receiptId?: string; returnTo?: string }>();
   const { categories, activeReceiptDraft, startReceiptDraft, confirmReceiptImport, getReceiptPreset } =
     useSmartBudgeting();
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const receiptScanRoute: Href = receiptId
     ? { pathname: '/(finance)/smart-budgeting/setup/receipt-scan', params: { receiptId, returnTo } }
@@ -49,7 +51,8 @@ export default function SmartBudgetReceiptReviewScreen() {
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Receipt not found</Text>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery')}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery'))}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Choose receipt again</Text>
           </Pressable>
@@ -135,23 +138,29 @@ export default function SmartBudgetReceiptReviewScreen() {
         <View style={styles.buttonStack}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            disabled={isNavigating}
             onPress={() => {
               confirmReceiptImport(receipt.id, selectedCategoryId ?? receipt.categoryId);
-              router.replace({
-                pathname: '/(finance)/smart-budgeting/monthly-budget',
-                params: returnTo ? { returnTo } : undefined,
-              });
+              runNavigation(() =>
+                router.replace({
+                  pathname: '/(finance)/smart-budgeting/monthly-budget',
+                  params: returnTo ? { returnTo } : undefined,
+                })
+              );
             }}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Apply to budget</Text>
           </Pressable>
           <Pressable
             style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            disabled={isNavigating}
             onPress={() =>
-              router.replace(
-                returnTo
-                  ? { pathname: '/(finance)/smart-budgeting/setup/receipt-gallery', params: { returnTo } }
-                  : '/(finance)/smart-budgeting/setup/receipt-gallery'
+              runNavigation(() =>
+                router.replace(
+                  returnTo
+                    ? { pathname: '/(finance)/smart-budgeting/setup/receipt-gallery', params: { returnTo } }
+                    : '/(finance)/smart-budgeting/setup/receipt-gallery'
+                )
               )
             }
           >

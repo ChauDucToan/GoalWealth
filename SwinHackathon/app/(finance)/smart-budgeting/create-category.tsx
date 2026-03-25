@@ -82,8 +82,8 @@ export default function CreateCategoryScreen() {
               <Text style={[styles.metricValue, { color: colors.text }]}>${monthlyLimit || '0'}</Text>
             </View>
             <View style={[styles.metricCard, { backgroundColor: colors.backgroundSoft }]}>
-              <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.46) }]}>Tracking</Text>
-              <Text style={[styles.metricValue, { color: colors.text }]}>Weekly</Text>
+              <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.46) }]}>Pacing</Text>
+              <Text style={[styles.metricValue, { color: colors.text }]}>Monthly</Text>
             </View>
           </View>
         </FinanceCard>

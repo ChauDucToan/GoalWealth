@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetReceiptGalleryScreen() {
   const { colors } = useTheme();
@@ -23,6 +24,7 @@ export default function SmartBudgetReceiptGalleryScreen() {
   const backRoute = resolveSmartBudgetReturnRoute(returnTo);
   const { setReceiptImportDraft } = useAssistant();
   const [activeSource, setActiveSource] = useState<ReceiptImportSourceKey | null>(null);
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.card }]} edges={['top', 'bottom']}>
@@ -63,13 +65,19 @@ export default function SmartBudgetReceiptGalleryScreen() {
                   },
                 ]}
                 onPress={() => {
+                  if (activeSource || isNavigating) {
+                    return;
+                  }
+
                   setActiveSource(item.id);
                   void importReceiptFromSource(item.id, (draft) => {
                     setReceiptImportDraft(draft);
-                    router.push({
-                      pathname: '/(finance)/smart-budgeting/receipt-scan',
-                      params: { returnTo: returnTo ?? 'budget-setup' },
-                    });
+                    runNavigation(() =>
+                      router.push({
+                        pathname: '/(finance)/smart-budgeting/receipt-scan',
+                        params: { returnTo: returnTo ?? 'budget-setup' },
+                      })
+                    );
                   }).finally(() => {
                     setActiveSource(null);
                   });
@@ -91,10 +99,12 @@ export default function SmartBudgetReceiptGalleryScreen() {
           <Pressable
             style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
             onPress={() =>
-              router.replace({
-                pathname: '/(finance)/smart-budgeting/monthly-budget',
-                params: returnTo ? { returnTo } : undefined,
-              })
+              runNavigation(() =>
+                router.replace({
+                  pathname: '/(finance)/smart-budgeting/monthly-budget',
+                  params: returnTo ? { returnTo } : undefined,
+                })
+              )
             }
           >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Skip for now</Text>

@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { goSmartBudgetBack } from '../_navigation';
+import { useSetupNavigationDebounce } from './use-setup-navigation-debounce';
 
 export default function SmartBudgetStepperScreen() {
   const { colors } = useTheme();
@@ -15,6 +16,7 @@ export default function SmartBudgetStepperScreen() {
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(5);
   const [dependents, setDependents] = useState(2);
+  const { isNavigating, runNavigation } = useSetupNavigationDebounce();
 
   const buildStepper = (
     label: string,
@@ -61,7 +63,11 @@ export default function SmartBudgetStepperScreen() {
         </View>
 
         <View style={styles.bottomArea}>
-          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.push('/(finance)/smart-budgeting/setup/details')}>
+          <Pressable
+            style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            disabled={isNavigating}
+            onPress={() => runNavigation(() => router.push('/(finance)/smart-budgeting/setup/details'))}
+          >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Continue</Text>
           </Pressable>
         </View>
