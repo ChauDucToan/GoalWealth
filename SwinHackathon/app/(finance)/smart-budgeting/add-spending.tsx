@@ -2,30 +2,20 @@ import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
+import {
+  importReceiptFromSource,
+  receiptImportSourceCards as importSourceCards,
+  ReceiptImportSourceKey as ImportSourceKey,
+} from '@/components/smart-budgeting/receipt-import';
 import { Typography } from '@/constants/theme';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-
-type ImportSourceKey = 'camera' | 'files' | 'gallery';
-
-const importSourceCards: {
-  id: ImportSourceKey;
-  label: string;
-  icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  helper: string;
-}[] = [
-  { id: 'camera', label: 'Take photo', icon: 'photo-camera', helper: 'Best for paper receipts' },
-  { id: 'files', label: 'Browse files', icon: 'folder-open', helper: 'Import PDF or image' },
-  { id: 'gallery', label: 'Gallery', icon: 'collections', helper: 'Use an existing photo' },
-];
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function SmartBudgetingAddSpendingScreen() {
   const { colors } = useTheme();
@@ -36,118 +26,6 @@ export default function SmartBudgetingAddSpendingScreen() {
   const [activeSource, setActiveSource] = useState<ImportSourceKey | null>(null);
 
   const recentImports = useMemo(() => importedReceipts.slice(0, 3), [importedReceipts]);
-
-  const openReceiptReview = (draft: {
-    source: 'camera' | 'gallery' | 'files' | 'demo';
-    uri?: string;
-    name: string;
-    mimeType?: string | null;
-    fileSize?: number | null;
-    kind: 'image' | 'document' | 'mock';
-  }) => {
-    setReceiptImportDraft(draft);
-    router.push('/(finance)/smart-budgeting/receipt-scan');
-  };
-
-  const pickFromCamera = async () => {
-    setActiveSource('camera');
-
-    try {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert('Camera access needed', 'Allow camera access to capture a bill or receipt.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        quality: 0.9,
-      });
-
-      if (result.canceled || !result.assets?.[0]) {
-        return;
-      }
-
-      const asset = result.assets[0];
-
-      openReceiptReview({
-        source: 'camera',
-        uri: asset.uri,
-        name: asset.fileName ?? 'Camera receipt',
-        mimeType: asset.mimeType,
-        fileSize: asset.fileSize,
-        kind: 'image',
-      });
-    } finally {
-      setActiveSource(null);
-    }
-  };
-
-  const pickFromGallery = async () => {
-    setActiveSource('gallery');
-
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert('Photo access needed', 'Allow photo library access to import a receipt image.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.9,
-        allowsMultipleSelection: false,
-      });
-
-      if (result.canceled || !result.assets?.[0]) {
-        return;
-      }
-
-      const asset = result.assets[0];
-
-      openReceiptReview({
-        source: 'gallery',
-        uri: asset.uri,
-        name: asset.fileName ?? 'Gallery receipt',
-        mimeType: asset.mimeType,
-        fileSize: asset.fileSize,
-        kind: 'image',
-      });
-    } finally {
-      setActiveSource(null);
-    }
-  };
-
-  const pickFromFiles = async () => {
-    setActiveSource('files');
-
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        copyToCacheDirectory: true,
-        multiple: false,
-        type: ['image/*', 'application/pdf'],
-      });
-
-      if (result.canceled || !result.assets?.[0]) {
-        return;
-      }
-
-      const asset = result.assets[0];
-
-      openReceiptReview({
-        source: 'files',
-        uri: asset.uri,
-        name: asset.name,
-        mimeType: asset.mimeType,
-        fileSize: asset.size,
-        kind: asset.mimeType?.startsWith('image/') ? 'image' : 'document',
-      });
-    } finally {
-      setActiveSource(null);
-    }
-  };
 
   const openManualEntry = () => {
     resetTransactionDraft();
@@ -160,12 +38,6 @@ export default function SmartBudgetingAddSpendingScreen() {
       dateLabel: 'Today',
     });
     router.push('/(finance)/add-transaction');
-  };
-
-  const importActions: Record<ImportSourceKey, () => Promise<void>> = {
-    camera: pickFromCamera,
-    files: pickFromFiles,
-    gallery: pickFromGallery,
   };
 
   return (
@@ -222,7 +94,13 @@ export default function SmartBudgetingAddSpendingScreen() {
                     },
                   ]}
                   onPress={() => {
-                    void importActions[item.id]();
+                    setActiveSource(item.id);
+                    void importReceiptFromSource(item.id, (draft) => {
+                      setReceiptImportDraft(draft);
+                      router.push('/(finance)/smart-budgeting/receipt-scan');
+                    }).finally(() => {
+                      setActiveSource(null);
+                    });
                   }}
                 >
                   <View

@@ -36,6 +36,9 @@ export type ReceiptImportDraft = {
   mimeType?: string | null;
   fileSize?: number | null;
   kind: 'image' | 'document' | 'mock';
+  ocrRawText?: string;
+  ocrStatus?: 'idle' | 'running' | 'success' | 'error';
+  ocrError?: string | null;
 };
 
 type AssistantContextValue = {

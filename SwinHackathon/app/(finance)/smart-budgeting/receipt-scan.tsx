@@ -6,9 +6,10 @@ import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { recognizeText } from '@infinitered/react-native-mlkit-text-recognition';
 import { Image as ExpoImage } from 'expo-image';
-import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 function prettifyReceiptName(name?: string) {
@@ -67,12 +68,38 @@ function guessCategoryName(name: string, availableCategories: string[]) {
   return availableCategories[0];
 }
 
+function extractAmountFromRawText(rawText?: string) {
+  if (!rawText) {
+    return '';
+  }
+
+  const matches = rawText.match(/\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2})/g);
+
+  if (!matches?.length) {
+    return '';
+  }
+
+  const normalized = matches
+    .map((value) => Number(value.replace(/,/g, '')))
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((left, right) => right - left);
+
+  if (!normalized.length) {
+    return '';
+  }
+
+  return normalized[0].toFixed(2);
+}
+
 export default function SmartBudgetingReceiptScanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { receiptImportDraft, setReceiptImportDraft } = useAssistant();
   const { categories, updateTransactionDraft } = useFinance();
   const importedName = prettifyReceiptName(receiptImportDraft?.name);
+  const rawOcrText = receiptImportDraft?.ocrRawText?.trim() ?? '';
+  const detectedAmount = extractAmountFromRawText(rawOcrText);
   const [selectedCategory, setSelectedCategory] = useState<string>(
     guessCategoryName(
       importedName,
@@ -88,15 +115,97 @@ export default function SmartBudgetingReceiptScanScreen() {
         : receiptImportDraft?.source === 'files'
           ? 'Files import'
           : 'Imported file';
+  const receiptSourceRoute =
+    returnTo === 'budget-setup'
+      ? '/(finance)/smart-budgeting/setup/receipt-gallery'
+      : '/(finance)/smart-budgeting/add-spending';
+
+  useEffect(() => {
+    if (
+      !receiptImportDraft?.uri ||
+      receiptImportDraft.kind !== 'image' ||
+      receiptImportDraft.ocrStatus === 'running' ||
+      receiptImportDraft.ocrStatus === 'success'
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    setReceiptImportDraft({
+      ...receiptImportDraft,
+      ocrStatus: 'running',
+      ocrError: null,
+    });
+
+    const run = async () => {
+      console.log("Vao quet OCR");
+      try {
+        const result = await recognizeText(receiptImportDraft.uri!);
+        const jsonResult = {
+          raw_text: result.text ?? 'khomh co',
+        };
+
+        console.log(JSON.stringify(jsonResult, null, 2));
+        if (cancelled) {
+          return;
+        }
+
+        setReceiptImportDraft({
+          ...receiptImportDraft,
+          ocrRawText: jsonResult.raw_text,
+          ocrStatus: 'success',
+          ocrError: null,
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.log(JSON.stringify({ raw_text: '' }, null, 2));
+        setReceiptImportDraft({
+          ...receiptImportDraft,
+          ocrRawText: '',
+          ocrStatus: 'error',
+          ocrError: error instanceof Error ? error.message : 'OCR failed on this receipt image.',
+        });
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [receiptImportDraft, setReceiptImportDraft]);
 
   const extractedFields = useMemo(
     () => [
       { label: 'Merchant', value: importedName },
       { label: 'Suggested category', value: selectedCategory },
       { label: 'Source', value: sourceLabel },
-      { label: 'Total', value: 'Needs review' },
+      { label: 'Total', value: detectedAmount ? `$${detectedAmount}` : 'Needs review' },
+      {
+        label: 'OCR',
+        value:
+          receiptImportDraft?.ocrStatus === 'running'
+            ? 'Scanning text…'
+            : receiptImportDraft?.ocrStatus === 'success'
+              ? rawOcrText
+                ? 'Text captured'
+                : 'No text found'
+              : receiptImportDraft?.ocrError ?? 'Not started',
+      },
     ],
-    [importedName, selectedCategory, sourceLabel]
+    [
+      detectedAmount,
+      importedName,
+      rawOcrText,
+      receiptImportDraft?.ocrError,
+      receiptImportDraft?.ocrStatus,
+      selectedCategory,
+      sourceLabel,
+    ]
   );
 
   if (!receiptImportDraft) {
@@ -104,8 +213,8 @@ export default function SmartBudgetingReceiptScanScreen() {
       <FinanceScreen title="Receipt review" subtitle="No imported file is ready to review yet.">
         <View style={styles.emptyState}>
           <ThemeButton
-            title="Back to add spending"
-            onPress={() => router.replace('/(finance)/smart-budgeting/add-spending')}
+            title={returnTo === 'budget-setup' ? 'Back to receipt import' : 'Back to add spending'}
+            onPress={() => router.replace(receiptSourceRoute)}
             colorBackground={colors.primaryDark}
             colorText={colors.card}
           />
@@ -115,12 +224,16 @@ export default function SmartBudgetingReceiptScanScreen() {
   }
 
   const openSpendingDraft = () => {
+    const trimmedRawText = rawOcrText.slice(0, 420);
+
     updateTransactionDraft({
       type: 'expense',
       merchant: importedName,
       category: selectedCategory,
-      amount: '',
-      note: `Imported from ${sourceLabel.toLowerCase()}. Review merchant, amount and category before saving.`,
+      amount: detectedAmount,
+      note: trimmedRawText
+        ? `Imported from ${sourceLabel.toLowerCase()}. OCR text:\n${trimmedRawText}`
+        : `Imported from ${sourceLabel.toLowerCase()}. Review merchant, amount and category before saving.`,
       dateLabel: 'Today',
       ignoreFromBudgets: false,
     });
@@ -162,7 +275,7 @@ export default function SmartBudgetingReceiptScanScreen() {
           <View style={styles.previewMeta}>
             <Text style={[styles.previewTitle, { color: colors.card }]}>{importedName}</Text>
             <Text style={[styles.previewBody, { color: hexToRgba(colors.card, 0.76) }]}>
-              Review the suggested category and fill in the final amount in the spending form.
+              Review OCR output, adjust category and send the draft into spending.
             </Text>
           </View>
         </FinanceCard>
@@ -178,6 +291,20 @@ export default function SmartBudgetingReceiptScanScreen() {
                 <Text style={[styles.fieldValue, { color: colors.text }]}>{field.value}</Text>
               </View>
             ))}
+          </View>
+        </FinanceCard>
+
+        <FinanceCard>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>OCR output</Text>
+          <Text style={[styles.sectionBody, { color: hexToRgba(colors.text, 0.56) }]}>
+            Raw text captured from the receipt image before you send the draft into spending.
+          </Text>
+          <View style={[styles.ocrBox, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}>
+            <Text style={[styles.ocrText, { color: colors.text }]}>
+              {receiptImportDraft.ocrStatus === 'running'
+                ? 'Scanning receipt text…'
+                : rawOcrText || receiptImportDraft.ocrError || 'No OCR output available.'}
+            </Text>
           </View>
         </FinanceCard>
 
@@ -216,7 +343,7 @@ export default function SmartBudgetingReceiptScanScreen() {
             title="Choose another"
             onPress={() => {
               setReceiptImportDraft(null);
-              router.replace('/(finance)/smart-budgeting/add-spending');
+              router.replace(receiptSourceRoute);
             }}
             colorBackground={colors.card}
             colorText={colors.primaryDark}
@@ -342,6 +469,19 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 12,
     fontWeight: '800',
+  },
+  ocrBox: {
+    marginTop: 14,
+    minHeight: 120,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  ocrText: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '500',
   },
   buttonRow: {
     flexDirection: 'row',
