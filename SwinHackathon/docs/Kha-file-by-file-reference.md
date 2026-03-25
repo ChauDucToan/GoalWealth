@@ -109,11 +109,55 @@ Những gì đã được làm:
 - đổi nút thành FAB dấu `+`
 - chỉnh vị trí nút để tránh bottom tab
 - sửa modal để kéo, cuộn và đóng tốt hơn
+- làm lại block `Quick Filters` để nó là một workspace rõ ràng hơn
+- bỏ `Sort` và `Date` khỏi màn `My Transactions` vì đã nằm trong `Filters`
 
 Khi sửa tiếp nên chú ý:
 
 - phần modal/keyboard và gesture là nơi dễ vỡ UX nhất
 - nếu modal này còn lớn lên, nên cân nhắc tách thành component riêng
+
+### 2.6.a. `app/(finance)/add-transaction.tsx`
+
+Vai trò:
+
+- màn `Add New Transaction`
+
+Những gì đã được làm:
+
+- bỏ 3 tab lớn `expense / income / transfer`
+- thay bằng selector `Transaction Type` gọn hơn
+- thêm input trực tiếp cho `Merchant/Source/To` và `Note`
+- thêm quick chips cho `Recurring`
+- thêm validate cho `Amount`
+- giới hạn mức nhập ở ngưỡng hợp lý cho mobile
+
+Khi sửa tiếp nên chú ý:
+
+- logic validate `Amount` hiện đã nằm ngay trong file này
+- nếu sau này tạo transaction schema chung, nên đưa phần validate sang shared utility để tránh lặp
+
+### 2.6.b. `app/(finance)/transactions-filters.tsx`
+
+Vai trò:
+
+- màn `Filters` cho transactions
+
+Những gì đã được làm:
+
+- chuyển `Sort` và `Select Date` từ nút điều hướng sang lựa chọn trực tiếp trong màn
+- cho `Recent Merchants` chọn được thật thay vì chỉ hiển thị
+- biến màn này thành workspace filter hoàn chỉnh hơn thay vì tập hợp link
+
+### 2.6.c. `app/(finance)/sort-transactions.tsx`
+
+Vai trò trước đây:
+
+- màn sort riêng cho transactions
+
+Trạng thái hiện tại:
+
+- đã bị loại bỏ khỏi app vì luồng sort đã được nhập vào `transactions-filters.tsx`
 
 ### 2.7. `app/(tabs)/assistant.tsx`
 

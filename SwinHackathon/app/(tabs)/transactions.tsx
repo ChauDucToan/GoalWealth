@@ -163,55 +163,57 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <View style={styles.filterRow}>
-        {(['all', 'income', 'expense', 'pending'] as const).map((item) => {
-          const selected = filter === item;
-          const label = item.charAt(0).toUpperCase() + item.slice(1);
+      <View style={[styles.filterPanel, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+        <View style={styles.filterPanelHeader}>
+          <View>
+            <Text style={[styles.filterPanelTitle, { color: colors.text }]}>Quick Filters</Text>
+            <Text style={[styles.filterPanelBody, { color: hexToRgba(colors.text, 0.54) }]}>
+              {filteredTransactions.length} transactions visible. Sorting and date range live inside Filters.
+            </Text>
+          </View>
+          <Pressable
+            style={[
+              styles.filterWorkspaceButton,
+              {
+                backgroundColor: hexToRgba(colors.primaryDark, 0.08),
+                borderColor: hexToRgba(colors.primaryDark, 0.12),
+              },
+            ]}
+            onPress={() => router.push('/(finance)/transactions-filters')}
+          >
+            <MaterialIcons name="tune" size={18} color={colors.primaryDark} />
+            <Text style={[styles.filterWorkspaceButtonText, { color: colors.primaryDark }]}>
+              Filters
+            </Text>
+          </Pressable>
+        </View>
 
-          return (
-            <Pressable
-              key={item}
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: selected ? colors.primaryDark : colors.card,
-                  borderColor: selected
-                    ? colors.primaryDark
-                    : hexToRgba(colors.primaryDark, 0.1),
-                },
-              ]}
-              onPress={() => setFilter(item)}
-            >
-              <Text style={[styles.filterText, { color: selected ? colors.card : colors.text }]}>
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+        <View style={styles.filterRow}>
+          {(['all', 'income', 'expense', 'pending'] as const).map((item) => {
+            const selected = filter === item;
+            const label = item.charAt(0).toUpperCase() + item.slice(1);
 
-      <View style={styles.utilityRow}>
-        <ThemeButton
-          title="Filters"
-          onPress={() => router.push('/(finance)/transactions-filters')}
-          colorBackground={colors.card}
-          colorText={colors.text}
-          style={styles.utilityButton}
-        />
-        <ThemeButton
-          title="Sort"
-          onPress={() => router.push('/(finance)/sort-transactions')}
-          colorBackground={colors.card}
-          colorText={colors.text}
-          style={styles.utilityButton}
-        />
-        <ThemeButton
-          title="Date"
-          onPress={() => router.push('/(finance)/date-range')}
-          colorBackground={colors.card}
-          colorText={colors.text}
-          style={styles.utilityButton}
-        />
+            return (
+              <Pressable
+                key={item}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: selected ? colors.primaryDark : colors.backgroundSoft,
+                    borderColor: selected
+                      ? colors.primaryDark
+                      : hexToRgba(colors.primaryDark, 0.1),
+                  },
+                ]}
+                onPress={() => setFilter(item)}
+              >
+                <Text style={[styles.filterText, { color: selected ? colors.card : colors.text }]}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <View style={[styles.categoryPanel, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
@@ -398,10 +400,48 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   filterRow: {
-    marginTop: 18,
+    marginTop: 14,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  filterPanel: {
+    marginTop: 18,
+    borderRadius: 24,
+    padding: 18,
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
+  },
+  filterPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  filterPanelTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  filterPanelBody: {
+    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 19,
+    maxWidth: 240,
+  },
+  filterWorkspaceButton: {
+    minHeight: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterWorkspaceButtonText: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   filterChip: {
     minHeight: 38,
@@ -414,17 +454,6 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: Typography.body,
     fontWeight: '700',
-  },
-  utilityRow: {
-    marginTop: 18,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  utilityButton: {
-    flex: 1,
-    flexBasis: 100,
-    minWidth: 0,
   },
   categoryPanel: {
     marginTop: 18,

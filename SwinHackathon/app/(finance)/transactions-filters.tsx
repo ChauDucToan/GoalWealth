@@ -1,7 +1,7 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
-import { budgetCategories, merchantHighlights } from '@/components/home/mock-data';
+import { budgetCategories, merchantHighlights, transactionSortOptions } from '@/components/home/mock-data';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -9,12 +9,16 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';
 
 const transactionTypes = ['All', 'Income', 'Expense', 'Transfer'];
+const datePresets = ['Today', 'Last 7 days', 'This month', 'Last month'];
 
 export default function TransactionsFiltersScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const [type, setType] = useState('All');
   const [category, setCategory] = useState(budgetCategories[0].name);
+  const [selectedSort, setSelectedSort] = useState(transactionSortOptions[0]);
+  const [selectedDatePreset, setSelectedDatePreset] = useState(datePresets[0]);
+  const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
 
   return (
     <FinanceScreen title="Filter Transactions" subtitle="Advanced filter controls from the board">
@@ -64,31 +68,70 @@ export default function TransactionsFiltersScreen() {
 
         <Text style={[styles.label, { color: colors.text }]}>Recent Merchants</Text>
         <View style={styles.chipWrap}>
-          {merchantHighlights.map((item) => (
-            <View
-              key={item.id}
-              style={[styles.chip, { backgroundColor: colors.backgroundSoft }]}
-            >
-              <Text style={[styles.chipText, { color: colors.text }]}>{item.label}</Text>
-            </View>
-          ))}
+          {merchantHighlights.map((item) => {
+            const active = selectedMerchant === item.label;
+            return (
+              <Pressable
+                key={item.id}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: active ? hexToRgba(item.accent, 0.16) : colors.backgroundSoft,
+                    borderColor: active ? item.accent : 'transparent',
+                  },
+                ]}
+                onPress={() => setSelectedMerchant((current) => (current === item.label ? null : item.label))}
+              >
+                <Text style={[styles.chipText, { color: colors.text }]}>{item.label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
-        <View style={styles.linkRow}>
-          <ThemeButton
-            title="Sort"
-            onPress={() => router.push('/(finance)/sort-transactions')}
-            colorBackground={colors.backgroundSoft}
-            colorText={colors.text}
-            style={styles.linkButton}
-          />
-          <ThemeButton
-            title="Select Date"
-            onPress={() => router.push('/(finance)/date-range')}
-            colorBackground={colors.backgroundSoft}
-            colorText={colors.text}
-            style={styles.linkButton}
-          />
+        <Text style={[styles.label, { color: colors.text }]}>Sort By</Text>
+        <View style={styles.optionList}>
+          {transactionSortOptions.map((option) => {
+            const active = option === selectedSort;
+            return (
+              <Pressable
+                key={option}
+                style={[
+                  styles.optionRow,
+                  {
+                    backgroundColor: active ? hexToRgba(colors.primaryDark, 0.08) : colors.backgroundSoft,
+                    borderColor: active ? colors.primaryDark : 'transparent',
+                  },
+                ]}
+                onPress={() => setSelectedSort(option)}
+              >
+                <Text style={[styles.optionText, { color: colors.text }]}>{option}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.label, { color: colors.text }]}>Date Range</Text>
+        <View style={styles.chipWrap}>
+          {datePresets.map((option) => {
+            const active = option === selectedDatePreset;
+            return (
+              <Pressable
+                key={option}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: active ? colors.primaryDark : colors.backgroundSoft,
+                    borderColor: active ? colors.primaryDark : 'transparent',
+                  },
+                ]}
+                onPress={() => setSelectedDatePreset(option)}
+              >
+                <Text style={[styles.chipText, { color: active ? colors.card : colors.text }]}>
+                  {option}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <ThemeButton
@@ -125,12 +168,20 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     fontWeight: '600',
   },
-  linkRow: {
-    flexDirection: 'row',
+  optionList: {
+    marginTop: 12,
+    marginBottom: 18,
     gap: 10,
   },
-  linkButton: {
-    flex: 1,
+  optionRow: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  optionText: {
+    fontSize: Typography.body,
+    fontWeight: '700',
   },
   primaryButton: {
     marginTop: 16,

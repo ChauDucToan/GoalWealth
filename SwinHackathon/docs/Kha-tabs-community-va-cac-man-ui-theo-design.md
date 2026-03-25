@@ -156,6 +156,14 @@ Những gì được sửa theo feedback:
   - có thể kéo
   - có thể scroll nội dung
   - có nút đóng rõ ràng
+- làm lại `Add New Transaction` theo hướng gọn hơn:
+  - bỏ 3 tab type lớn
+  - thêm selector type gọn
+  - thêm input trực tiếp
+  - validate `Amount`
+- làm lại khu vực `Filters` ở `My Transactions`
+- bỏ `Sort` và `Date` ở màn ngoài vì đã được gom vào `transactions-filters.tsx`
+- chuyển `Sort` và `Date Range` trong `transactions-filters.tsx` thành lựa chọn trực tiếp, không còn là link sang route khác
 
 ### 6.3. Ý nghĩa
 

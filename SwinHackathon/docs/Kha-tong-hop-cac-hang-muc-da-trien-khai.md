@@ -46,6 +46,11 @@ Các điểm đã chỉnh:
 - đổi nút `Add transaction` thành FAB dấu `+`
 - đưa FAB ra khỏi vùng bottom tab
 - sửa modal add transaction để có thể kéo, cuộn và đóng tốt hơn
+- rút gọn màn `Add New Transaction`, bỏ 3 tab lớn dư thừa và thay bằng selector/input trực tiếp
+- thêm validate hợp lệ cho trường `Amount`
+- làm lại `Quick Filters` trên `My Transactions`, bỏ trùng chức năng `Sort` và `Date`
+- đưa `Sort` và `Date Range` vào trong chính màn `Filters`
+- loại bỏ route `app/(finance)/sort-transactions.tsx` vì không còn cần thiết
 - chỉnh alignment của các row trong `Profile`
 
 ### 3.3. Nhóm assistant và auth/state
