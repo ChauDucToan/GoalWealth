@@ -6,8 +6,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memberInvites } from '@/components/smart-budgeting/data';
 import { goSmartBudgetBack } from './_navigation';
-import { memberInvites } from './_data';
 
 const inviteFilters = ['All', 'Pending', 'Editors', 'Viewers'] as const;
 
