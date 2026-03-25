@@ -2,12 +2,12 @@ import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { makeReference } from '@/components/finance/finance-utils';
-import { FinanceIconName } from '@/components/home/mock-data';
+import { FinanceIconName, recurringOptions } from '@/components/home/mock-data';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Typography } from '@/constants/theme';
 
@@ -19,6 +19,23 @@ type DraftFieldRow = {
   action?: () => void;
 };
 
+const MAX_TRANSACTION_AMOUNT = 999999.99;
+const MAX_AMOUNT_WHOLE_DIGITS = 6;
+const MAX_AMOUNT_DECIMAL_DIGITS = 2;
+
+function sanitizeAmountInput(value: string) {
+  const normalized = value.replace(/[^0-9.]/g, '');
+  const [whole = '', ...decimalParts] = normalized.split('.');
+  const limitedWhole = whole.slice(0, MAX_AMOUNT_WHOLE_DIGITS).replace(/^0+(?=\d)/, '');
+  const decimal = decimalParts.join('').slice(0, MAX_AMOUNT_DECIMAL_DIGITS);
+
+  if (normalized.includes('.')) {
+    return `${limitedWhole || '0'}.${decimal}`;
+  }
+
+  return limitedWhole;
+}
+
 export default function AddTransactionScreen() {
   const {
     categories,
@@ -29,14 +46,40 @@ export default function AddTransactionScreen() {
   } = useFinance();
   const { colors } = useTheme();
   const router = useRouter();
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
 
   const selectedCategory =
     categories.find((item) => item.name === transactionDraft.category) ?? categories[0];
+  const titleLabel =
+    transactionDraft.type === 'transfer'
+      ? 'To'
+      : transactionDraft.type === 'income'
+        ? 'Source'
+        : 'Merchant';
+  const rawAmount = transactionDraft.amount.trim();
+  const parsedAmount = Number(rawAmount);
+  const hasAmount = rawAmount.length > 0;
+  const isAmountValid =
+    hasAmount &&
+    Number.isFinite(parsedAmount) &&
+    parsedAmount > 0 &&
+    parsedAmount <= MAX_TRANSACTION_AMOUNT &&
+    new RegExp(`^\\d{1,${MAX_AMOUNT_WHOLE_DIGITS}}(?:\\.\\d{0,${MAX_AMOUNT_DECIMAL_DIGITS}})?$`).test(
+      rawAmount
+    ) &&
+    rawAmount !== '.';
+  const amountError =
+    hasAmount && !isAmountValid
+      ? `Enter an amount from $0.01 to $${MAX_TRANSACTION_AMOUNT.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}.`
+      : '';
+  const isMerchantValid = transactionDraft.merchant.trim().length > 0;
+  const canSave = isAmountValid && isMerchantValid;
 
   const handleSave = () => {
-    const parsedAmount = Number(transactionDraft.amount.replace(/[^0-9.]/g, ''));
-
-    if (!parsedAmount || !transactionDraft.merchant.trim()) {
+    if (!canSave) {
       return;
     }
 
@@ -70,20 +113,6 @@ export default function AddTransactionScreen() {
 
   const fieldRows: DraftFieldRow[] = [
     {
-      key: 'merchant',
-      label: transactionDraft.type === 'transfer'
-        ? 'To'
-        : transactionDraft.type === 'income'
-          ? 'Source'
-          : 'Merchant',
-      value: transactionDraft.merchant || 'Not Set',
-      icon: transactionDraft.type === 'transfer' ? 'north-east' : 'storefront',
-      action:
-        transactionDraft.type === 'transfer'
-          ? () => router.push('/(finance)/send-money?mode=draft')
-          : undefined,
-    },
-    {
       key: 'category',
       label: 'Category',
       value: transactionDraft.type === 'income' ? 'Income' : transactionDraft.category,
@@ -92,20 +121,6 @@ export default function AddTransactionScreen() {
         transactionDraft.type === 'income'
           ? undefined
           : () => router.push('/(finance)/select-category'),
-    },
-    {
-      key: 'note',
-      label: 'Note',
-      value: transactionDraft.note || 'Not Set',
-      icon: 'description',
-      action: () => router.push('/(finance)/add-note'),
-    },
-    {
-      key: 'recurring',
-      label: 'Recurring',
-      value: transactionDraft.recurring || 'Not Set',
-      icon: 'event-repeat',
-      action: () => router.push('/(finance)/set-recurring'),
     },
     {
       key: 'date',
@@ -133,25 +148,69 @@ export default function AddTransactionScreen() {
       }
     >
       <FinanceCard style={styles.card}>
-        <View style={styles.segmentRow}>
-          {(['expense', 'income', 'transfer'] as const).map((item) => {
-            const selected = item === transactionDraft.type;
-            return (
-              <Pressable
-                key={item}
-                style={[
-                  styles.segment,
-                  { backgroundColor: selected ? colors.primaryDark : colors.backgroundSoft },
-                ]}
-                onPress={() => updateTransactionDraft({ type: item })}
-              >
-                <Text style={[styles.segmentText, { color: selected ? colors.card : colors.text }]}>
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Text style={[styles.sectionLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+          Transaction Type
+        </Text>
+        <Pressable
+          style={[
+            styles.selectorRow,
+            {
+              backgroundColor: colors.backgroundSoft,
+              borderColor: hexToRgba(colors.primaryDark, 0.1),
+            },
+          ]}
+          onPress={() => setTypeMenuOpen((current) => !current)}
+        >
+          <View style={styles.selectorCopy}>
+            <MaterialIcons
+              name={
+                transactionDraft.type === 'income'
+                  ? 'south-west'
+                  : transactionDraft.type === 'transfer'
+                    ? 'swap-horiz'
+                    : 'north-east'
+              }
+              size={18}
+              color={colors.primaryDark}
+            />
+            <Text style={[styles.selectorLabel, { color: colors.text }]}>
+              {transactionDraft.type.charAt(0).toUpperCase() + transactionDraft.type.slice(1)}
+            </Text>
+          </View>
+          <MaterialIcons
+            name={typeMenuOpen ? 'expand-less' : 'expand-more'}
+            size={20}
+            color={hexToRgba(colors.text, 0.42)}
+          />
+        </Pressable>
+
+        {typeMenuOpen ? (
+          <View style={styles.typeOptionWrap}>
+            {(['expense', 'income', 'transfer'] as const).map((item) => {
+              const selected = item === transactionDraft.type;
+              return (
+                <Pressable
+                  key={item}
+                  style={[
+                    styles.typeOption,
+                    {
+                      backgroundColor: selected ? colors.primaryDark : colors.backgroundSoft,
+                      borderColor: selected ? colors.primaryDark : hexToRgba(colors.primaryDark, 0.1),
+                    },
+                  ]}
+                  onPress={() => {
+                    updateTransactionDraft({ type: item });
+                    setTypeMenuOpen(false);
+                  }}
+                >
+                  <Text style={[styles.typeOptionText, { color: selected ? colors.card : colors.text }]}>
+                    {item.charAt(0).toUpperCase() + item.slice(1)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
         <Text style={[styles.amountLabel, { color: hexToRgba(colors.text, 0.54) }]}>
           Amount
@@ -160,9 +219,12 @@ export default function AddTransactionScreen() {
           <Text style={[styles.amountPrefix, { color: hexToRgba(colors.text, 0.54) }]}>$</Text>
           <TextInput
             value={transactionDraft.amount}
-            onChangeText={(value) => updateTransactionDraft({ amount: value })}
+            onChangeText={(value) =>
+              updateTransactionDraft({ amount: sanitizeAmountInput(value) })
+            }
             keyboardType="numeric"
             placeholder="0.00"
+            maxLength={MAX_AMOUNT_WHOLE_DIGITS + MAX_AMOUNT_DECIMAL_DIGITS + 1}
             placeholderTextColor={hexToRgba(colors.text, 0.28)}
             style={[styles.amountInput, { color: colors.text }]}
           />
@@ -170,9 +232,98 @@ export default function AddTransactionScreen() {
         <View
           style={[
             styles.amountUnderline,
-            { backgroundColor: hexToRgba(colors.primaryDark, 0.9) },
+            {
+              backgroundColor: amountError
+                ? colors.error
+                : hexToRgba(colors.primaryDark, 0.9),
+            },
           ]}
         />
+        <Text
+          style={[
+            styles.amountHelper,
+            {
+              color: amountError ? colors.error : hexToRgba(colors.text, 0.48),
+            },
+          ]}
+        >
+          {amountError ||
+            `Use a positive amount up to $${MAX_TRANSACTION_AMOUNT.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}.`}
+        </Text>
+
+        <View
+          style={[
+            styles.inputBlock,
+            {
+              backgroundColor: colors.backgroundSoft,
+              borderColor: hexToRgba(colors.primaryDark, 0.08),
+            },
+          ]}
+        >
+          <Text style={[styles.inputLabel, { color: hexToRgba(colors.text, 0.54) }]}>{titleLabel}</Text>
+          <TextInput
+            value={transactionDraft.merchant}
+            onChangeText={(value) => updateTransactionDraft({ merchant: value })}
+            placeholder={
+              transactionDraft.type === 'transfer'
+                ? 'Enter recipient'
+                : transactionDraft.type === 'income'
+                  ? 'Enter income source'
+                  : 'Enter merchant name'
+            }
+            placeholderTextColor={hexToRgba(colors.text, 0.28)}
+            style={[styles.textInput, { color: colors.text }]}
+          />
+        </View>
+
+        <View
+          style={[
+            styles.inputBlock,
+            {
+              backgroundColor: colors.backgroundSoft,
+              borderColor: hexToRgba(colors.primaryDark, 0.08),
+            },
+          ]}
+        >
+          <Text style={[styles.inputLabel, { color: hexToRgba(colors.text, 0.54) }]}>Note</Text>
+          <TextInput
+            value={transactionDraft.note}
+            onChangeText={(value) => updateTransactionDraft({ note: value })}
+            placeholder="Add a note for this transaction"
+            placeholderTextColor={hexToRgba(colors.text, 0.28)}
+            style={[styles.textInput, styles.noteInput, { color: colors.text }]}
+            multiline
+          />
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+          Repeat Schedule
+        </Text>
+        <View style={styles.quickOptionWrap}>
+          {recurringOptions.map((option) => {
+            const active = transactionDraft.recurring === option;
+            return (
+              <Pressable
+                key={option}
+                style={[
+                  styles.quickOptionChip,
+                  {
+                    backgroundColor: active ? colors.primaryDark : colors.backgroundSoft,
+                    borderColor: active ? colors.primaryDark : hexToRgba(colors.primaryDark, 0.1),
+                  },
+                ]}
+                onPress={() => updateTransactionDraft({ recurring: option })}
+              >
+                <Text style={[styles.quickOptionText, { color: active ? colors.card : colors.text }]}>
+                  {option}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <View style={styles.fieldList}>
           {fieldRows.map((row) => (
@@ -249,15 +400,15 @@ export default function AddTransactionScreen() {
 
         <View style={styles.helperRow}>
           <ThemeButton
-            title="Type"
-            onPress={() => router.push('/(finance)/select-type')}
+            title="Category"
+            onPress={() => router.push('/(finance)/select-category')}
             colorBackground={colors.backgroundSoft}
             colorText={colors.text}
             style={styles.helperButton}
           />
           <ThemeButton
-            title="Category"
-            onPress={() => router.push('/(finance)/select-category')}
+            title="Date"
+            onPress={() => router.push('/(finance)/date-range?mode=draft')}
             colorBackground={colors.backgroundSoft}
             colorText={colors.text}
             style={styles.helperButton}
@@ -270,6 +421,7 @@ export default function AddTransactionScreen() {
           colorBackground={colors.primaryDark}
           colorText={colors.card}
           style={styles.primaryButton}
+          disabled={!canSave}
         />
       </FinanceCard>
     </FinanceScreen>
@@ -288,23 +440,50 @@ const styles = StyleSheet.create({
   card: {
     paddingTop: 16,
   },
-  segmentRow: {
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  selectorRow: {
+    marginTop: 10,
+    minHeight: 52,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  selectorCopy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  selectorLabel: {
+    fontSize: Typography.body,
+    fontWeight: '700',
+  },
+  typeOptionWrap: {
+    marginTop: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  segment: {
+  typeOption: {
     flex: 1,
-    flexBasis: 90,
-    minHeight: 38,
+    flexBasis: 92,
+    minHeight: 40,
     borderRadius: 999,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  segmentText: {
-    fontSize: Typography.body,
+  typeOptionText: {
+    fontSize: 13,
     fontWeight: '700',
-    textTransform: 'capitalize',
   },
   amountLabel: {
     marginTop: 18,
@@ -346,6 +525,53 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 220,
     alignSelf: 'center',
+  },
+  amountHelper: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  inputBlock: {
+    marginTop: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  textInput: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    fontWeight: '600',
+    paddingVertical: 0,
+  },
+  noteInput: {
+    minHeight: 52,
+    textAlignVertical: 'top',
+  },
+  quickOptionWrap: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickOptionChip: {
+    minHeight: 36,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickOptionText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   fieldList: {
     marginTop: 16,
