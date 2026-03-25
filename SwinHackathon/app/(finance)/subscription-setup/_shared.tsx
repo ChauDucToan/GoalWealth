@@ -97,7 +97,7 @@ export function SubscriptionSetupSecondaryButton({ label, onPress }: { label: st
 function createStyles(colors: ColorTheme) {
   return StyleSheet.create({
     screen: { flex: 1 },
-    content: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 16, paddingBottom: 24 },
+    content: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 16, paddingBottom: 28 },
     headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     headerButton: {
       width: 40,
@@ -110,13 +110,13 @@ function createStyles(colors: ColorTheme) {
     progressTrack: { flex: 1, height: 8, borderRadius: 999, overflow: 'hidden' },
     progressFill: { height: '100%', borderRadius: 999 },
     progressText: { width: 38, textAlign: 'right', fontSize: 11, fontWeight: '700' },
-    title: { marginTop: 24, fontSize: 28, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
+    title: { marginTop: 28, fontSize: 28, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
     body: { marginTop: 10, fontSize: Typography.body, lineHeight: 20 },
-    bodyWrap: { marginTop: 24, gap: 16 },
-    footer: { marginTop: 24, gap: 10 },
-    primaryButton: { minHeight: 50, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    bodyWrap: { marginTop: 28, gap: 16 },
+    footer: { marginTop: 28, gap: 10 },
+    primaryButton: { minHeight: 52, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
     primaryButtonText: { fontSize: 14, fontWeight: '800' },
-    secondaryButton: { minHeight: 50, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    secondaryButton: { minHeight: 52, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     secondaryButtonText: { fontSize: 14, fontWeight: '800' },
   });
 }

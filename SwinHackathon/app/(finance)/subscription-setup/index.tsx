@@ -37,6 +37,20 @@ export default function SubscriptionSetupIntroScreen() {
         </View>
         <Text style={[styles.heroTitle, { color: colors.text }]}>Subscription control</Text>
         <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56) }]}>Create, review and optimize every recurring payment in one workspace.</Text>
+        <View style={styles.metricRow}>
+          <View style={[styles.metricCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.5) }]}>Track</Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>Bills</Text>
+          </View>
+          <View style={[styles.metricCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.5) }]}>Review</Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>Renewals</Text>
+          </View>
+          <View style={[styles.metricCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.5) }]}>Optimize</Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>Costs</Text>
+          </View>
+        </View>
       </View>
     </SubscriptionSetupShell>
   );
@@ -50,5 +64,9 @@ function createStyles(colors: ColorTheme) {
     heroBadge: { width: 78, height: 78, borderRadius: 26, marginTop: -26, alignItems: 'center', justifyContent: 'center' },
     heroTitle: { marginTop: 16, fontSize: 18, fontWeight: '900' },
     heroBody: { marginTop: 8, textAlign: 'center', fontSize: 13, lineHeight: 19, fontWeight: '500' },
+    metricRow: { marginTop: 18, flexDirection: 'row', gap: 10 },
+    metricCard: { flex: 1, borderRadius: 16, padding: 10, alignItems: 'center' },
+    metricLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+    metricValue: { marginTop: 4, fontSize: 12, fontWeight: '800' },
   });
 }

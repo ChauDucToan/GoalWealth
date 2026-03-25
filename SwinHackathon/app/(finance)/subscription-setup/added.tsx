@@ -35,6 +35,16 @@ export default function SubscriptionSetupAddedScreen() {
         </View>
         <Text style={[styles.cardTitle, { color: colors.text }]}>{service.service}</Text>
         <Text style={[styles.cardBody, { color: hexToRgba(colors.text, 0.56) }]}>${state.amount} • {state.cycle} • next on {state.nextPayment}</Text>
+        <View style={styles.summaryRow}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.5) }]}>Type</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>{state.type}</Text>
+          </View>
+          <View style={[styles.summaryCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.5) }]}>Amount</Text>
+            <Text style={[styles.summaryValue, { color: colors.text }]}>${state.amount}</Text>
+          </View>
+        </View>
       </View>
     </SubscriptionSetupShell>
   );
@@ -46,5 +56,9 @@ function createStyles(colors: ColorTheme) {
     checkWrap: { width: 84, height: 84, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
     cardTitle: { marginTop: 16, fontSize: 18, fontWeight: '900', textAlign: 'center' },
     cardBody: { marginTop: 8, fontSize: 13, lineHeight: 19, fontWeight: '500', textAlign: 'center' },
+    summaryRow: { marginTop: 18, flexDirection: 'row', gap: 10 },
+    summaryCard: { flex: 1, borderRadius: 18, padding: 12 },
+    summaryLabel: { fontSize: 11, fontWeight: '700' },
+    summaryValue: { marginTop: 4, fontSize: 12, fontWeight: '800' },
   });
 }

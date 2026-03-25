@@ -23,6 +23,11 @@ export default function SubscriptionSetupNextPaymentScreen() {
       body="The reminder and upcoming charge sections depend on this date."
       footer={<SubscriptionSetupPrimaryButton label="Continue" onPress={() => router.push('/(finance)/subscription-setup/cycle')} />}
     >
+      <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.previewLabel, { color: hexToRgba(colors.text, 0.52) }]}>Selected schedule</Text>
+        <Text style={[styles.previewValue, { color: colors.text }]}>{state.nextPayment}</Text>
+        <Text style={[styles.previewBody, { color: hexToRgba(colors.text, 0.56) }]}>This date will be used for reminder timing and upcoming charge cards.</Text>
+      </View>
       <View style={styles.stack}>
         {dateOptions.map((item) => {
           const active = item === state.nextPayment;
@@ -32,7 +37,11 @@ export default function SubscriptionSetupNextPaymentScreen() {
               style={[styles.dateRow, { backgroundColor: active ? hexToRgba(colors.primaryDark, 0.1) : colors.card, borderColor: active ? colors.primaryDark : colors.border }]}
               onPress={() => setNextPayment(item)}
             >
-              <Text style={[styles.dateText, { color: active ? colors.primaryDark : colors.text }]}>{item}</Text>
+              <View>
+                <Text style={[styles.dateText, { color: active ? colors.primaryDark : colors.text }]}>{item}</Text>
+                <Text style={[styles.dateMeta, { color: hexToRgba(colors.text, 0.52) }]}>Upcoming renewal candidate</Text>
+              </View>
+              {active ? <Text style={[styles.dateBadge, { color: colors.primaryDark }]}>Selected</Text> : null}
             </Pressable>
           );
         })}
@@ -43,8 +52,14 @@ export default function SubscriptionSetupNextPaymentScreen() {
 
 function createStyles(colors: ColorTheme) {
   return StyleSheet.create({
+    previewCard: { borderWidth: 1, borderRadius: 24, padding: 18 },
+    previewLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
+    previewValue: { marginTop: 8, fontSize: 22, fontWeight: '900' },
+    previewBody: { marginTop: 8, fontSize: 12, lineHeight: 18, fontWeight: '500' },
     stack: { gap: 12 },
-    dateRow: { borderWidth: 1, borderRadius: 20, paddingVertical: 16, paddingHorizontal: 16 },
+    dateRow: { borderWidth: 1, borderRadius: 20, paddingVertical: 16, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
     dateText: { fontSize: 14, fontWeight: '800' },
+    dateMeta: { marginTop: 4, fontSize: 11, fontWeight: '600' },
+    dateBadge: { fontSize: 11, fontWeight: '800' },
   });
 }

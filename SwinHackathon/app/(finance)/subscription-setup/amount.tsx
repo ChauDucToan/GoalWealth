@@ -29,6 +29,16 @@ export default function SubscriptionSetupAmountScreen() {
         <Text style={[styles.valueLabel, { color: hexToRgba(colors.text, 0.54) }]}>Subscription amount</Text>
         <Text style={[styles.valueText, { color: colors.primaryDark }]}>${state.amount}</Text>
         <Text style={[styles.valueHint, { color: hexToRgba(colors.text, 0.52) }]}>This amount will appear in projections and payment cards.</Text>
+        <View style={styles.metricRow}>
+          <View style={[styles.metricCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.5) }]}>Yearly</Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>${(numeric * 12).toFixed(0)}</Text>
+          </View>
+          <View style={[styles.metricCard, { backgroundColor: colors.backgroundSoft }]}>
+            <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.5) }]}>Monthly view</Text>
+            <Text style={[styles.metricValue, { color: colors.text }]}>${numeric.toFixed(0)}</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.stepperRow}>
@@ -60,6 +70,10 @@ function createStyles(colors: ColorTheme) {
     valueLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
     valueText: { marginTop: 8, fontSize: 44, fontWeight: '900', letterSpacing: -1.2 },
     valueHint: { marginTop: 8, fontSize: 12, lineHeight: 18, fontWeight: '500' },
+    metricRow: { marginTop: 16, flexDirection: 'row', gap: 10 },
+    metricCard: { flex: 1, borderRadius: 18, padding: 12 },
+    metricLabel: { fontSize: 11, fontWeight: '700' },
+    metricValue: { marginTop: 4, fontSize: 13, fontWeight: '800' },
     stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14 },
     stepperButton: { width: 54, height: 54, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     stepperValue: { flex: 1, minHeight: 54, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

@@ -44,16 +44,27 @@ export default function SubscriptionResultScreen() {
   const router = useRouter();
   const item = getSubscriptionById(id);
   const copy = RESULT_COPY[mode ?? 'added'] ?? RESULT_COPY.added;
+  const toneColor =
+    mode === 'cancelled'
+      ? colors.error
+      : mode === 'paused'
+        ? colors.warning
+        : colors.primaryDark;
 
   return (
     <FinanceScreen title="Subscription Result" subtitle="Confirmation state after a create, update or lifecycle action." contentStyle={styles.contentStyle}>
       <View style={styles.stack}>
-        <FinanceCard style={styles.resultCard}>
-          <View style={[styles.resultBadge, { backgroundColor: hexToRgba(colors.primaryDark, 0.1) }]}>
-            <MaterialIcons name={copy.icon} size={42} color={colors.primaryDark} />
+        <FinanceCard style={[styles.resultCard, { backgroundColor: hexToRgba(toneColor, 0.06) }]}>
+          <View style={[styles.resultBadge, { backgroundColor: hexToRgba(toneColor, 0.1) }]}>
+            <MaterialIcons name={copy.icon} size={42} color={toneColor} />
           </View>
           <Text style={[styles.resultTitle, { color: colors.text }]}>{copy.title}</Text>
           <Text style={[styles.resultBody, { color: hexToRgba(colors.text, 0.56) }]}>{copy.body}</Text>
+          <View style={[styles.resultPill, { backgroundColor: colors.card, borderColor: hexToRgba(toneColor, 0.18) }]}>
+            <Text style={[styles.resultPillText, { color: toneColor }]}>
+              {mode === 'cancelled' ? 'Moved to inactive history' : mode === 'paused' ? 'Renewal flow paused' : 'Workspace updated'}
+            </Text>
+          </View>
         </FinanceCard>
 
         <FinanceCard>
@@ -97,6 +108,8 @@ function createStyles(colors: ColorTheme) {
     resultBadge: { width: 88, height: 88, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
     resultTitle: { marginTop: 16, fontSize: 20, fontWeight: '900', textAlign: 'center' },
     resultBody: { marginTop: 8, fontSize: 13, lineHeight: 19, fontWeight: '500', textAlign: 'center' },
+    resultPill: { marginTop: 14, minHeight: 34, borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
+    resultPillText: { fontSize: 11, fontWeight: '800' },
     sectionTitle: { fontSize: 15, fontWeight: '800' },
     summaryStack: { marginTop: 16, gap: 14 },
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },

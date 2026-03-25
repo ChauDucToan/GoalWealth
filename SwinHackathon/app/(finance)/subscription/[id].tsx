@@ -7,32 +7,59 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function SubscriptionDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, action } = useLocalSearchParams<{ id: string; action?: string }>();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const item = getSubscriptionById(id);
   const activeMode = item.status === 'paused' ? 'reactivated' : 'paused';
   const totalTracked = item.charges.filter((charge) => charge.status === 'paid').reduce((sum, charge) => sum + charge.amount, 0);
+  const actionCopy =
+    action === 'cancel'
+      ? {
+          title: 'Cancel Subscription',
+          body: 'The service will move to history and future renewals will stop until you activate it again.',
+          confirmLabel: 'Cancel subscription',
+          resultMode: 'cancelled' as const,
+          confirmColor: colors.error,
+        }
+      : action === 'activate'
+        ? {
+            title: 'Activate Subscription',
+            body: 'The subscription will be restored to active status and upcoming charges will reappear in the workspace.',
+            confirmLabel: 'Activate subscription',
+            resultMode: 'reactivated' as const,
+            confirmColor: colors.primaryDark,
+          }
+        : action === 'pause'
+          ? {
+              title: 'Pause Subscription',
+              body: 'This plan will stay visible, but renewals will be paused until you reactivate it later.',
+              confirmLabel: 'Pause subscription',
+              resultMode: 'paused' as const,
+              confirmColor: colors.warning,
+            }
+          : null;
 
   return (
-    <FinanceScreen
-      title={item.service}
-      subtitle={`${item.category} • ${item.plan}`}
-      contentStyle={styles.contentStyle}
-      rightAccessory={
-        <Pressable
-          style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => router.push({ pathname: '/(finance)/subscription-add', params: { preset: item.id } })}
-        >
-          <MaterialIcons name="edit" size={18} color={colors.text} />
-        </Pressable>
-      }
-    >
-      <View style={styles.stack}>
+    <>
+      <FinanceScreen
+        title={item.service}
+        subtitle={`${item.category} • ${item.plan}`}
+        contentStyle={styles.contentStyle}
+        rightAccessory={
+          <Pressable
+            style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push({ pathname: '/(finance)/subscription-add', params: { preset: item.id } })}
+          >
+            <MaterialIcons name="edit" size={18} color={colors.text} />
+          </Pressable>
+        }
+      >
+        <View style={styles.stack}>
         <FinanceCard style={[styles.heroCard, { backgroundColor: hexToRgba(item.accent, 0.12) }]}> 
           <View style={styles.heroTop}>
             <View style={[styles.serviceIcon, { backgroundColor: item.accent }]}>
@@ -115,15 +142,55 @@ export default function SubscriptionDetailScreen() {
           <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.push({ pathname: '/(finance)/subscription-add', params: { preset: item.id } })}>
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Change plan</Text>
           </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push({ pathname: '/(finance)/subscription-result', params: { mode: activeMode, id: item.id } })}>
+          <Pressable
+            style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.setParams({ action: item.status === 'paused' ? 'activate' : 'pause' })}
+          >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>{item.status === 'paused' ? 'Activate subscription' : 'Pause subscription'}</Text>
           </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: hexToRgba(colors.error, 0.2) }]} onPress={() => router.push({ pathname: '/(finance)/subscription-result', params: { mode: 'cancelled', id: item.id } })}>
+          <Pressable
+            style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: hexToRgba(colors.error, 0.2) }]}
+            onPress={() => router.setParams({ action: 'cancel' })}
+          >
             <Text style={[styles.secondaryButtonText, { color: colors.error }]}>Cancel subscription</Text>
           </Pressable>
         </View>
-      </View>
-    </FinanceScreen>
+        </View>
+      </FinanceScreen>
+
+      <Modal visible={Boolean(actionCopy)} transparent animationType="fade" onRequestClose={() => router.setParams({ action: undefined })}>
+        <View style={[styles.confirmBackdrop, { backgroundColor: hexToRgba(colors.text, 0.76) }]}>
+          <View style={[styles.confirmSheet, { backgroundColor: colors.card }]}>
+            <View style={[styles.confirmIconWrap, { backgroundColor: hexToRgba(actionCopy?.confirmColor ?? colors.primaryDark, 0.1) }]}>
+              <MaterialIcons
+                name={action === 'cancel' ? 'cancel' : action === 'activate' ? 'play-circle' : 'pause-circle'}
+                size={42}
+                color={actionCopy?.confirmColor ?? colors.primaryDark}
+              />
+            </View>
+            <Text style={[styles.confirmTitle, { color: colors.text }]}>{actionCopy?.title}</Text>
+            <Text style={[styles.confirmBody, { color: hexToRgba(colors.text, 0.56) }]}>{actionCopy?.body}</Text>
+
+            <View style={styles.confirmActionStack}>
+              <Pressable
+                style={[styles.primaryButton, { backgroundColor: actionCopy?.confirmColor ?? colors.primaryDark }]}
+                onPress={() =>
+                  router.replace({
+                    pathname: '/(finance)/subscription-result',
+                    params: { mode: actionCopy?.resultMode ?? activeMode, id: item.id },
+                  })
+                }
+              >
+                <Text style={[styles.primaryButtonText, { color: colors.card }]}>{actionCopy?.confirmLabel}</Text>
+              </Pressable>
+              <Pressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.setParams({ action: undefined })}>
+                <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Not now</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -167,5 +234,11 @@ function createStyles(colors: ColorTheme) {
     primaryButtonText: { fontSize: 14, fontWeight: '800' },
     secondaryButton: { minHeight: 50, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     secondaryButtonText: { fontSize: 14, fontWeight: '800' },
+    confirmBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
+    confirmSheet: { width: '100%', borderRadius: 30, padding: 22, alignItems: 'center' },
+    confirmIconWrap: { width: 92, height: 92, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+    confirmTitle: { marginTop: 18, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    confirmBody: { marginTop: 10, fontSize: 13, lineHeight: 20, fontWeight: '500', textAlign: 'center' },
+    confirmActionStack: { marginTop: 22, width: '100%', gap: 10 },
   });
 }

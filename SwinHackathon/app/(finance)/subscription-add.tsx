@@ -12,11 +12,11 @@ import { ColorTheme } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 export default function SubscriptionAddScreen() {
-  const { preset } = useLocalSearchParams<{ preset?: string }>();
+  const { preset, chooser, cycle: cycleParam } = useLocalSearchParams<{ preset?: string; chooser?: string; cycle?: string }>();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
@@ -33,19 +33,28 @@ export default function SubscriptionAddScreen() {
   const [autoRenew, setAutoRenew] = useState(presetItem.autoRenew);
   const [smartReminder, setSmartReminder] = useState(true);
   const projectedYearly = Number(amount || 0) * (cycle === 'Yearly' ? 1 : cycle === 'Bi-Monthly' ? 6 : cycle === 'Weekly' ? 52 : 12);
+  const isFrequencyOpen = chooser === 'frequency';
+  const isServiceOpen = chooser === 'service';
 
   const filteredServices = subscriptionServices.filter((item) =>
     item.service.toLowerCase().includes(search.toLowerCase())
   );
   const selectedService = subscriptionServices.find((item) => item.id === selectedId) ?? subscriptionServices[0];
 
+  useEffect(() => {
+    if (cycleParam && subscriptionCycles.includes(cycleParam as (typeof subscriptionCycles)[number])) {
+      setCycle(cycleParam as (typeof subscriptionCycles)[number]);
+    }
+  }, [cycleParam]);
+
   return (
-    <FinanceScreen
-      title={preset ? 'Edit Subscription' : 'Add New Subscription'}
-      subtitle={preset ? 'Update billing details, reminders and payment setup.' : 'Create a recurring subscription entry with category and reminder details.'}
-      contentStyle={styles.contentStyle}
-    >
-      <View style={styles.stack}>
+    <>
+      <FinanceScreen
+        title={preset ? 'Edit Subscription' : 'Add New Subscription'}
+        subtitle={preset ? 'Update billing details, reminders and payment setup.' : 'Create a recurring subscription entry with category and reminder details.'}
+        contentStyle={styles.contentStyle}
+      >
+        <View style={styles.stack}>
         <FinanceCard style={[styles.heroCard, { backgroundColor: hexToRgba(selectedService.accent, 0.1) }]}> 
           <View style={styles.heroTop}>
             <View style={[styles.heroIcon, { backgroundColor: selectedService.accent }]}>
@@ -70,7 +79,12 @@ export default function SubscriptionAddScreen() {
         </FinanceCard>
 
         <FinanceCard>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose service</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose service</Text>
+            <Pressable onPress={() => router.setParams({ chooser: 'service' })}>
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open library</Text>
+            </Pressable>
+          </View>
           <View style={[styles.searchRow, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}> 
             <MaterialIcons name="search" size={18} color={hexToRgba(colors.text, 0.5)} />
             <TextInput
@@ -126,13 +140,16 @@ export default function SubscriptionAddScreen() {
           </View>
 
           <Text style={[styles.subLabel, { color: hexToRgba(colors.text, 0.52) }]}>Billing cycle</Text>
-          <View style={styles.optionWrap}>
-            {subscriptionCycles.map((item) => (
-              <Pressable key={item} style={[styles.optionChip, { backgroundColor: cycle === item ? hexToRgba(colors.primaryDark, 0.1) : colors.card, borderColor: cycle === item ? colors.primaryDark : colors.border }]} onPress={() => setCycle(item)}>
-                <Text style={[styles.optionChipText, { color: cycle === item ? colors.primaryDark : colors.text }]}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Pressable
+            style={[styles.selectorRow, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
+            onPress={() => router.setParams({ chooser: 'frequency' })}
+          >
+            <View>
+              <Text style={[styles.selectorLabel, { color: hexToRgba(colors.text, 0.52) }]}>Chosen frequency</Text>
+              <Text style={[styles.selectorValue, { color: colors.text }]}>{cycle}</Text>
+            </View>
+            <MaterialIcons name="keyboard-arrow-down" size={22} color={colors.text} />
+          </Pressable>
 
           <Text style={[styles.subLabel, { color: hexToRgba(colors.text, 0.52) }]}>Category</Text>
           <View style={styles.optionWrap}>
@@ -200,8 +217,116 @@ export default function SubscriptionAddScreen() {
         <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.push({ pathname: '/(finance)/subscription-result', params: { mode: preset ? 'updated' : 'added', id: selectedId } })}>
           <Text style={[styles.primaryButtonText, { color: colors.card }]}>{preset ? 'Save subscription' : 'Create subscription'}</Text>
         </Pressable>
-      </View>
-    </FinanceScreen>
+        </View>
+      </FinanceScreen>
+
+      <Modal visible={isFrequencyOpen} transparent animationType="fade" onRequestClose={() => router.setParams({ chooser: undefined })}>
+        <View style={[styles.modalBackdrop, { backgroundColor: hexToRgba(colors.text, 0.72) }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Choose Frequency</Text>
+                <Text style={[styles.modalBody, { color: hexToRgba(colors.text, 0.56) }]}>Select how often this subscription renews.</Text>
+              </View>
+              <Pressable style={[styles.modalClose, { backgroundColor: colors.backgroundSoft }]} onPress={() => router.setParams({ chooser: undefined })}>
+                <MaterialIcons name="close" size={18} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <View style={styles.modalOptionStack}>
+              {subscriptionCycles.map((item) => {
+                const active = cycle === item;
+                return (
+                  <Pressable
+                    key={item}
+                    style={[styles.modalOptionRow, { backgroundColor: active ? hexToRgba(colors.primaryDark, 0.08) : colors.backgroundSoft, borderColor: active ? colors.primaryDark : colors.border }]}
+                    onPress={() => {
+                      setCycle(item);
+                      router.setParams({ chooser: undefined, cycle: item });
+                    }}
+                  >
+                    <View>
+                      <Text style={[styles.modalOptionTitle, { color: colors.text }]}>{item}</Text>
+                      <Text style={[styles.modalOptionMeta, { color: hexToRgba(colors.text, 0.52) }]}>
+                        {item === 'Weekly'
+                          ? 'Charge every week'
+                          : item === 'Monthly'
+                            ? 'Charge every month'
+                            : item === 'Bi-Monthly'
+                              ? 'Charge every two months'
+                              : 'Charge once per year'}
+                      </Text>
+                    </View>
+                    {active ? <MaterialIcons name="check-circle" size={20} color={colors.primaryDark} /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={isServiceOpen} transparent animationType="slide" onRequestClose={() => router.setParams({ chooser: undefined })}>
+        <View style={[styles.modalBackdrop, { backgroundColor: hexToRgba(colors.text, 0.72) }]}>
+          <View style={[styles.librarySheet, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Add New Subscription</Text>
+                <Text style={[styles.modalBody, { color: hexToRgba(colors.text, 0.56) }]}>Search and pick a recurring service from your workspace library.</Text>
+              </View>
+              <Pressable style={[styles.modalClose, { backgroundColor: colors.backgroundSoft }]} onPress={() => router.setParams({ chooser: undefined })}>
+                <MaterialIcons name="close" size={18} color={colors.text} />
+              </Pressable>
+            </View>
+
+            <View style={[styles.searchRow, { backgroundColor: colors.backgroundSoft, borderColor: colors.border, marginTop: 0 }]}> 
+              <MaterialIcons name="search" size={18} color={hexToRgba(colors.text, 0.5)} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search subscription service"
+                placeholderTextColor={hexToRgba(colors.text, 0.4)}
+                style={[styles.searchInput, { color: colors.text }]}
+              />
+            </View>
+
+            {filteredServices.length === 0 ? (
+              <View style={[styles.libraryEmptyPanel, { backgroundColor: hexToRgba(colors.primaryDark, 0.06) }]}>
+                <MaterialIcons name="search-off" size={34} color={colors.primaryDark} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>Oops! Subscription service not found</Text>
+                <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}>Press back or try a broader search term to continue building the subscription entry.</Text>
+              </View>
+            ) : (
+              <View style={styles.libraryList}>
+                {filteredServices.map((item) => {
+                  const active = item.id === selectedId;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      style={[styles.libraryRow, { backgroundColor: active ? hexToRgba(item.accent, 0.08) : colors.backgroundSoft, borderColor: active ? item.accent : colors.border }]}
+                      onPress={() => {
+                        setSelectedId(item.id);
+                        setAmount(String(item.amount));
+                        router.setParams({ chooser: undefined });
+                      }}
+                    >
+                      <View style={[styles.libraryIcon, { backgroundColor: hexToRgba(item.accent, 0.14) }]}>
+                        <MaterialIcons name={item.icon} size={18} color={item.accent} />
+                      </View>
+                      <View style={styles.libraryCopy}>
+                        <Text style={[styles.libraryTitle, { color: colors.text }]}>{item.service}</Text>
+                        <Text style={[styles.libraryMeta, { color: hexToRgba(colors.text, 0.52) }]}>{item.type} • {formatCurrency(item.amount)}</Text>
+                      </View>
+                      {active ? <MaterialIcons name="check-circle" size={20} color={colors.primaryDark} /> : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -220,6 +345,8 @@ function createStyles(colors: ColorTheme) {
     heroMetaLabel: { fontSize: 11, fontWeight: '700' },
     heroMetaValue: { marginTop: 5, fontSize: 13, fontWeight: '800' },
     sectionTitle: { fontSize: 15, fontWeight: '800' },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+    sectionLink: { fontSize: 12, fontWeight: '800' },
     searchRow: { marginTop: 16, borderWidth: 1, borderRadius: 18, minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 },
     searchInput: { flex: 1, fontSize: 13, fontWeight: '600' },
     emptyPanel: { marginTop: 16, borderRadius: 22, padding: 18, alignItems: 'center' },
@@ -235,6 +362,9 @@ function createStyles(colors: ColorTheme) {
     fieldInput: { minHeight: 46, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, fontSize: 13, fontWeight: '600' },
     textArea: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
     subLabel: { marginTop: 18, fontSize: 12, fontWeight: '700' },
+    selectorRow: { marginTop: 10, minHeight: 56, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    selectorLabel: { fontSize: 11, fontWeight: '700' },
+    selectorValue: { marginTop: 4, fontSize: 13, fontWeight: '800' },
     optionWrap: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     optionChip: { borderWidth: 1, borderRadius: 16, minHeight: 40, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
     optionChipText: { fontSize: 12, fontWeight: '700' },
@@ -254,5 +384,23 @@ function createStyles(colors: ColorTheme) {
     previewStatValue: { marginTop: 4, fontSize: 12, fontWeight: '800' },
     primaryButton: { minHeight: 50, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
     primaryButtonText: { fontSize: 14, fontWeight: '800' },
+    modalBackdrop: { flex: 1, justifyContent: 'flex-end', padding: 18 },
+    modalSheet: { borderRadius: 28, padding: 18, gap: 16 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+    modalTitle: { fontSize: 18, fontWeight: '900' },
+    modalBody: { marginTop: 6, fontSize: 12, lineHeight: 18, fontWeight: '500' },
+    modalClose: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    modalOptionStack: { gap: 10 },
+    modalOptionRow: { minHeight: 62, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+    modalOptionTitle: { fontSize: 14, fontWeight: '800' },
+    modalOptionMeta: { marginTop: 4, fontSize: 11, fontWeight: '600' },
+    librarySheet: { maxHeight: '88%', borderRadius: 28, padding: 18, gap: 16 },
+    libraryList: { gap: 10 },
+    libraryRow: { minHeight: 64, borderWidth: 1, borderRadius: 18, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+    libraryIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    libraryCopy: { flex: 1 },
+    libraryTitle: { fontSize: 13, fontWeight: '800' },
+    libraryMeta: { marginTop: 4, fontSize: 11, fontWeight: '600' },
+    libraryEmptyPanel: { borderRadius: 22, padding: 24, alignItems: 'center' },
   });
 }
