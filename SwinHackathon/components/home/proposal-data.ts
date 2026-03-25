@@ -8,7 +8,7 @@ export type ProposalRoute =
   | '/(finance)/financial-assessment'
   | '/(finance)/financial-goals'
   | '/(finance)/investments'
-  | '/(assistant)/receipt-upload'
+  | '/(finance)/smart-budgeting/add-spending'
   | '/(tabs)/news-resources'
   | '/(tabs)/smart-budgeting'
   | '/(tabs)/achievements'
@@ -124,13 +124,13 @@ export const proposalHomeModules: ProposalModuleCard[] = [
   },
   {
     id: 'ocr',
-    title: 'OCR Intake',
-    body: 'Import receipts or statements and review extracted fields.',
-    badge: 'FR7 OCR pipeline',
-    metric: 'Receipt flow ready',
+    title: 'Spending Intake',
+    body: 'Scan receipts or add spending manually from one place.',
+    badge: 'Budget input',
+    metric: '2 entry modes',
     icon: 'document-scanner',
     tone: 'primaryDark',
-    route: '/(assistant)/receipt-upload',
+    route: '/(finance)/smart-budgeting/add-spending',
   },
   {
     id: 'news',
@@ -185,12 +185,12 @@ export const proposalTopPriorities: ProposalPriorityItem[] = [
   },
   {
     id: 'priority-ocr',
-    title: 'One OCR import needs review',
-    detail: 'Confirm extracted fields before advice refreshes.',
-    status: 'Inputs',
+    title: 'One receipt draft needs review',
+    detail: 'Finish the import and turn it into a spending entry.',
+    status: 'Budgeting',
     icon: 'document-scanner',
     tone: 'primaryDark',
-    route: '/(assistant)/receipt-upload',
+    route: '/(finance)/smart-budgeting/add-spending',
   },
   {
     id: 'priority-news',

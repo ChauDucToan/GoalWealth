@@ -22,6 +22,13 @@ export function SmartBudgetingHomeScreen() {
   const totalProgress = budgetSummary.spent / budgetSummary.total;
   const quickDestinations = useMemo(
     () => [
+      {
+        id: 'add-spending',
+        title: 'Add spending',
+        body: 'Scan a bill or enter an expense by hand.',
+        route: '/(finance)/smart-budgeting/add-spending',
+        icon: 'receipt-long' as const,
+      },
       hasCompletedSetup
         ? {
             id: 'monthly',
@@ -51,13 +58,6 @@ export function SmartBudgetingHomeScreen() {
         route: '/(finance)/smart-budgeting/manage-categories',
         icon: 'category' as const,
       },
-      {
-        id: 'share',
-        title: 'Share budget',
-        body: 'Invite members or share the plan by QR.',
-        route: '/(finance)/smart-budgeting/share-budget',
-        icon: 'group-add' as const,
-      },
     ],
     [hasCompletedSetup]
   );
@@ -65,7 +65,7 @@ export function SmartBudgetingHomeScreen() {
   return (
     <FinanceScreen
       title="Smart Budgeting"
-      subtitle="Keep the monthly plan, categories and budget insights in one place."
+      subtitle="Track the plan, add spending and keep every category on pace."
       contentStyle={styles.contentStyle}
       hideBackButton
       bottomInsetSpacing={verticalScale(isCompact ? 180 : 150, 0.72)}
@@ -98,12 +98,12 @@ export function SmartBudgetingHomeScreen() {
           </Text>
           <Text style={[styles.heroTitle, { color: colors.card }]}>
             {hasCompletedSetup
-              ? 'Open the monthly budget and keep every category on pace.'
+              ? 'Import receipts or add spending by hand without leaving the budget workspace.'
               : 'Set the monthly target first, then move into the live budget.'}
           </Text>
           <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.82) }]}>
             {hasCompletedSetup
-              ? 'Insights, categories and sharing stay available as lightweight follow-up actions.'
+              ? 'Monthly budget, categories and insights stay one tap away after each new expense.'
               : 'Once setup is done, this screen becomes the shortcut into the budget workspace.'}
           </Text>
 
@@ -140,13 +140,13 @@ export function SmartBudgetingHomeScreen() {
             onPress={() =>
               router.push(
                 hasCompletedSetup
-                  ? '/(finance)/smart-budgeting/monthly-budget'
+                  ? '/(finance)/smart-budgeting/add-spending'
                   : '/(finance)/smart-budgeting/setup'
               )
             }
           >
             <Text style={[styles.heroButtonText, { color: colors.primaryDark }]}>
-              {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Budget Setup'}
+              {hasCompletedSetup ? 'Add Spending' : 'Start Budget Setup'}
             </Text>
           </Pressable>
         </FinanceCard>

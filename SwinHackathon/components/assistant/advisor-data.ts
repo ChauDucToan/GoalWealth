@@ -122,9 +122,9 @@ export const advisorPrimaryRecommendation: AdvisorRecommendation = {
     },
     {
       id: 'act-ocr',
-      label: 'Import receipts',
-      body: 'Refresh inputs before the next recommendation cycle.',
-      route: '/(assistant)/receipt-upload',
+      label: 'Add spending',
+      body: 'Import a receipt or enter an expense by hand.',
+      route: '/(finance)/smart-budgeting/add-spending',
       status: 'monitor',
     },
   ],

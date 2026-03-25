@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { smartBudgetSetupSteps } from '@/components/smart-budgeting/data';
 
@@ -37,7 +37,10 @@ export default function SmartBudgetSetupStepScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
-      <View style={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -107,7 +110,7 @@ export default function SmartBudgetSetupStepScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -118,7 +121,7 @@ function createStyles(colors: ColorTheme) {
       flex: 1,
     },
     content: {
-      flex: 1,
+      flexGrow: 1,
       paddingHorizontal: 22,
       paddingTop: 16,
       paddingBottom: 20,

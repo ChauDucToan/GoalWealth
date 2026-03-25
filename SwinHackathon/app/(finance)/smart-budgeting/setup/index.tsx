@@ -1,46 +1,41 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
-import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { smartBudgetSetupSteps } from '@/components/smart-budgeting/data';
+import { goSmartBudgetBack } from '../_navigation';
 
 export default function SmartBudgetSetupIntroScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { hasCompletedSetup } = useSmartBudgeting();
-  const {
-    hasSeenSmartBudgetSetupIntro,
-    isIntroPreferencesReady,
-    markSmartBudgetSetupIntroSeen,
-  } = useIntroPreferences();
   const nextRoute = hasCompletedSetup
     ? '/(finance)/smart-budgeting/monthly-budget'
     : '/(finance)/smart-budgeting/setup/goal';
 
-  React.useEffect(() => {
-    if (!isIntroPreferencesReady || !hasSeenSmartBudgetSetupIntro) {
-      return;
-    }
-
-    router.replace(nextRoute);
-  }, [hasSeenSmartBudgetSetupIntro, isIntroPreferencesReady, nextRoute, router]);
-
-  if (!isIntroPreferencesReady || hasSeenSmartBudgetSetupIntro) {
-    return (
-      <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']} />
-    );
-  }
-
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
-      <View style={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        <View style={styles.headerRow}>
+          <Pressable
+            style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => goSmartBudgetBack(router, '/(tabs)/smart-budgeting')}
+          >
+            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Budget Setup</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+
         <View style={[styles.heroOrb, { backgroundColor: hexToRgba(colors.primaryDark, 0.1) }]}>
           <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
             <MaterialIcons name="tune" size={36} color={colors.primaryDark} />
@@ -51,7 +46,7 @@ export default function SmartBudgetSetupIntroScreen() {
           {hasCompletedSetup ? 'SETUP COMPLETE' : 'SMART BUDGET SETUP'}
         </Text>
         <Text style={[styles.title, { color: colors.text }]}>
-          {hasCompletedSetup ? 'Your budget is already ready.' : "Let&apos;s set up your budget."}
+          {hasCompletedSetup ? 'Your budget is already ready.' : "Let's set up your budget."}
         </Text>
         <Text style={[styles.body, { color: hexToRgba(colors.text, 0.58) }]}>
           {hasCompletedSetup
@@ -100,30 +95,26 @@ export default function SmartBudgetSetupIntroScreen() {
           )}
         </View>
 
-        <Pressable
-          style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-          onPress={() => {
-            markSmartBudgetSetupIntroSeen();
-            router.push(nextRoute);
-          }}
-        >
-          <Text style={[styles.primaryButtonText, { color: colors.card }]}>
-            {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Setup'}
-          </Text>
-        </Pressable>
-
-        {hasCompletedSetup ? (
+        <View style={styles.buttonStack}>
           <Pressable
-            style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => {
-              markSmartBudgetSetupIntroSeen();
-              router.push('/(finance)/smart-budgeting/setup/receipt-gallery');
-            }}
+            style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
+            onPress={() => router.push(nextRoute)}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Import Receipt</Text>
+            <Text style={[styles.primaryButtonText, { color: colors.card }]}>
+              {hasCompletedSetup ? 'Open Monthly Budget' : 'Start Setup'}
+            </Text>
           </Pressable>
-        ) : null}
-      </View>
+
+          {hasCompletedSetup ? (
+            <Pressable
+              style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => router.push('/(finance)/smart-budgeting/add-spending')}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Add Spending</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -134,10 +125,33 @@ function createStyles(colors: ColorTheme) {
       flex: 1,
     },
     content: {
-      flex: 1,
+      flexGrow: 1,
       paddingHorizontal: 22,
       paddingTop: 18,
       paddingBottom: 20,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    headerButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    headerSpacer: {
+      width: 40,
     },
     heroOrb: {
       alignSelf: 'center',
@@ -216,8 +230,12 @@ function createStyles(colors: ColorTheme) {
       lineHeight: 18,
       fontWeight: '500',
     },
+    buttonStack: {
+      marginTop: 24,
+      paddingTop: 10,
+      gap: 12,
+    },
     primaryButton: {
-      marginTop: 'auto',
       minHeight: 50,
       borderRadius: 22,
       alignItems: 'center',
@@ -228,7 +246,6 @@ function createStyles(colors: ColorTheme) {
       fontWeight: '800',
     },
     secondaryButton: {
-      marginTop: 12,
       minHeight: 50,
       borderRadius: 22,
       borderWidth: 1,

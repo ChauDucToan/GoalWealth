@@ -156,11 +156,11 @@ export default function AssistantChatScreen() {
               ]}
               onPress={() => {
                 setIsToolMenuOpen(false);
-                router.push('/(assistant)/receipt-upload');
+                router.push('/(finance)/smart-budgeting/add-spending');
               }}
             >
               <MaterialIcons name="photo-camera" size={18} color={colors.primaryDark} />
-              <Text style={[styles.toolChipText, { color: colors.text }]}>Receipt</Text>
+              <Text style={[styles.toolChipText, { color: colors.text }]}>Spending</Text>
             </Pressable>
           </View>
         ) : null}

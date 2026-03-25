@@ -528,9 +528,9 @@ export function buildAssessmentResult(state: FinancialAssessmentState): Assessme
       },
       {
         id: 'assessment-ocr',
-        label: 'Import receipts or statements',
-        body: 'Reduce uncertainty by improving transaction and obligation accuracy.',
-        route: '/(assistant)/receipt-upload',
+        label: 'Add spending inputs',
+        body: 'Use receipt import or manual entry to improve cash-flow accuracy.',
+        route: '/(finance)/smart-budgeting/add-spending',
         status: 'monitor',
       },
     ],
