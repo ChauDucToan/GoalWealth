@@ -21,11 +21,13 @@ import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const feedTabs = ['Feed', 'My Posts'] as const;
+const filterTypes = ['Poll', 'Story'] as const;
+const filterCategories = ['Trending', 'Finance', 'Budgeting', 'Opportunity'] as const;
 
 function getFirstParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -44,10 +46,64 @@ export default function FinanceCommunityScreen() {
     tabParam === 'my-posts' ? 'My Posts' : 'Feed'
   );
   const [selectedTag, setSelectedTag] = useState('trending');
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [isFilterSheetMounted, setIsFilterSheetMounted] = useState(false);
+  const [selectedPostType, setSelectedPostType] = useState<(typeof filterTypes)[number]>('Poll');
+  const [selectedFilterCategory, setSelectedFilterCategory] =
+    useState<(typeof filterCategories)[number]>('Trending');
+  const filterSheetTranslateY = useRef(new Animated.Value(340)).current;
+  const filterSheetOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setActiveTab(tabParam === 'my-posts' ? 'My Posts' : 'Feed');
   }, [tabParam]);
+
+  useEffect(() => {
+    const tagMatch = filterCategories.find((item) => item.toLowerCase() === selectedTag);
+    if (tagMatch) {
+      setSelectedFilterCategory(tagMatch);
+    }
+  }, [selectedTag]);
+
+  useEffect(() => {
+    if (showFilterSheet) {
+      setIsFilterSheetMounted(true);
+      Animated.parallel([
+        Animated.timing(filterSheetTranslateY, {
+          toValue: 0,
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(filterSheetOpacity, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(filterSheetTranslateY, {
+        toValue: 340,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(filterSheetOpacity, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        setIsFilterSheetMounted(false);
+      }
+    });
+  }, [filterSheetOpacity, filterSheetTranslateY, showFilterSheet]);
 
   const visiblePosts = useMemo(() => {
     const tabPosts =
@@ -83,6 +139,11 @@ export default function FinanceCommunityScreen() {
       pathname: '/community-comments',
       params: { postId: post.id },
     });
+  };
+
+  const applyFeedFilter = () => {
+    setSelectedTag(selectedFilterCategory.toLowerCase());
+    setShowFilterSheet(false);
   };
 
   if (stage === 'rules') {
@@ -202,6 +263,21 @@ export default function FinanceCommunityScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.headerRow, isCompact && styles.headerRowCompact]}>
+            <Pressable
+              onPress={() => router.replace('/news-resources')}
+              style={[
+                styles.iconButton,
+                {
+                  width: scale(42, 0.76),
+                  height: scale(42, 0.76),
+                  borderRadius: scale(21, 0.72),
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <MaterialIcons name="arrow-back" size={scale(20, 0.72)} color={colors.text} />
+            </Pressable>
             <CommunityAvatar author={communityAuthors.melissa} size={scale(36, 0.76)} />
             <View style={styles.headerBody}>
               <Text style={[styles.feedTitle, { color: colors.text, fontSize: scaleFont(24, 0.76) }]}>
@@ -217,7 +293,7 @@ export default function FinanceCommunityScreen() {
               </Text>
             </View>
             <Pressable
-              onPress={() => router.push('/community-notifications')}
+              onPress={() => router.push('/search-notifications')}
               style={[
                 styles.iconButton,
                 {
@@ -288,7 +364,7 @@ export default function FinanceCommunityScreen() {
                 18 trending posts
               </Text>
               <Pressable
-                onPress={() => router.push('/community-filter-posts')}
+                onPress={() => setShowFilterSheet(true)}
                 style={[
                   styles.filterButton,
                   isCompact && styles.filterButtonCompact,
@@ -391,6 +467,94 @@ export default function FinanceCommunityScreen() {
             <MaterialIcons name="add" size={scale(28, 0.76)} color={colors.card} />
           </Pressable>
         </View>
+
+        {isFilterSheetMounted ? (
+          <View style={styles.modalRoot} pointerEvents="box-none">
+            <Animated.View
+              style={[
+                styles.modalScrim,
+                { backgroundColor: hexToRgba(colors.text, 0.34), opacity: filterSheetOpacity },
+              ]}
+            >
+              <Pressable style={styles.modalScrim} onPress={() => setShowFilterSheet(false)} />
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.sheet,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: hexToRgba(colors.primaryDark, 0.08),
+                  borderTopLeftRadius: scale(30, 0.74),
+                  borderTopRightRadius: scale(30, 0.74),
+                  paddingHorizontal: scale(20, 0.8),
+                  paddingTop: verticalScale(18, 0.76),
+                  paddingBottom: Math.max(verticalScale(24, 0.76), insets.bottom + verticalScale(12, 0.76)),
+                  transform: [{ translateY: filterSheetTranslateY }],
+                },
+              ]}
+            >
+              <View style={styles.sheetHeader}>
+                <Text style={[styles.sheetTitle, { color: colors.text, fontSize: scaleFont(20, 0.76) }]}>
+                  Filter Posts
+                </Text>
+                <Pressable onPress={() => setShowFilterSheet(false)}>
+                  <MaterialIcons name="close" size={scale(20, 0.72)} color={hexToRgba(colors.text, 0.48)} />
+                </Pressable>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.46), fontSize: scaleFont(12, 0.76) }]}>
+                  Post Date
+                </Text>
+                <View
+                  style={[
+                    styles.field,
+                    { backgroundColor: colors.backgroundSoft, borderColor: hexToRgba(colors.primaryDark, 0.08) },
+                  ]}
+                >
+                  <Text style={[styles.fieldValue, { color: colors.text, fontSize: scaleFont(Typography.body, 0.76) }]}>
+                    This month
+                  </Text>
+                  <MaterialIcons name="calendar-month" size={scale(18, 0.72)} color={colors.primaryDark} />
+                </View>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.46), fontSize: scaleFont(12, 0.76) }]}>
+                  Post Type
+                </Text>
+                <View style={styles.optionRow}>
+                  {filterTypes.map((item) => (
+                    <CommunityTagChip
+                      key={item}
+                      label={item}
+                      active={selectedPostType === item}
+                      onPress={() => setSelectedPostType(item)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.46), fontSize: scaleFont(12, 0.76) }]}>
+                  Post Category
+                </Text>
+                <View style={styles.optionRow}>
+                  {filterCategories.map((item) => (
+                    <CommunityTagChip
+                      key={item}
+                      label={item}
+                      active={selectedFilterCategory === item}
+                      onPress={() => setSelectedFilterCategory(item)}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <CommunityPrimaryButton title={`Filter Posts (${visiblePosts.length})`} onPress={applyFeedFilter} />
+            </Animated.View>
+          </View>
+        ) : null}
       </SafeAreaView>
     );
   }
@@ -408,6 +572,24 @@ export default function FinanceCommunityScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.landingHeaderRow}>
+          <Pressable
+            onPress={() => router.replace('/news-resources')}
+            style={[
+              styles.iconButton,
+              {
+                width: scale(42, 0.76),
+                height: scale(42, 0.76),
+                borderRadius: scale(21, 0.72),
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <MaterialIcons name="arrow-back" size={scale(20, 0.72)} color={colors.text} />
+          </Pressable>
+        </View>
+
         <View style={styles.heroWrap}>
           <Text style={[styles.eyebrow, { color: colors.primaryDark, fontSize: scaleFont(13, 0.76) }]}>
             FINPAL SOCIAL
@@ -494,6 +676,10 @@ function createStyles(colors: ColorTheme) {
     root: { flex: 1 },
     content: {
       gap: 16,
+    },
+    landingHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
     },
     heroWrap: {
       alignItems: 'center',
@@ -665,6 +851,7 @@ function createStyles(colors: ColorTheme) {
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
+      flexWrap: 'wrap',
     },
     feedMetaRowCompact: {
       alignItems: 'flex-start',
@@ -674,9 +861,11 @@ function createStyles(colors: ColorTheme) {
       fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.4,
+      flex: 1,
+      minWidth: 140,
     },
     feedMetaTextCompact: {
-      flexBasis: '100%',
+      flexBasis: 'auto',
     },
     filterButton: {
       minHeight: 34,
@@ -686,6 +875,7 @@ function createStyles(colors: ColorTheme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      flexShrink: 0,
     },
     filterButtonCompact: {
       alignSelf: 'flex-start',
@@ -723,6 +913,51 @@ function createStyles(colors: ColorTheme) {
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },
       elevation: 6,
+    },
+    modalRoot: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    modalScrim: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    sheet: {
+      borderTopWidth: 1,
+      gap: 18,
+    },
+    sheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sheetTitle: {
+      fontWeight: '900',
+      letterSpacing: -0.5,
+    },
+    fieldGroup: {
+      gap: 10,
+    },
+    fieldLabel: {
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    field: {
+      minHeight: 50,
+      borderRadius: 18,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    fieldValue: {
+      fontWeight: '700',
+    },
+    optionRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
     },
   });
 }

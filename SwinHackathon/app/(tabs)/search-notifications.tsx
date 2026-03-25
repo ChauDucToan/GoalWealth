@@ -1,6 +1,7 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { communityNotifications } from '@/components/community/mock-data';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -26,7 +27,6 @@ type NotificationItem = {
   body: string;
   time: string;
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
-  group: 'Today' | 'Earlier';
 };
 
 type SearchResult = {
@@ -56,39 +56,52 @@ const searchStates: { id: SearchPreview; label: string }[] = [
   { id: 'empty', label: 'No result' },
 ];
 
-const notifications: NotificationItem[] = [
+const baseNotifications: NotificationItem[] = [
   {
     id: 'n1',
     title: 'Transaction needs review',
     body: "You've exceeded your Dining Out budget by $50 this month.",
     time: '1h ago',
     icon: 'warning-amber',
-    group: 'Today',
   },
   {
     id: 'n2',
-    title: 'Transaction Completed',
+    title: 'Transaction completed',
     body: 'Your $50 payment to Amazon has been successfully completed.',
     time: '1h ago',
     icon: 'check-circle-outline',
-    group: 'Today',
   },
   {
     id: 'n3',
-    title: 'Goal Progress Update',
+    title: 'Goal progress update',
     body: "You're 70% towards your Vacation Savings Goal.",
     time: '3h ago',
     icon: 'track-changes',
-    group: 'Today',
   },
   {
     id: 'n4',
-    title: 'Recurring Payment Reminder',
+    title: 'Recurring payment reminder',
     body: 'Your music subscription renews tomorrow.',
     time: '3d ago',
     icon: 'notifications-active',
-    group: 'Earlier',
   },
+];
+
+const communityNotificationIcons: Record<string, React.ComponentProps<typeof MaterialIcons>['name']> = {
+  comments: 'forum',
+  message: 'chat-bubble-outline',
+  profile: 'groups-2',
+};
+
+const notifications: NotificationItem[] = [
+  ...communityNotifications.map((item) => ({
+    id: `community-${item.id}`,
+    title: 'Community update',
+    body: item.body,
+    time: item.time,
+    icon: communityNotificationIcons[item.action] ?? 'notifications-none',
+  })),
+  ...baseNotifications,
 ];
 
 const results: SearchResult[] = [
@@ -150,14 +163,6 @@ export default function SearchNotificationsScreen() {
         ? 'Groceries'
         : query;
 
-  const groupedNotifications = notifications.reduce<Record<string, NotificationItem[]>>((groups, item) => {
-    if (!groups[item.group]) {
-      groups[item.group] = [];
-    }
-
-    groups[item.group].push(item);
-    return groups;
-  }, {});
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -306,7 +311,7 @@ export default function SearchNotificationsScreen() {
                 <View style={styles.surfaceHeaderCopy}>
                   <Text style={styles.surfaceCardTitle}>Notification Inbox</Text>
                   <Text style={styles.surfaceCardBody}>
-                    Review warnings, completed payments and goal updates in one place.
+                    Review budget alerts, payment updates and community activity in one place.
                   </Text>
                 </View>
                 <View style={styles.statusRow}>
@@ -332,40 +337,36 @@ export default function SearchNotificationsScreen() {
                 </Text>
               </View>
             ) : (
-              <>
-                {Object.entries(groupedNotifications).map(([group, items]) => (
-                  <View key={group} style={styles.sectionStack}>
-                    <View style={styles.inlineHeader}>
-                      <Text style={styles.sectionTitle}>{group}</Text>
-                      <Text style={styles.inlineLink}>{items.length} items</Text>
+              <View style={styles.sectionStack}>
+                <View style={styles.inlineHeader}>
+                  <Text style={styles.sectionTitle}>All notifications</Text>
+                  <Text style={styles.inlineLink}>{notifications.length} items</Text>
+                </View>
+
+                {notifications.map((item) => (
+                  <View key={item.id} style={styles.notificationCard}>
+                    <View style={styles.notificationTopRow}>
+                      <View style={styles.notificationLeading}>
+                        <View style={styles.notificationIconWrap}>
+                          <MaterialIcons name={item.icon} size={18} color={colors.primaryDark} />
+                        </View>
+                        <View style={styles.notificationCopy}>
+                          <Text style={styles.notificationTitle}>{item.title}</Text>
+                          <Text style={styles.notificationBody}>{item.body}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.notificationTime}>{item.time}</Text>
                     </View>
 
-                    {items.map((item) => (
-                      <View key={item.id} style={styles.notificationCard}>
-                        <View style={styles.notificationTopRow}>
-                          <View style={styles.notificationLeading}>
-                            <View style={styles.notificationIconWrap}>
-                              <MaterialIcons name={item.icon} size={18} color={colors.primaryDark} />
-                            </View>
-                            <View style={styles.notificationCopy}>
-                              <Text style={styles.notificationTitle}>{item.title}</Text>
-                              <Text style={styles.notificationBody}>{item.body}</Text>
-                            </View>
-                          </View>
-                          <Text style={styles.notificationTime}>{item.time}</Text>
-                        </View>
-
-                        {item.id === 'n2' ? (
-                          <Pressable style={styles.inlineAction}>
-                            <Text style={styles.inlineActionText}>See transaction</Text>
-                            <MaterialIcons name="arrow-forward" size={14} color={colors.primaryDark} />
-                          </Pressable>
-                        ) : null}
-                      </View>
-                    ))}
+                    {item.id === 'n2' ? (
+                      <Pressable style={styles.inlineAction}>
+                        <Text style={styles.inlineActionText}>See transaction</Text>
+                        <MaterialIcons name="arrow-forward" size={14} color={colors.primaryDark} />
+                      </Pressable>
+                    ) : null}
                   </View>
                 ))}
-              </>
+              </View>
             )}
           </>
         ) : (

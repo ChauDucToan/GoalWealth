@@ -476,7 +476,6 @@ export function CommunityLandingIllustration() {
           </View>
         ))}
       </View>
-      <View style={[styles.landingSketch, { borderColor: hexToRgba(colors.text, 0.12) }]} />
       <View
         style={[
           styles.landingBar,

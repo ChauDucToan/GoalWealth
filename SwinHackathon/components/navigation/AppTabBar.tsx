@@ -1,11 +1,12 @@
+import { MotionPressable } from '@/components/MotionPressable';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TabRouteName =
@@ -45,12 +46,81 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const { scale, verticalScale, scaleFont } = useResponsive();
   const insets = useSafeAreaInsets();
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isMoreVisible, setIsMoreVisible] = useState(false);
   const currentRouteName = state.routes[state.index]?.name as TabRouteName;
   const isOverflowActive = overflowTabs.includes(currentRouteName);
+  const morePanelTranslateY = useRef(new Animated.Value(18)).current;
+  const morePanelOpacity = useRef(new Animated.Value(0)).current;
+  const morePanelScale = useRef(new Animated.Value(0.96)).current;
+  const centerIconRotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setIsMoreOpen(false);
   }, [currentRouteName]);
+
+  useEffect(() => {
+    if (isMoreOpen) {
+      setIsMoreVisible(true);
+      Animated.parallel([
+        Animated.timing(morePanelTranslateY, {
+          toValue: 0,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(morePanelOpacity, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(morePanelScale, {
+          toValue: 1,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(centerIconRotation, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(morePanelTranslateY, {
+        toValue: 18,
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(morePanelOpacity, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(morePanelScale, {
+        toValue: 0.96,
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(centerIconRotation, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) {
+        setIsMoreVisible(false);
+      }
+    });
+  }, [centerIconRotation, isMoreOpen, morePanelOpacity, morePanelScale, morePanelTranslateY]);
 
   const routesByName = useMemo(
     () => new Map(state.routes.map((route) => [route.name as TabRouteName, route])),
@@ -96,16 +166,23 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
   ] as const;
 
   const overflowMenuTabs = overflowTabs.filter((name) => name !== 'news-resources');
+  const centerRotate = centerIconRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '45deg'],
+  });
 
   const renderPrimaryTab = (name: TabRouteName) => {
     const active = currentRouteName === name;
     const meta = routeMeta[name];
 
     return (
-      <Pressable
+      <MotionPressable
         key={name}
         onPress={() => navigateTo(name)}
-        style={styles.tabButton}
+        pressableStyle={styles.tabButton}
+        scaleTo={0.94}
+        translateYTo={1}
+        activeOpacity={0.92}
       >
         <View
           style={[
@@ -125,7 +202,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
             color={active ? colors.primaryDark : hexToRgba(colors.text, 0.4)}
           />
         </View>
-      </Pressable>
+      </MotionPressable>
     );
   };
 
@@ -140,8 +217,8 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
         },
       ]}
     >
-      {isMoreOpen ? (
-        <View
+      {isMoreVisible ? (
+        <Animated.View
           style={[
             styles.morePanel,
             {
@@ -153,14 +230,17 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
               right: scale(18, 0.8),
               borderRadius: scale(24, 0.74),
               padding: scale(12, 0.76),
+              opacity: morePanelOpacity,
+              transform: [{ translateY: morePanelTranslateY }, { scale: morePanelScale }],
             },
           ]}
         >
           <View style={styles.featuredRow}>
             {featuredActions.map((item) => (
-              <Pressable
+              <MotionPressable
                 key={item.id}
                 onPress={item.onPress}
+                pressableStyle={styles.featuredCardPressable}
                 style={[
                   styles.featuredCard,
                   {
@@ -171,6 +251,8 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
                     paddingVertical: verticalScale(12, 0.76),
                   },
                 ]}
+                scaleTo={0.97}
+                translateYTo={2}
               >
                 <View
                   style={[
@@ -217,7 +299,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
                     {item.body}
                   </Text>
                 </View>
-              </Pressable>
+              </MotionPressable>
             ))}
           </View>
 
@@ -227,9 +309,10 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
               const meta = routeMeta[name];
 
               return (
-                <Pressable
+                <MotionPressable
                   key={name}
                   onPress={() => navigateTo(name)}
+                  pressableStyle={styles.moreItemPressable}
                   style={[
                     styles.moreItem,
                     {
@@ -240,6 +323,8 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
                       paddingVertical: verticalScale(12, 0.76),
                     },
                   ]}
+                  scaleTo={0.97}
+                  translateYTo={2}
                 >
                   <View
                     style={[
@@ -270,11 +355,11 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
                   >
                     {meta.label}
                   </Text>
-                </Pressable>
+                </MotionPressable>
               );
             })}
           </View>
-        </View>
+        </Animated.View>
       ) : null}
 
       <View
@@ -309,7 +394,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
           { bottom: Math.max(insets.bottom, verticalScale(8, 0.7)) + verticalScale(18, 0.72) },
         ]}
       >
-        <Pressable
+        <MotionPressable
           style={[
             styles.centerButton,
             {
@@ -324,19 +409,25 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
               borderRadius: scale(32, 0.72),
             },
           ]}
+          pressableStyle={styles.centerButtonPressable}
           onPress={() => setIsMoreOpen((current) => !current)}
           onLongPress={() => setIsMoreOpen((current) => !current)}
+          scaleTo={0.94}
+          translateYTo={1}
+          activeOpacity={0.92}
         >
-          <MaterialIcons
-            name="apps"
-            size={scale(26, 0.72)}
-            color={
-              isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
-                ? colors.card
-                : colors.primaryDark
-            }
-          />
-        </Pressable>
+          <Animated.View style={{ transform: [{ rotate: centerRotate }] }}>
+            <MaterialIcons
+              name="apps"
+              size={scale(26, 0.72)}
+              color={
+                isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
+                  ? colors.card
+                  : colors.primaryDark
+              }
+            />
+          </Animated.View>
+        </MotionPressable>
       </View>
     </View>
   );
@@ -370,6 +461,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 10,
   },
+  featuredCardPressable: {
+    flex: 1,
+    minWidth: 0,
+  },
   featuredIconShell: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -396,6 +491,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  moreItemPressable: {
+    flexBasis: 140,
+    flexGrow: 1,
   },
   moreIconShell: {
     alignItems: 'center',
@@ -446,5 +545,9 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 10,
+  },
+  centerButtonPressable: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

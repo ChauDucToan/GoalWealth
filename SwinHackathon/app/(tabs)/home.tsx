@@ -169,20 +169,24 @@ export default function HomeScreen() {
           </View>
 
           <View style={[styles.heroActionRow, isSmallPhone && styles.heroStackRow]}>
-            <ThemeButton
-              title="Open advisor"
-              onPress={() => router.push('/(tabs)/assistant')}
-              colorBackground={colors.card}
-              colorText={colors.primaryDark}
-              style={styles.heroButton}
-            />
-            <ThemeButton
-              title="Review plan"
-              onPress={() => router.push('/(finance)/financial-goals')}
-              colorBackground={hexToRgba(colors.card, 0.14)}
-              colorText={colors.card}
-              style={[styles.heroButton, styles.heroOutlineButton]}
-            />
+            <View style={styles.heroButtonWrap}>
+              <ThemeButton
+                title="Open advisor"
+                onPress={() => router.push('/(tabs)/assistant')}
+                colorBackground={colors.card}
+                colorText={colors.primaryDark}
+                style={styles.heroButton}
+              />
+            </View>
+            <View style={styles.heroButtonWrap}>
+              <ThemeButton
+                title="Review plan"
+                onPress={() => router.push('/(finance)/financial-goals')}
+                colorBackground={hexToRgba(colors.card, 0.14)}
+                colorText={colors.card}
+                style={[styles.heroButton, styles.heroOutlineButton]}
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -546,8 +550,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
-  heroButton: {
+  heroButtonWrap: {
     flex: 1,
+    minWidth: 0,
+  },
+  heroButton: {
+    width: '100%',
   },
   heroOutlineButton: {
     borderWidth: 1,

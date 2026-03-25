@@ -1,23 +1,23 @@
 import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import {
-  ProfileSettingsBanner,
   ProfileSettingsCard,
-  ProfileSettingsPill,
   ProfileSettingsRow,
   ProfileSettingsSectionTitle,
   ProfileSettingsStat,
   ProfileSettingsSwitchRow,
 } from '@/components/profile-settings/ui';
-import { premiumPerks } from '@/components/profile-settings/data';
 import { Typography } from '@/constants/theme';
 import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
+  Alert,
+  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -40,11 +40,36 @@ export default function ProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const pushRoute = (route: string) => router.push(route as never);
-  const { profile, notifications, security, display, linkedAccounts, invite, updateNotifications } =
+  const { profile, notifications, security, display, linkedAccounts, invite, updateNotifications, updateProfile } =
     useProfileSettings();
 
   const enabledNotifications = Object.values(notifications).filter(Boolean).length;
   const activeAccounts = linkedAccounts.filter((item) => item.status === 'Active').length;
+
+  const pickProfileImage = useCallback(async (target: 'avatar' | 'cover') => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Allow photo library access to update your profile images.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: target === 'cover' ? [16, 9] : [1, 1],
+      quality: 0.9,
+    });
+
+    if (result.canceled || !result.assets?.[0]?.uri) {
+      return;
+    }
+
+    updateProfile(
+      target === 'cover'
+        ? { coverUri: result.assets[0].uri }
+        : { avatarUri: result.assets[0].uri }
+    );
+  }, [updateProfile]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -60,24 +85,33 @@ export default function ProfileScreen() {
             <Text style={styles.headerEyebrow}>Profile Settings</Text>
             <Text style={styles.headerTitle}>Profile</Text>
           </View>
-          <Pressable style={styles.editButton} onPress={() => router.push('/(profile)/account')}>
-            <MaterialIcons name="edit" size={16} color={hexToRgba(colors.text, 0.7)} />
-          </Pressable>
         </View>
 
         <ProfileSettingsCard style={styles.profileCard}>
           <ImageBackground
-            source={require('../../assets/images/loading-budget-photo.png')}
+            source={
+              profile.coverUri
+                ? { uri: profile.coverUri }
+                : require('../../assets/images/loading-budget-photo.png')
+            }
             style={styles.cover}
             imageStyle={styles.coverImage}
           >
             <View style={styles.coverOverlay} />
+            <Pressable style={styles.coverEditButton} onPress={() => pickProfileImage('cover')}>
+              <MaterialIcons name="photo-camera" size={16} color={colors.card} />
+              <Text style={styles.coverEditText}>Change cover</Text>
+            </Pressable>
             <View style={styles.profileHead}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{profile.avatarInitial}</Text>
-              </View>
+              <Pressable style={styles.avatar} onPress={() => pickProfileImage('avatar')}>
+                {profile.avatarUri ? (
+                  <Image source={{ uri: profile.avatarUri }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{profile.avatarInitial}</Text>
+                )}
+              </Pressable>
               <View style={styles.userNameWrap}>
-                <Text style={styles.userLabel}>{profile.planLabel}</Text>
+                <Text style={styles.userLabel}>{profile.memberSince}</Text>
                 <Text style={styles.userName}>{profile.name}</Text>
                 <Text style={styles.userMeta}>{profile.city}</Text>
               </View>
@@ -86,7 +120,6 @@ export default function ProfileScreen() {
 
           <View style={styles.streakBox}>
             <View style={styles.streakCopy}>
-              <ProfileSettingsPill label={profile.planLabel} icon="workspace-premium" tone="warning" />
               <Text style={styles.streakTitle}>{profile.streakLabel}</Text>
               <Text style={styles.streakSubTitle}>
                 Strong consistency across goals, subscriptions and reminders.
@@ -112,14 +145,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         </ProfileSettingsCard>
-
-        <ProfileSettingsBanner
-          eyebrow="Premium Workspace"
-          title="Everything important is now surfaced here"
-          body={`You have ${activeAccounts} active connections, ${enabledNotifications} alert channels enabled and ${premiumPerks.length} premium perks ready to use.`}
-          icon="verified-user"
-          tone="success"
-        />
 
         <Text style={styles.sectionLabel}>Shortcuts</Text>
         <ResponsiveGrid minItemWidth={140} horizontalPadding={20} gap={12} maxColumns={2}>
@@ -304,23 +329,14 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       color: colors.text,
       letterSpacing: -0.4,
     },
-    editButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
     profileCard: {
       padding: 0,
       overflow: 'hidden',
     },
     cover: {
       height: 150,
-      justifyContent: 'flex-end',
+      paddingTop: 14,
+      justifyContent: 'space-between',
       paddingHorizontal: 18,
       paddingBottom: 18,
     },
@@ -330,6 +346,23 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     coverOverlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(12,24,41,0.18)',
+    },
+    coverEditButton: {
+      alignSelf: 'flex-end',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: hexToRgba(colors.text, 0.34),
+      borderWidth: 1,
+      borderColor: hexToRgba(colors.card, 0.24),
+    },
+    coverEditText: {
+      color: colors.card,
+      fontSize: 12,
+      fontWeight: '700',
     },
     profileHead: {
       flexDirection: 'row',
@@ -345,6 +378,11 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       justifyContent: 'center',
       borderWidth: 2,
       borderColor: colors.card,
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
     },
     avatarText: {
       fontSize: 30,

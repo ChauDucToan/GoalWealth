@@ -1,10 +1,9 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceScreen } from '@/components/finance/FinanceScaffold';
-import { exportFormats, premiumPerks } from '@/components/profile-settings/data';
+import { exportFormats } from '@/components/profile-settings/data';
 import {
   ProfilePrimaryActions,
-  ProfileSettingsBanner,
   ProfileSettingsCard,
   ProfileSettingsPill,
   ProfileSettingsSectionTitle,
@@ -13,7 +12,6 @@ import {
 import { Typography } from '@/constants/theme';
 import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useTheme } from '@/hooks/use-theme-colors';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -33,7 +31,7 @@ export default function ProfileAccountScreen() {
   return (
     <FinanceScreen
       title="Account"
-      subtitle="Review your identity, member status and export options from one screen."
+      subtitle="Review your identity, joined date and export options from one screen."
       contentStyle={styles.contentStyle}
     >
       <View style={styles.stack}>
@@ -51,25 +49,13 @@ export default function ProfileAccountScreen() {
               <Text style={[styles.avatarText, { color: colors.primaryDark }]}>{profile.avatarInitial}</Text>
             </View>
             <View style={styles.heroCopy}>
-              <Text style={[styles.planLabel, { color: colors.primaryDark }]}>{profile.planLabel}</Text>
               <Text style={[styles.heroTitle, { color: colors.text }]}>{profile.name}</Text>
               <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56) }]}>
                 {profile.memberSince} • {profile.city}
               </Text>
             </View>
-            <View style={[styles.statusPill, { backgroundColor: colors.card }]}>
-              <MaterialIcons name="verified" size={16} color={colors.success} />
-              <Text style={[styles.statusText, { color: colors.success }]}>Verified</Text>
-            </View>
           </View>
         </ProfileSettingsCard>
-
-        <ProfileSettingsBanner
-          eyebrow="Profile Workspace"
-          title="Identity, export and membership now live together"
-          body="The board shows account, export and premium fragments in separate places. This screen keeps them grouped so profile management stays fast."
-          icon="person-outline"
-        />
 
         <ProfileSettingsCard>
           <ProfileSettingsSectionTitle title="Profile details" />
@@ -120,10 +106,10 @@ export default function ProfileAccountScreen() {
         </ProfileSettingsCard>
 
         <ProfileSettingsCard>
-          <ProfileSettingsSectionTitle title="Data & membership" />
+          <ProfileSettingsSectionTitle title="Data & exports" />
           <View style={styles.statGrid}>
             <View style={styles.statItem}>
-              <ProfileSettingsStat value={profile.planLabel} label="Membership" icon="workspace-premium" tone="warning" />
+              <ProfileSettingsStat value={profile.memberSince.replace('Joined ', '')} label="Joined" icon="calendar-month" tone="soft" />
             </View>
             <View style={styles.statItem}>
               <ProfileSettingsStat value={exportStatusSummary} label="Latest export" icon="file-download-done" tone="soft" />
@@ -132,11 +118,7 @@ export default function ProfileAccountScreen() {
 
           <View style={styles.metaStack}>
             <View style={styles.metaRow}>
-              <Text style={[styles.metaLabel, { color: hexToRgba(colors.text, 0.56) }]}>Plan</Text>
-              <Text style={[styles.metaValue, { color: colors.text }]}>{profile.planLabel}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={[styles.metaLabel, { color: hexToRgba(colors.text, 0.56) }]}>Member since</Text>
+              <Text style={[styles.metaLabel, { color: hexToRgba(colors.text, 0.56) }]}>Joined</Text>
               <Text style={[styles.metaValue, { color: colors.text }]}>{profile.memberSince}</Text>
             </View>
             <View style={styles.metaRow}>
@@ -148,16 +130,6 @@ export default function ProfileAccountScreen() {
           <View style={styles.formatRow}>
             {exportFormats.map((format) => (
               <ProfileSettingsPill key={format} label={format} icon="description" tone="soft" />
-            ))}
-          </View>
-
-          <View style={[styles.perksCard, { backgroundColor: colors.backgroundSoft }]}>
-            <Text style={[styles.perksTitle, { color: colors.text }]}>Premium perks active</Text>
-            {premiumPerks.map((item) => (
-              <View key={item} style={styles.perkRow}>
-                <MaterialIcons name="check-circle" size={16} color={colors.primaryDark} />
-                <Text style={[styles.perkText, { color: colors.text }]}>{item}</Text>
-              </View>
             ))}
           </View>
 
@@ -176,8 +148,8 @@ export default function ProfileAccountScreen() {
             </View>
             <View style={styles.inlineActionWrap}>
               <ThemeButton
-                title="Manage Plan"
-                onPress={() => router.push('/(assistant)/upgrade')}
+                title="Export Result"
+                onPress={() => router.push({ pathname: '/(profile)/result', params: { mode: 'export' } })}
                 colorBackground={colors.card}
                 colorText={colors.text}
                 style={[styles.fullButton, { borderWidth: 1, borderColor: colors.border }]}
@@ -232,12 +204,6 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       flex: 1,
       minWidth: 0,
     },
-    planLabel: {
-      fontSize: 12,
-      fontWeight: '800',
-      letterSpacing: 0.6,
-      textTransform: 'uppercase',
-    },
     heroTitle: {
       marginTop: 4,
       fontSize: 22,
@@ -248,18 +214,6 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginTop: 4,
       fontSize: Typography.body,
       lineHeight: 18,
-    },
-    statusPill: {
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    statusText: {
-      fontSize: 12,
-      fontWeight: '800',
     },
     formStack: {
       marginTop: 16,
@@ -314,27 +268,6 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: 8,
-    },
-    perksCard: {
-      marginTop: 18,
-      borderRadius: 18,
-      padding: 14,
-      gap: 10,
-    },
-    perksTitle: {
-      fontSize: 14,
-      fontWeight: '800',
-    },
-    perkRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    perkText: {
-      flex: 1,
-      fontSize: Typography.body,
-      lineHeight: 18,
-      fontWeight: '600',
     },
     inlineActions: {
       marginTop: 18,

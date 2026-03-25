@@ -1,3 +1,4 @@
+import { MotionPressable } from '@/components/MotionPressable';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -108,16 +109,18 @@ export function AssessmentPrimaryButton({
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <Pressable
+    <MotionPressable
       style={[
         styles.primaryButton,
         { backgroundColor: disabled ? hexToRgba(colors.primaryDark, 0.2) : colors.primaryDark },
       ]}
       onPress={onPress}
       disabled={disabled}
+      scaleTo={0.975}
+      translateYTo={2}
     >
       <Text style={[styles.primaryButtonText, { color: colors.card }]}>{label}</Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
