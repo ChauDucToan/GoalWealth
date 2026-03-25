@@ -76,9 +76,11 @@ if [[ ! -f "$GW_SSH_KEY_PATH" ]]; then
 fi
 
 SSH_OPTS=(
+  -F /dev/null
   -o StrictHostKeyChecking=no
   -o UserKnownHostsFile=/dev/null
   -o ConnectTimeout=10
+  -o IdentitiesOnly=yes
   -i "$GW_SSH_KEY_PATH"
 )
 
@@ -168,23 +170,39 @@ fi
 
 REMOTE_HOST="${GW_EC2_USER}@${GW_EC2_PUBLIC_IP}"
 log "waiting for SSH on $REMOTE_HOST"
+SSH_READY="false"
+LAST_SSH_ERROR=""
 for _ in $(seq 1 40); do
-  if ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'echo ssh-ready' >/dev/null 2>&1; then
+  LAST_SSH_ERROR="$(ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'echo ssh-ready' 2>&1)" && {
+    SSH_READY="true"
+    break
+  }
+  if [[ "$LAST_SSH_ERROR" == *"Permission denied"* ]]; then
     break
   fi
   sleep 10
 done
 
-ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" 'echo ssh-ready' >/dev/null 2>&1 || {
+if [[ "$SSH_READY" != "true" ]]; then
   echo "SSH did not become ready for $REMOTE_HOST" >&2
+  if [[ -n "$LAST_SSH_ERROR" ]]; then
+    printf '%s\n' "$LAST_SSH_ERROR" >&2
+  fi
   exit 1
-}
+fi
 
 ARCHIVE_PATH="$(mktemp /tmp/goalwealth-workspace.XXXXXX.tgz)"
 trap 'rm -f "$ARCHIVE_PATH"' EXIT
 
 log "packing local workspace subset for remote bootstrap"
-tar czf "$ARCHIVE_PATH" -C "$WORKSPACE_ROOT" goalwealth aws-guide
+ARCHIVE_INPUTS=(goalwealth)
+if [[ -d "$WORKSPACE_ROOT/aws/aws-guide" ]]; then
+  ARCHIVE_INPUTS+=(aws/aws-guide)
+elif [[ -d "$WORKSPACE_ROOT/aws-guide" ]]; then
+  ARCHIVE_INPUTS+=(aws-guide)
+fi
+
+tar czf "$ARCHIVE_PATH" -C "$WORKSPACE_ROOT" "${ARCHIVE_INPUTS[@]}"
 
 REMOTE_ARCHIVE="/tmp/goalwealth-workspace.tgz"
 REMOTE_SCRIPT="/tmp/remote_bootstrap_goalwealth_runtime.sh"

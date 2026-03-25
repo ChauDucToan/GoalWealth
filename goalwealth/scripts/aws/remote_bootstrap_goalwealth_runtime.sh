@@ -23,12 +23,52 @@ ARCHIVE_PATH="$GW_REMOTE_SRC_ARCHIVE"
 RUN_DIR="$APP_DIR/run"
 LOG_DIR="$APP_DIR/logs"
 
-sudo dnf update -y
-sudo dnf install -y git python3 python3-pip tar gzip curl
+install_base_packages() {
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      git python3 python3-pip python3-venv tar gzip curl
+    return 0
+  fi
+
+  if command -v dnf >/dev/null 2>&1; then
+    sudo dnf update -y
+    sudo dnf install -y git python3 python3-pip tar gzip curl
+    return 0
+  fi
+
+  if command -v yum >/dev/null 2>&1; then
+    sudo yum update -y
+    sudo yum install -y git python3 python3-pip tar gzip curl
+    return 0
+  fi
+
+  echo "[remote-bootstrap] unsupported package manager" >&2
+  exit 1
+}
+
+install_node_packages() {
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs npm || true
+    return 0
+  fi
+
+  if command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y nodejs npm || true
+    return 0
+  fi
+
+  if command -v yum >/dev/null 2>&1; then
+    sudo yum install -y nodejs npm || true
+    return 0
+  fi
+}
+
+install_base_packages
 
 if [[ "${GW_INSTALL_OPENCLAW:-false}" == "true" ]]; then
   if ! command -v node >/dev/null 2>&1; then
-    sudo dnf install -y nodejs npm || true
+    install_node_packages
   fi
   if ! command -v openclaw >/dev/null 2>&1; then
     sudo npm install -g "${GW_OPENCLAW_NPM_PACKAGE:-openclaw}" || true
@@ -38,7 +78,7 @@ fi
 sudo mkdir -p "$APP_DIR"
 sudo chown "$USER":"$USER" "$APP_DIR"
 mkdir -p "$APP_DIR"
-rm -rf "$APP_DIR/goalwealth" "$APP_DIR/aws-guide"
+rm -rf "$APP_DIR/goalwealth" "$APP_DIR/aws" "$APP_DIR/aws-guide"
 
 tar xzf "$ARCHIVE_PATH" -C "$APP_DIR"
 
