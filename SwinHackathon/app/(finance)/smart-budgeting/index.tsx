@@ -66,6 +66,7 @@ export default function SmartBudgetingHomeScreen() {
       title="Smart Budgeting"
       subtitle="Plan, review and operate the monthly budget from a single finance workspace."
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace('/(tabs)/home')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}

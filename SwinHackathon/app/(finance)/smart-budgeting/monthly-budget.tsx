@@ -3,9 +3,9 @@ import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { goSmartBudgetBack } from '@/app/(finance)/smart-budgeting/_navigation';
+import { goSmartBudgetBack, resolveSmartBudgetReturnRoute } from '@/app/(finance)/smart-budgeting/_navigation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -15,7 +15,9 @@ export default function MonthlyBudgetScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { categories, importedReceipts, totalBudget } = useSmartBudgeting();
+  const backRoute = resolveSmartBudgetReturnRoute(returnTo);
   const totalSpent = categories.reduce((sum, item) => sum + item.spent, 0);
   const totalLeft = Number((totalBudget - totalSpent).toFixed(2));
   const usagePercent = Math.min(totalSpent / totalBudget, 1);
@@ -27,7 +29,7 @@ export default function MonthlyBudgetScreen() {
       title="Monthly Budget"
       subtitle="A tighter monthly workspace with live budget status, imports and category pacing."
       contentStyle={styles.contentStyle}
-      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}
+      onBackPress={() => goSmartBudgetBack(router, backRoute)}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}

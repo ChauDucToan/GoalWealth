@@ -12,7 +12,7 @@ export default function SmartBudgetReceiptProcessingScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const { receiptId } = useLocalSearchParams<{ receiptId?: string }>();
+  const { receiptId, returnTo } = useLocalSearchParams<{ receiptId?: string; returnTo?: string }>();
   const { startReceiptDraft } = useSmartBudgeting();
 
   useEffect(() => {
@@ -23,12 +23,12 @@ export default function SmartBudgetReceiptProcessingScreen() {
     const timer = setTimeout(() => {
       router.replace({
         pathname: '/(finance)/smart-budgeting/setup/receipt-review',
-        params: receiptId ? { receiptId } : undefined,
+        params: receiptId ? { receiptId, returnTo } : returnTo ? { returnTo } : undefined,
       });
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [receiptId, router, startReceiptDraft]);
+  }, [receiptId, returnTo, router, startReceiptDraft]);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>

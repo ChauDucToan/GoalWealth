@@ -4,8 +4,8 @@ import { ColorTheme, Typography } from '@/constants/theme';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
-import { goSmartBudgetBack } from '@/app/(finance)/smart-budgeting/_navigation';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { goSmartBudgetBack, resolveSmartBudgetReturnRoute } from '@/app/(finance)/smart-budgeting/_navigation';
 import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,13 +14,15 @@ export default function SmartBudgetReceiptGalleryScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { startReceiptDraft } = useSmartBudgeting();
+  const backRoute = resolveSmartBudgetReturnRoute(returnTo);
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.card }]} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}>
+          <Pressable style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, backRoute)}>
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Choose receipt source</Text>
@@ -40,7 +42,7 @@ export default function SmartBudgetReceiptGalleryScreen() {
                 startReceiptDraft(receipt.id);
                 router.push({
                   pathname: '/(finance)/smart-budgeting/setup/receipt-scan',
-                  params: { receiptId: receipt.id },
+                  params: { receiptId: receipt.id, returnTo },
                 });
               }}
             >
@@ -57,13 +59,21 @@ export default function SmartBudgetReceiptGalleryScreen() {
               startReceiptDraft(firstReceipt.id);
               router.push({
                 pathname: '/(finance)/smart-budgeting/setup/receipt-scan',
-                params: { receiptId: firstReceipt.id },
+                params: { receiptId: firstReceipt.id, returnTo },
               });
             }}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Scan receipt now</Text>
           </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => router.replace('/(finance)/smart-budgeting/monthly-budget')}>
+          <Pressable
+            style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
+            onPress={() =>
+              router.replace({
+                pathname: '/(finance)/smart-budgeting/monthly-budget',
+                params: returnTo ? { returnTo } : undefined,
+              })
+            }
+          >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Skip for now</Text>
           </Pressable>
         </View>

@@ -251,14 +251,24 @@ export default function BudgetInsightsScreen() {
         <View style={styles.actionRow}>
           <Pressable
             style={[styles.actionButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.push('/(finance)/smart-budgeting/monthly-budget')}
+            onPress={() =>
+              router.push({
+                pathname: '/(finance)/smart-budgeting/monthly-budget',
+                params: { returnTo: 'budget-insights' },
+              })
+            }
           >
             <MaterialIcons name="pie-chart-outline" size={18} color={colors.card} />
             <Text style={[styles.actionButtonText, { color: colors.card }]}>Open Monthly Budget</Text>
           </Pressable>
           <Pressable
             style={[styles.actionButton, styles.actionButtonSecondary, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.push('/(finance)/smart-budgeting/setup/receipt-gallery')}
+            onPress={() =>
+              router.push({
+                pathname: '/(finance)/smart-budgeting/setup/receipt-gallery',
+                params: { returnTo: 'budget-insights' },
+              })
+            }
           >
             <MaterialIcons name="receipt-long" size={18} color={colors.text} />
             <Text style={[styles.actionButtonText, { color: colors.text }]}>Import Receipt</Text>

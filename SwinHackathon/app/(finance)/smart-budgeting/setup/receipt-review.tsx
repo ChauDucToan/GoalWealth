@@ -13,13 +13,15 @@ export default function SmartBudgetReceiptReviewScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const { receiptId } = useLocalSearchParams<{ receiptId?: string }>();
+  const { receiptId, returnTo } = useLocalSearchParams<{ receiptId?: string; returnTo?: string }>();
   const { categories, activeReceiptDraft, startReceiptDraft, confirmReceiptImport, getReceiptPreset } =
     useSmartBudgeting();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const receiptScanRoute: Href = receiptId
-    ? { pathname: '/(finance)/smart-budgeting/setup/receipt-scan', params: { receiptId } }
-    : '/(finance)/smart-budgeting/setup/receipt-gallery';
+    ? { pathname: '/(finance)/smart-budgeting/setup/receipt-scan', params: { receiptId, returnTo } }
+    : returnTo
+      ? { pathname: '/(finance)/smart-budgeting/setup/receipt-gallery', params: { returnTo } }
+      : '/(finance)/smart-budgeting/setup/receipt-gallery';
 
   const receipt =
     activeReceiptDraft?.id === receiptId
@@ -135,14 +137,23 @@ export default function SmartBudgetReceiptReviewScreen() {
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
             onPress={() => {
               confirmReceiptImport(receipt.id, selectedCategoryId ?? receipt.categoryId);
-              router.replace('/(finance)/smart-budgeting/monthly-budget');
+              router.replace({
+                pathname: '/(finance)/smart-budgeting/monthly-budget',
+                params: returnTo ? { returnTo } : undefined,
+              });
             }}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Apply to budget</Text>
           </Pressable>
           <Pressable
             style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery')}
+            onPress={() =>
+              router.replace(
+                returnTo
+                  ? { pathname: '/(finance)/smart-budgeting/setup/receipt-gallery', params: { returnTo } }
+                  : '/(finance)/smart-budgeting/setup/receipt-gallery'
+              )
+            }
           >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Choose another receipt</Text>
           </Pressable>

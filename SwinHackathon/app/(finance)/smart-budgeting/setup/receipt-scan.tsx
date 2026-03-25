@@ -13,7 +13,7 @@ export default function SmartBudgetReceiptScanScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const { receiptId } = useLocalSearchParams<{ receiptId?: string }>();
+  const { receiptId, returnTo } = useLocalSearchParams<{ receiptId?: string; returnTo?: string }>();
   const { activeReceiptDraft, startReceiptDraft, getReceiptPreset } = useSmartBudgeting();
   const receipt =
     activeReceiptDraft?.id === receiptId
@@ -50,7 +50,14 @@ export default function SmartBudgetReceiptScanScreen() {
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
-            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/receipt-gallery')}
+            onPress={() =>
+              goSmartBudgetBack(
+                router,
+                returnTo
+                  ? { pathname: '/(finance)/smart-budgeting/setup/receipt-gallery', params: { returnTo } }
+                  : '/(finance)/smart-budgeting/setup/receipt-gallery'
+              )
+            }
           >
             <MaterialIcons name="close" size={20} color={colors.text} />
           </Pressable>
@@ -72,7 +79,7 @@ export default function SmartBudgetReceiptScanScreen() {
             onPress={() =>
               router.push({
                 pathname: '/(finance)/smart-budgeting/setup/receipt-processing',
-                params: { receiptId: receipt.id },
+                params: { receiptId: receipt.id, returnTo },
               })
             }
           >
@@ -80,7 +87,14 @@ export default function SmartBudgetReceiptScanScreen() {
           </Pressable>
           <Pressable
             style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
-            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/receipt-gallery')}
+            onPress={() =>
+              goSmartBudgetBack(
+                router,
+                returnTo
+                  ? { pathname: '/(finance)/smart-budgeting/setup/receipt-gallery', params: { returnTo } }
+                  : '/(finance)/smart-budgeting/setup/receipt-gallery'
+              )
+            }
           >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Retake</Text>
           </Pressable>
