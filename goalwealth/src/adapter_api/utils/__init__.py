@@ -1,0 +1,1 @@
+"""Adapter API utility helpers."""

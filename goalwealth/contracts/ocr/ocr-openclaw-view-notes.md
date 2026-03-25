@@ -11,6 +11,8 @@ OpenClaw **không nên** đọc trực tiếp:
 - block-level OCR noise
 - parser internals
 
+Lưu ý: OCR ingress hiện tại được chốt rất tối giản, chỉ có `raw_text`. Vì vậy việc phân loại document, parse field, confidence và validation đều thuộc lớp normalize/backend phía sau OCR, không thuộc chính OCR ingress response.
+
 Thay vào đó, OpenClaw chỉ nên đọc:
 - summary ngắn
 - facts đã normalize

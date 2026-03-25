@@ -5,12 +5,23 @@
 
 ## Mục đích
 Schema này dùng cho bản ghi OCR sau khi:
-1. frontend/OCR layer trả raw text
+1. frontend/OCR layer trả một JSON tối giản chỉ gồm `raw_text`
 2. model/service parse raw text thành JSON chuẩn
 3. validation layer kiểm tra business rules
 4. kết quả được lưu vào PostgreSQL
 
 OpenClaw không nên đọc raw OCR trực tiếp; nó nên đọc bản đã normalize/validated.
+
+## OCR ingress decision (current)
+Ở boundary đầu vào, OCR/frontend hiện được chốt theo dạng tối giản:
+
+```json
+{
+  "raw_text": "..."
+}
+```
+
+Điều này có nghĩa là các field như `blocks`, `raw_text_confidence`, `document_type_hint` chỉ là tùy chọn mở rộng về sau, không phải yêu cầu bắt buộc của ingress contract hiện tại.
 
 ## Các field validation quan trọng
 
