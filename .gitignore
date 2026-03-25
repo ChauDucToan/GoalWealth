@@ -8,6 +8,7 @@ wheels/
 
 aws/config
 aws/credentials
+goalwealth/scripts/aws/goalwealth.aws.env
 
 # Virtual environments
 .venv
