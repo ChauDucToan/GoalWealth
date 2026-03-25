@@ -1,0 +1,1 @@
+"""Adapter API route modules."""

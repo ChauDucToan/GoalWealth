@@ -1,0 +1,341 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: GoalWealth hybrid crawl architecture
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: goalwealth
+  EnvironmentName:
+    Type: String
+    Default: dev
+  FeedRegistryTableName:
+    Type: String
+    Default: goalwealth-feed-registry
+  OpenSearchCollectionName:
+    Type: String
+    Default: goalwealth-news-search
+  OpenSearchAllowFromPublic:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Set to false when you later move access behind VPC endpoints/private network policy.
+  WarmSyncScheduleExpression:
+    Type: String
+    Default: rate(30 minutes)
+  EmbeddingProviderMode:
+    Type: String
+    Default: bedrock
+    AllowedValues:
+      - bedrock
+      - external
+  BedrockEmbeddingModelId:
+    Type: String
+    Default: amazon.titan-embed-text-v2:0
+  BedrockEmbeddingDimensions:
+    Type: Number
+    Default: 1024
+    AllowedValues:
+      - 256
+      - 512
+      - 1024
+  SmartAgentModelMode:
+    Type: String
+    Default: rule_based
+    AllowedValues:
+      - rule_based
+      - bedrock
+      - external
+  ExternalProviderSecretArn:
+    Type: String
+    Default: ''
+  QueryApiEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+  PublicApiAuthMode:
+    Type: String
+    Default: oidc_jwt
+    AllowedValues:
+      - none
+      - oidc_jwt
+      - iam
+  OidcIssuerUrl:
+    Type: String
+    Default: https://accounts.google.com
+  OidcAudience:
+    Type: String
+    Default: ''
+  OidcRequiredScopes:
+    Type: CommaDelimitedList
+    Default: goalwealth.read
+  RecencyThresholdMinutes:
+    Type: Number
+    Default: 180
+  MaxArticlesPerFeed:
+    Type: Number
+    Default: 20
+  FeedFetchTimeoutSeconds:
+    Type: Number
+    Default: 15
+
+Conditions:
+  EnableQueryApi: !Equals [!Ref QueryApiEnabled, 'true']
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 512
+    Tracing: Active
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        PROJECT_NAME: !Ref ProjectName
+        ENVIRONMENT_NAME: !Ref EnvironmentName
+        FEED_REGISTRY_TABLE: !Ref FeedRegistryTable
+        OPENSEARCH_INDEX: news_articles
+        OPENSEARCH_COLLECTION_ENDPOINT: !GetAtt NewsSearchCollection.CollectionEndpoint
+        EMBEDDING_PROVIDER_MODE: !Ref EmbeddingProviderMode
+        BEDROCK_EMBEDDING_MODEL_ID: !Ref BedrockEmbeddingModelId
+        BEDROCK_EMBEDDING_DIMENSIONS: !Ref BedrockEmbeddingDimensions
+        EXTERNAL_PROVIDER_SECRET_ARN: !Ref ExternalProviderSecretArn
+        RECENCY_THRESHOLD_MINUTES: !Ref RecencyThresholdMinutes
+        MAX_ARTICLES_PER_FEED: !Ref MaxArticlesPerFeed
+        FETCH_TIMEOUT_SECONDS: !Ref FeedFetchTimeoutSeconds
+
+Resources:
+  FeedRegistryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref FeedRegistryTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: feed_id
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: priority
+          AttributeType: N
+      KeySchema:
+        - AttributeName: feed_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: status-priority-index
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: priority
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  NewsSearchEncryptionPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-enc
+      Type: encryption
+      Policy: !Sub |
+        {"Rules":[{"ResourceType":"collection","Resource":["collection/${OpenSearchCollectionName}"]}],"AWSOwnedKey":true}
+
+  NewsSearchNetworkPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-net
+      Type: network
+      Policy: !Sub |
+        [{"Rules":[{"ResourceType":"collection","Resource":["collection/${OpenSearchCollectionName}"]},{"ResourceType":"dashboard","Resource":["collection/${OpenSearchCollectionName}"]}],"AllowFromPublic":${OpenSearchAllowFromPublic}}]
+
+  NewsSearchCollection:
+    Type: AWS::OpenSearchServerless::Collection
+    DependsOn:
+      - NewsSearchEncryptionPolicy
+    Properties:
+      Name: !Ref OpenSearchCollectionName
+      Type: VECTORSEARCH
+      Description: GoalWealth news retrieval vector collection
+
+  RssCrawlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: rss-crawler-dynamodb
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt FeedRegistryTable.Arn
+                  - !Sub ${FeedRegistryTable.Arn}/index/*
+        - PolicyName: rss-crawler-opensearch-serverless
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - aoss:APIAccessAll
+                Resource: '*'
+        - PolicyName: rss-crawler-bedrock
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+
+  RssCrawlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../src/
+      Handler: lambdas.rss_crawler.handler.lambda_handler
+      Timeout: 300
+      MemorySize: 1024
+      Role: !GetAtt RssCrawlerRole.Arn
+
+  WarmSyncInvokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: invoke-crawler
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt RssCrawlerFunction.Arn
+
+  RssCrawlerWarmSyncEvent:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      ScheduleExpression: !Ref WarmSyncScheduleExpression
+      Target:
+        Arn: !GetAtt RssCrawlerFunction.Arn
+        RoleArn: !GetAtt WarmSyncInvokeRole.Arn
+        Input: '{"mode":"warm_sync"}'
+
+  SmartAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: smart-agent-crawler-invoke
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt RssCrawlerFunction.Arn
+        - PolicyName: smart-agent-opensearch-serverless
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - aoss:APIAccessAll
+                Resource: '*'
+        - PolicyName: smart-agent-bedrock
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+
+  SmartAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../src/
+      Handler: lambdas.smart_agent.handler.lambda_handler
+      Timeout: 60
+      MemorySize: 1024
+      Role: !GetAtt SmartAgentRole.Arn
+      Environment:
+        Variables:
+          SMART_AGENT_MODEL_MODE: !Ref SmartAgentModelMode
+          CRAWLER_FUNCTION_NAME: !Ref RssCrawlerFunction
+
+  NewsSearchAccessPolicy:
+    Type: AWS::OpenSearchServerless::AccessPolicy
+    DependsOn:
+      - NewsSearchCollection
+      - RssCrawlerRole
+      - SmartAgentRole
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-data
+      Type: data
+      Policy: !Sub |
+        [{
+          "Rules": [
+            {
+              "ResourceType": "index",
+              "Resource": ["index/${OpenSearchCollectionName}/*"],
+              "Permission": ["aoss:CreateIndex", "aoss:DescribeIndex", "aoss:ReadDocument", "aoss:WriteDocument"]
+            },
+            {
+              "ResourceType": "collection",
+              "Resource": ["collection/${OpenSearchCollectionName}"],
+              "Permission": ["aoss:DescribeCollectionItems"]
+            }
+          ],
+          "Principal": [
+            "${RssCrawlerRole.Arn}",
+            "${SmartAgentRole.Arn}"
+          ]
+        }]
+
+Outputs:
+  FeedRegistryTableName:
+    Value: !Ref FeedRegistryTable
+  OpenSearchCollectionEndpoint:
+    Value: !GetAtt NewsSearchCollection.CollectionEndpoint
+  OpenSearchDashboardEndpoint:
+    Value: !GetAtt NewsSearchCollection.DashboardEndpoint
+  RssCrawlerFunctionName:
+    Value: !Ref RssCrawlerFunction
+  SmartAgentFunctionName:
+    Value: !Ref SmartAgentFunction

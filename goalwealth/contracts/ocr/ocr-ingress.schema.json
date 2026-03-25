@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://goalwealth.local/contracts/ocr/ocr-ingress.schema.json",
+  "title": "GoalWealth OCR Ingress",
+  "description": "Minimal OCR ingress payload. OCR/frontend returns exactly one field: raw_text. All document typing, normalization, and validation happen downstream.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "raw_text"
+  ],
+  "properties": {
+    "raw_text": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Raw text extracted from the document by the OCR/front-end layer."
+    }
+  }
+}

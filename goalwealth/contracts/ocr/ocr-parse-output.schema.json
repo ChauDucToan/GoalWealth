@@ -1,0 +1,608 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://goalwealth.local/contracts/ocr-parse-output.schema.json",
+  "title": "GoalWealth OCR Parse Output",
+  "description": "Structured OCR parse result after raw text has been normalized by a model/service and validated before persistence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ocr_record_id",
+    "user_id",
+    "source_type",
+    "document_type",
+    "status",
+    "created_at",
+    "raw_extraction",
+    "normalized_data",
+    "validation",
+    "audit_metadata"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "ocr_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "image_upload",
+        "camera_capture",
+        "pdf_upload",
+        "frontend_sdk",
+        "api_import"
+      ]
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "receipt",
+        "bank_statement",
+        "salary_slip",
+        "investment_statement",
+        "insurance_document",
+        "unknown"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processed",
+        "needs_review",
+        "validation_failed",
+        "rejected"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 16,
+      "default": "vi"
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1,
+      "description": "OCR or parsing provider identifier, e.g. frontend_ocr, textract, bedrock_parser"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "document_info": {
+      "$ref": "#/$defs/documentInfo"
+    },
+    "raw_extraction": {
+      "$ref": "#/$defs/rawExtraction"
+    },
+    "normalized_data": {
+      "$ref": "#/$defs/normalizedDataEnvelope"
+    },
+    "validation": {
+      "$ref": "#/$defs/validation"
+    },
+    "audit_metadata": {
+      "$ref": "#/$defs/auditMetadata"
+    }
+  },
+  "$defs": {
+    "documentInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file_name": {
+          "type": "string"
+        },
+        "mime_type": {
+          "type": "string"
+        },
+        "page_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "issued_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "institution_name": {
+          "type": "string"
+        },
+        "document_reference": {
+          "type": "string"
+        }
+      }
+    },
+    "textBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "confidence"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "block_type": {
+          "type": "string",
+          "enum": [
+            "line",
+            "word",
+            "table_cell",
+            "key_value",
+            "other"
+          ]
+        }
+      }
+    },
+    "rawExtraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_text"
+      ],
+      "properties": {
+        "raw_text": {
+          "type": "string"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/textBlock"
+          }
+        },
+        "raw_text_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "moneyAmount": {
+      "type": "number"
+    },
+    "statementPeriod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "format": "date"
+        },
+        "to": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transaction_date",
+        "description",
+        "amount",
+        "direction",
+        "confidence"
+      ],
+      "properties": {
+        "transaction_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "in",
+            "out",
+            "unknown"
+          ]
+        },
+        "category_hint": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "holding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ticker",
+        "quantity"
+      ],
+      "properties": {
+        "ticker": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "avg_cost": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "market_price": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "market_value": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "receiptItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "unit_price": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "line_total": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "normalizedDataEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_type",
+        "data"
+      ],
+      "properties": {
+        "schema_type": {
+          "type": "string",
+          "enum": [
+            "receipt",
+            "bank_statement",
+            "salary_slip",
+            "investment_statement",
+            "insurance_document",
+            "unknown"
+          ]
+        },
+        "summary_text": {
+          "type": "string"
+        },
+        "data": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/receiptData"
+            },
+            {
+              "$ref": "#/$defs/bankStatementData"
+            },
+            {
+              "$ref": "#/$defs/salarySlipData"
+            },
+            {
+              "$ref": "#/$defs/investmentStatementData"
+            },
+            {
+              "$ref": "#/$defs/insuranceDocumentData"
+            },
+            {
+              "$ref": "#/$defs/unknownData"
+            }
+          ]
+        }
+      }
+    },
+    "receiptData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "merchant_name": {
+          "type": "string"
+        },
+        "transaction_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "total_amount": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "payment_method_hint": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/receiptItem"
+          }
+        }
+      }
+    },
+    "bankStatementData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "account_number_masked": {
+          "type": "string"
+        },
+        "statement_period": {
+          "$ref": "#/$defs/statementPeriod"
+        },
+        "opening_balance": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "closing_balance": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transaction"
+          }
+        }
+      }
+    },
+    "salarySlipData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "employer_name": {
+          "type": "string"
+        },
+        "employee_name_masked": {
+          "type": "string"
+        },
+        "pay_period": {
+          "$ref": "#/$defs/statementPeriod"
+        },
+        "gross_income": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "net_income": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "deductions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "amount"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "amount": {
+                "$ref": "#/$defs/moneyAmount"
+              }
+            }
+          }
+        }
+      }
+    },
+    "investmentStatementData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "broker_name": {
+          "type": "string"
+        },
+        "portfolio_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "total_market_value": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "cash_balance": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "holdings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/holding"
+          }
+        }
+      }
+    },
+    "insuranceDocumentData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider_name": {
+          "type": "string"
+        },
+        "policy_number_masked": {
+          "type": "string"
+        },
+        "coverage_start_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "coverage_end_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "premium_amount": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "insured_amount": {
+          "$ref": "#/$defs/moneyAmount"
+        }
+      }
+    },
+    "unknownData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "type": "string"
+        },
+        "extracted_fields": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "validationMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "field_path": {
+          "type": "string"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "is_usable",
+        "overall_confidence",
+        "manual_review_required",
+        "warnings",
+        "missing_fields",
+        "failed_rules",
+        "auto_apply_allowed"
+      ],
+      "properties": {
+        "is_usable": {
+          "type": "boolean"
+        },
+        "overall_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "normalization_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "manual_review_required": {
+          "type": "boolean"
+        },
+        "auto_apply_allowed": {
+          "type": "boolean",
+          "description": "Whether downstream services may auto-apply this parsed result into financial state without human confirmation."
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/validationMessage"
+          }
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failed_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/validationMessage"
+          }
+        }
+      }
+    },
+    "auditMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parser_model_id",
+        "normalizer_version",
+        "processed_at"
+      ],
+      "properties": {
+        "parser_model_id": {
+          "type": "string"
+        },
+        "normalizer_version": {
+          "type": "string"
+        },
+        "frontend_trace_id": {
+          "type": "string"
+        },
+        "processed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

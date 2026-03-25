@@ -1,0 +1,344 @@
+openapi: 3.1.0
+info:
+  title: GoalWealth Internal Backend API for OpenClaw
+  version: 1.0.0
+  summary: Contract-first internal APIs for OpenClaw orchestrator
+  description: |
+    Internal service contracts that OpenClaw uses to read structured memory,
+    read OCR results in orchestration-safe form, and query the GoalWealth news Smart Agent.
+
+    Design rules:
+    - OpenClaw reads structured facts only.
+    - OpenClaw does not read raw OCR text directly.
+    - Smart Agent returns JSON only and performs no direct user-facing side effects.
+servers:
+  - url: https://internal-api.goalwealth.local
+    description: Placeholder internal API base URL
+
+tags:
+  - name: memory-service
+  - name: ocr-service
+  - name: smart-agent
+
+paths:
+  /v1/memory/users/{userId}/view:
+    get:
+      tags: [memory-service]
+      summary: Get orchestration-ready memory view for a user
+      operationId: getMemoryServiceView
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: includeSections
+          required: false
+          description: Optional section filter for reducing payload size
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - user_profile
+                - goals
+                - risk_profile
+                - ocr_summaries
+                - conversation_summary
+          style: form
+          explode: false
+        - in: query
+          name: ocrSummaryLimit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: Memory service view returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../memory/memory-service-view.schema.json'
+        '404':
+          description: User memory view not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal memory service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/ocr/records/{ocrRecordId}/openclaw-view:
+    get:
+      tags: [ocr-service]
+      summary: Get orchestration-safe OCR view for a document record
+      operationId: getOcrOpenClawView
+      parameters:
+        - in: path
+          name: ocrRecordId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OCR OpenClaw view returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../ocr/ocr-openclaw-view.schema.json'
+        '404':
+          description: OCR record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: OCR record exists but is not yet ready for OpenClaw consumption
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    additionalProperties: false
+                    properties:
+                      retryable:
+                        type: boolean
+                        default: true
+                      status:
+                        type: string
+                        enum: [processing, queued, awaiting_validation]
+        '500':
+          description: Internal OCR service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/smart-agent/query:
+    post:
+      tags: [smart-agent]
+      summary: Query GoalWealth Smart Agent for news/search routing
+      operationId: querySmartAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmartAgentQueryRequest'
+      responses:
+        '200':
+          description: Smart Agent response returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmartAgentQueryResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Smart Agent internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Internal service-to-service token or user-scoped OIDC access token depending on deployment mode
+
+  schemas:
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        trace_id:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    SmartAgentQueryRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+        user_id:
+          type: string
+          description: Optional user id for audit, personalization, or policy checks
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 10
+        categories:
+          type: array
+          items:
+            type: string
+        freshness_threshold_minutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          default: 180
+        locale:
+          type: string
+          example: vi-VN
+        timezone:
+          type: string
+          example: Asia/Ho_Chi_Minh
+        trace_id:
+          type: string
+        caller:
+          type: string
+          enum:
+            - openclaw_orchestrator
+            - adapter_api
+            - internal_tool
+
+    SmartAgentResultItem:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - type
+        - title
+        - url
+        - source
+        - summary
+        - score
+        - freshness_score
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          const: article
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        source:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+        summary:
+          type: string
+        score:
+          type: number
+        freshness_score:
+          type: number
+          minimum: 0
+          maximum: 1
+
+    SmartAgentMeta:
+      type: object
+      additionalProperties: false
+      required:
+        - query
+        - total_results
+        - freshness
+        - refresh_triggered
+        - took_ms
+        - trace_id
+      properties:
+        query:
+          type: string
+        total_results:
+          type: integer
+          minimum: 0
+        freshness:
+          type: string
+          enum:
+            - fresh
+            - stale
+            - empty
+            - mixed
+            - unknown
+        refresh_triggered:
+          type: boolean
+        took_ms:
+          type: integer
+          minimum: 0
+        trace_id:
+          type: string
+
+    SmartAgentErrorEnvelope:
+      oneOf:
+        - type: 'null'
+        - type: object
+          additionalProperties: false
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    SmartAgentQueryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - route
+        - results
+        - summary
+        - meta
+        - error
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        route:
+          type: string
+          enum:
+            - semantic_search
+            - fresh_news
+            - hybrid_search
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SmartAgentResultItem'
+        summary:
+          type: string
+        meta:
+          $ref: '#/components/schemas/SmartAgentMeta'
+        error:
+          $ref: '#/components/schemas/SmartAgentErrorEnvelope'
+
+security:
+  - bearerAuth: []

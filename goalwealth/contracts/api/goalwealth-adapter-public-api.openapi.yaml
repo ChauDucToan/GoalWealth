@@ -1,0 +1,458 @@
+openapi: 3.1.0
+info:
+  title: GoalWealth Adapter Public API
+  version: 0.1.0
+  summary: Public-facing adapter API for GoalWealth frontend integration
+  description: |
+    Public API contract for the GoalWealth adapter.
+
+    Current architecture assumptions:
+    - Google OIDC first for MVP
+    - Adapter is the only public backend entry point
+    - OpenClaw is orchestration only
+    - OCR ingress is raw_text-only
+    - Outer response envelope is standardized as: { ok, data, error, meta, warnings }
+
+servers:
+  - url: http://localhost:8080
+    description: Local adapter development server
+  - url: https://api.goalwealth.example.com
+    description: Example production adapter base URL
+
+tags:
+  - name: meta
+  - name: health
+  - name: chat
+  - name: ocr
+
+paths:
+  /:
+    get:
+      tags: [meta]
+      summary: Adapter root metadata
+      operationId: getAdapterRoot
+      responses:
+        '200':
+          description: Adapter metadata envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaEnvelope'
+
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      operationId: getHealth
+      responses:
+        '200':
+          description: Health envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthEnvelope'
+
+  /ready:
+    get:
+      tags: [health]
+      summary: Readiness probe
+      operationId: getReady
+      responses:
+        '200':
+          description: Readiness envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyEnvelope'
+
+  /v1/chat/respond:
+    post:
+      tags: [chat]
+      summary: Send a user chat message to GoalWealth
+      operationId: postChatRespond
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRespondRequest'
+      responses:
+        '200':
+          description: Chat response envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatEnvelope'
+        '401':
+          description: Auth failure envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /v1/ocr/ingress:
+    post:
+      tags: [ocr]
+      summary: Submit OCR ingress payload (raw_text only)
+      operationId: postOcrIngress
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OcrIngressRequest'
+      responses:
+        '200':
+          description: OCR ingress accepted envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OcrIngressEnvelope'
+        '401':
+          description: Auth failure envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /v1/ocr/records/{ocr_record_id}:
+    get:
+      tags: [ocr]
+      summary: Fetch OCR record status / OpenClaw-safe OCR view
+      operationId: getOcrRecord
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: ocr_record_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OCR record envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OcrRecordEnvelope'
+        '401':
+          description: Auth failure envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Production target: Google OIDC token.
+        Current dev mode also supports dev-token:<user_id>.
+
+  schemas:
+    EnvelopeMeta:
+      type: object
+      additionalProperties: true
+      properties:
+        request_id:
+          type: string
+          nullable: true
+        route:
+          type: string
+
+    ErrorBody:
+      type: object
+      additionalProperties: false
+      required: [code, message, details]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: false
+        data:
+          type: 'null'
+        error:
+          $ref: '#/components/schemas/ErrorBody'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    MetaRootData:
+      type: object
+      additionalProperties: false
+      required: [service, version, environment, docs_enabled]
+      properties:
+        service:
+          type: string
+        version:
+          type: string
+        environment:
+          type: string
+        docs_enabled:
+          type: boolean
+
+    HealthData:
+      type: object
+      additionalProperties: false
+      required: [status, service]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        service:
+          type: string
+        version:
+          type: string
+        environment:
+          type: string
+
+    ReadyData:
+      type: object
+      additionalProperties: false
+      required: [status, service, checks]
+      properties:
+        status:
+          type: string
+          enum: [ready]
+        service:
+          type: string
+        checks:
+          type: object
+          additionalProperties: true
+        runtime:
+          type: object
+          additionalProperties: true
+
+    ChatRespondRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+        session_id:
+          type: string
+        locale:
+          type: string
+          example: vi-VN
+        timezone:
+          type: string
+          example: Asia/Ho_Chi_Minh
+        attachments:
+          type: array
+          items:
+            type: string
+          default: []
+
+    ChatResponseData:
+      type: object
+      additionalProperties: false
+      required: [session_id, reply, warnings, used_context, meta]
+      properties:
+        session_id:
+          type: string
+        reply:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string
+        used_context:
+          type: object
+          additionalProperties: true
+          properties:
+            memory:
+              type: boolean
+            ocr_records:
+              type: array
+              items:
+                type: string
+            smart_agent:
+              type: boolean
+            smart_agent_result_count:
+              type: integer
+            user_present:
+              type: boolean
+        meta:
+          type: object
+          additionalProperties: true
+
+    OcrIngressRequest:
+      type: object
+      additionalProperties: false
+      required: [raw_text]
+      properties:
+        raw_text:
+          type: string
+          minLength: 1
+
+    OcrIngressData:
+      type: object
+      additionalProperties: false
+      required: [ocr_record_id, status, message, meta]
+      properties:
+        ocr_record_id:
+          type: string
+        status:
+          type: string
+          enum: [accepted]
+        message:
+          type: string
+        meta:
+          type: object
+          additionalProperties: true
+
+    OcrRecordData:
+      type: object
+      additionalProperties: false
+      required: [ocr_record_id, status, warnings, data]
+      properties:
+        ocr_record_id:
+          type: string
+        status:
+          type: string
+          enum: [pending_user_context, pending_backend, ready]
+        warnings:
+          type: array
+          items:
+            type: string
+        data:
+          type: object
+          additionalProperties: true
+
+    MetaEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/MetaRootData'
+        error:
+          type: 'null'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    HealthEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/HealthData'
+        error:
+          type: 'null'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    ReadyEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/ReadyData'
+        error:
+          type: 'null'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    ChatEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/ChatResponseData'
+        error:
+          type: 'null'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    OcrIngressEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/OcrIngressData'
+        error:
+          type: 'null'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string
+
+    OcrRecordEnvelope:
+      type: object
+      additionalProperties: false
+      required: [ok, data, error, meta, warnings]
+      properties:
+        ok:
+          type: boolean
+          const: true
+        data:
+          $ref: '#/components/schemas/OcrRecordData'
+        error:
+          type: 'null'
+        meta:
+          $ref: '#/components/schemas/EnvelopeMeta'
+        warnings:
+          type: array
+          items:
+            type: string

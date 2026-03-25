@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://goalwealth.local/contracts/ocr-openclaw-view.schema.json",
+  "title": "GoalWealth OCR OpenClaw View",
+  "description": "A minimal, validated OCR result view intended for OpenClaw consumption. This view excludes raw OCR text and exposes only normalized facts, confidence, warnings, and orchestration hints.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ocr_record_id",
+    "user_id",
+    "document_type",
+    "status",
+    "summary_text",
+    "usable",
+    "overall_confidence",
+    "manual_review_required",
+    "auto_apply_allowed",
+    "warnings",
+    "facts",
+    "orchestration_hint",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "ocr_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "receipt",
+        "bank_statement",
+        "salary_slip",
+        "investment_statement",
+        "insurance_document",
+        "unknown"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processed",
+        "needs_review",
+        "validation_failed",
+        "rejected"
+      ]
+    },
+    "summary_text": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable summary safe for OpenClaw to use when reasoning about the document result."
+    },
+    "usable": {
+      "type": "boolean"
+    },
+    "overall_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "manual_review_required": {
+      "type": "boolean"
+    },
+    "auto_apply_allowed": {
+      "type": "boolean"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/message"
+      }
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "facts": {
+      "$ref": "#/$defs/factsEnvelope"
+    },
+    "orchestration_hint": {
+      "$ref": "#/$defs/orchestrationHint"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "severity"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "field_path": {
+          "type": "string"
+        }
+      }
+    },
+    "moneyAmount": {
+      "type": "number"
+    },
+    "transactionCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transaction_date",
+        "description",
+        "amount",
+        "direction",
+        "confidence"
+      ],
+      "properties": {
+        "transaction_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "in",
+            "out",
+            "unknown"
+          ]
+        },
+        "category_hint": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "holdingCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ticker",
+        "quantity"
+      ],
+      "properties": {
+        "ticker": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "avg_cost": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "market_price": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "market_value": {
+          "$ref": "#/$defs/moneyAmount"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "factsEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "document_summary",
+        "financial_updates"
+      ],
+      "properties": {
+        "document_summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "institution_name": {
+              "type": "string"
+            },
+            "currency": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 3
+            },
+            "statement_period": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            },
+            "merchant_name": {
+              "type": "string"
+            },
+            "broker_name": {
+              "type": "string"
+            },
+            "document_date": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        "financial_updates": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "opening_balance": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "closing_balance": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "gross_income": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "net_income": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "total_amount": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "total_market_value": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "cash_balance": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "premium_amount": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "insured_amount": {
+              "$ref": "#/$defs/moneyAmount"
+            },
+            "transactions_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "holding_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "transaction_candidates": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/transactionCandidate"
+              }
+            },
+            "holding_candidates": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/holdingCandidate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "orchestrationHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommended_action",
+        "safe_for_context_use"
+      ],
+      "properties": {
+        "recommended_action": {
+          "type": "string",
+          "enum": [
+            "use_for_context_only",
+            "ask_user_confirmation_before_apply",
+            "manual_review_before_apply",
+            "ignore_for_now"
+          ]
+        },
+        "safe_for_context_use": {
+          "type": "boolean",
+          "description": "Whether OpenClaw may use this OCR result to understand user intent/context, even if it should not auto-apply the data."
+        },
+        "next_question_hint": {
+          "type": "string",
+          "description": "Optional hint for what OpenClaw should ask the user next."
+        },
+        "apply_targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "cashflow",
+              "income_profile",
+              "expense_profile",
+              "asset_snapshot",
+              "liability_snapshot",
+              "goal_context",
+              "portfolio_snapshot"
+            ]
+          },
+          "default": []
+        }
+      }
+    }
+  }
+}
