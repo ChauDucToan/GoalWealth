@@ -3,10 +3,15 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   getFinancialGoalById,
   getGoalAccountById,
+  getGoalPrioritySummary,
 } from '@/components/financial-goals/data';
 import {
+  FeasibilityMeter,
+  FundingGapSummary,
+  GoalConflictNotice,
   GoalHistoryCard,
   GoalProgressRing,
+  GoalRecommendationSummary,
   GoalTransferList,
 } from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
@@ -25,14 +30,13 @@ export default function FinancialGoalDetailScreen() {
   const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const router = useRouter();
   const goal = getFinancialGoalById(goalId);
+  const prioritySummary = getGoalPrioritySummary(goalId);
   const account = getGoalAccountById(goal.accountId);
   const progress = goal.saved / goal.target;
-  const left = Math.max(goal.target - goal.saved, 0);
-
   return (
     <FinanceScreen
       title={goal.title}
-      subtitle={`${goal.category} goal • ${goal.dueLabel}`}
+      subtitle={`${goal.priority} priority • ${goal.allowedRisk} • ${goal.dueLabel}`}
       contentStyle={styles.contentStyle}
       rightAccessory={
         <Pressable
@@ -85,29 +89,46 @@ export default function FinancialGoalDetailScreen() {
           <View style={styles.heroStats}>
             <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
               <Text style={[styles.heroStatValue, { color: goal.accent }]}>
-                {formatCurrency(left)}
+                {formatCurrency(goal.fundingGap)}
               </Text>
               <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                still left
+                funding gap
               </Text>
             </View>
             <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
               <Text style={[styles.heroStatValue, { color: colors.success }]}>
-                {formatCurrency(goal.monthlyContribution)}
+                {formatCurrency(goal.recommendedMonthlyAllocation)}
               </Text>
               <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                monthly transfer
+                recommended / month
               </Text>
             </View>
             <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroStatValue, { color: colors.primaryDark }]}>
-                {goal.targetDate}
+              <Text style={[styles.heroStatValue, { color: colors.primaryDark, fontSize: 13 }]}>
+                {prioritySummary.feasibilityLabel}
               </Text>
               <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                target date
+                feasibility
               </Text>
             </View>
           </View>
+        </FinanceCard>
+
+        <FinanceCard>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Planner rationale</Text>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+              sequence {goal.recommendedSequence}
+            </Text>
+          </View>
+
+          <GoalRecommendationSummary goal={goal} />
+          <FundingGapSummary
+            gap={goal.fundingGap}
+            monthlyAllocation={goal.recommendedMonthlyAllocation}
+          />
+          <FeasibilityMeter probability={goal.feasibilityProbability} accent={goal.accent} />
+          <GoalConflictNotice conflicts={goal.conflictWithOtherGoals} />
         </FinanceCard>
 
         <View style={styles.actionRow}>
@@ -147,6 +168,31 @@ export default function FinancialGoalDetailScreen() {
           accent={goal.accent}
           footer={`${goal.title} is pacing toward ${goal.targetDate}.`}
         />
+
+        <FinanceCard>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Constraint flags</Text>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+              {prioritySummary.fundingGapLabel}
+            </Text>
+          </View>
+          <View style={styles.flagWrap}>
+            {goal.constraintFlags.map((flag) => (
+              <View
+                key={flag}
+                style={[
+                  styles.flagChip,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.flagText, { color: colors.text }]}>{flag}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={[styles.constraintBody, { color: hexToRgba(colors.text, 0.54) }]}>
+            {prioritySummary.conflicts}
+          </Text>
+        </FinanceCard>
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
@@ -384,6 +430,27 @@ const styles = StyleSheet.create({
   accountBalance: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  flagWrap: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  flagChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  flagText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  constraintBody: {
+    marginTop: 12,
+    fontSize: 12,
+    lineHeight: 18,
   },
   milestoneStack: {
     marginTop: 16,

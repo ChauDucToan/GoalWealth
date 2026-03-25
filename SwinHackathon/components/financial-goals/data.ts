@@ -1,4 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import type { GoalPlanningItem, GoalPriority } from '@/types/product-domain';
 
 export type GoalIconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -26,7 +27,7 @@ export type FinancialGoalTransfer = {
   type: 'Top up' | 'Recurring transfer' | 'Adjustment';
 };
 
-export type FinancialGoalItem = {
+export type FinancialGoalItem = GoalPlanningItem & {
   id: string;
   title: string;
   category: string;
@@ -61,6 +62,18 @@ export type GoalInsight = {
   body: string;
   value: string;
   tone: 'primaryDark' | 'success' | 'warning';
+};
+
+export type GoalPriorityOption = {
+  id: GoalPriority;
+  label: string;
+  body: string;
+};
+
+export type GoalRiskOption = {
+  id: string;
+  label: string;
+  body: string;
 };
 
 export type GoalIntroHighlight = {
@@ -101,20 +114,35 @@ export const financialGoalAccounts: FinancialGoalAccount[] = [
 export const financialGoals: FinancialGoalItem[] = [
   {
     id: 'travel',
+    goalId: 'travel',
+    goalType: 'travel',
+    goalTitle: 'Vacation',
     title: 'Vacation',
     category: 'Lifestyle',
     saved: 1480,
     target: 2400,
+    targetAmount: 2400,
+    targetDate: 'September 2026',
     dueLabel: '84 days left',
     icon: 'flight-takeoff',
     accent: '#1A73E8',
     monthlyContribution: 320,
+    priority: 'Medium',
+    priorityOrder: 2,
+    minimumFundingNeed: 280,
+    allowedRisk: 'Low to moderate',
+    currentProgress: 1480 / 2400,
+    feasibilityProbability: 0.84,
+    fundingGap: 920,
+    constraintFlags: ['Deadline sensitive'],
+    conflictWithOtherGoals: ['Emergency Fund'],
+    recommendedSequence: 2,
+    recommendedMonthlyAllocation: 320,
     note: 'Paris flights and first week accommodation are covered once this goal crosses the next milestone.',
     milestones: ['Book flights', 'Reserve hotel', 'Set aside food and local transport buffer'],
     accountId: 'travel-fund',
     accountLabel: 'Travel Fund',
     recurringLabel: 'Monthly transfer · 5th of each month',
-    targetDate: 'September 2026',
     targetMonth: 'Sep',
     history: [
       { id: 'travel-h1', label: 'Jan', amount: 420 },
@@ -153,20 +181,35 @@ export const financialGoals: FinancialGoalItem[] = [
   },
   {
     id: 'emergency',
+    goalId: 'emergency',
+    goalType: 'emergency-fund',
+    goalTitle: 'Emergency Fund',
     title: 'Emergency Fund',
     category: 'Safety',
     saved: 3200,
     target: 5000,
+    targetAmount: 5000,
+    targetDate: 'January 2027',
     dueLabel: 'Build to 6 months',
     icon: 'health-and-safety',
     accent: '#6A927A',
     monthlyContribution: 450,
+    priority: 'High',
+    priorityOrder: 1,
+    minimumFundingNeed: 400,
+    allowedRisk: 'Low risk',
+    currentProgress: 3200 / 5000,
+    feasibilityProbability: 0.91,
+    fundingGap: 1800,
+    constraintFlags: ['Suitability critical', 'Liquidity anchor'],
+    conflictWithOtherGoals: ['Vacation', 'Home Office Upgrade'],
+    recommendedSequence: 1,
+    recommendedMonthlyAllocation: 450,
     note: 'Primary buffer for job and health uncertainty. Keep it liquid and separate from daily spending.',
     milestones: ['Reach 4 months of expenses', 'Separate emergency wallet', 'Auto-transfer every payday'],
     accountId: 'savings-plus',
     accountLabel: 'Savings Account',
     recurringLabel: 'Bi-weekly transfer · every Friday',
-    targetDate: 'January 2027',
     targetMonth: 'Jan',
     history: [
       { id: 'emergency-h1', label: 'Jan', amount: 1820 },
@@ -205,20 +248,35 @@ export const financialGoals: FinancialGoalItem[] = [
   },
   {
     id: 'home-office',
+    goalId: 'home-office',
+    goalType: 'workspace-upgrade',
+    goalTitle: 'Home Office Upgrade',
     title: 'Home Office Upgrade',
     category: 'Work',
     saved: 860,
     target: 1800,
+    targetAmount: 1800,
+    targetDate: 'August 2026',
     dueLabel: 'Target by Aug 2026',
     icon: 'desktop-windows',
     accent: '#B2955A',
     monthlyContribution: 180,
+    priority: 'Low',
+    priorityOrder: 3,
+    minimumFundingNeed: 120,
+    allowedRisk: 'Moderate growth',
+    currentProgress: 860 / 1800,
+    feasibilityProbability: 0.58,
+    fundingGap: 940,
+    constraintFlags: ['Can be deferred'],
+    conflictWithOtherGoals: ['Emergency Fund'],
+    recommendedSequence: 3,
+    recommendedMonthlyAllocation: 180,
     note: 'Desk, monitor arm and acoustic setup for better focus. This stays flexible if bigger priorities appear.',
     milestones: ['Desk fund complete', 'Display setup', 'Final acoustic treatment'],
     accountId: 'goal-wallet',
     accountLabel: 'Goal Wallet',
     recurringLabel: 'Monthly transfer · 18th of each month',
-    targetDate: 'August 2026',
     targetMonth: 'Aug',
     history: [
       { id: 'office-h1', label: 'Jan', amount: 180 },
@@ -285,6 +343,41 @@ export const contributionPresets = [100, 250, 400, 600] as const;
 export const transferPresets = [50, 100, 250, 500, 1000] as const;
 export const goalFrequencyOptions = ['Weekly', 'Bi-weekly', 'Monthly'] as const;
 export const goalDeadlineOptions = ['3 months', '6 months', '9 months', '12 months'] as const;
+export const goalPriorityOptions: GoalPriorityOption[] = [
+  {
+    id: 'High',
+    label: 'High priority',
+    body: 'Fund this first before more flexible goals receive the remaining monthly cash.',
+  },
+  {
+    id: 'Medium',
+    label: 'Medium priority',
+    body: 'Fund once higher-priority needs are stable and the plan has spare capacity.',
+  },
+  {
+    id: 'Low',
+    label: 'Low priority',
+    body: 'Receives residual funding after urgent and safety-critical goals are protected.',
+  },
+];
+
+export const goalRiskOptions: GoalRiskOption[] = [
+  {
+    id: 'Low risk',
+    label: 'Low risk',
+    body: 'Appropriate for short-dated or non-negotiable goals.',
+  },
+  {
+    id: 'Low to moderate',
+    label: 'Low to moderate',
+    body: 'Allows some market sensitivity while protecting the timeline.',
+  },
+  {
+    id: 'Moderate growth',
+    label: 'Moderate growth',
+    body: 'Suitable only after higher-priority goals are safely funded.',
+  },
+];
 
 export const financialGoalInsights: GoalInsight[] = [
   {
@@ -353,22 +446,51 @@ export function getGoalAccountById(accountId?: string | string[] | null) {
 }
 
 export function getGoalTransferSummary() {
-  const totalSaved = financialGoals.reduce((sum, goal) => sum + goal.saved, 0);
-  const totalTarget = financialGoals.reduce((sum, goal) => sum + goal.target, 0);
-  const monthlyContribution = financialGoals.reduce(
+  const orderedGoals = getGoalsByPriority();
+  const totalSaved = orderedGoals.reduce((sum, goal) => sum + goal.saved, 0);
+  const totalTarget = orderedGoals.reduce((sum, goal) => sum + goal.target, 0);
+  const monthlyContribution = orderedGoals.reduce(
     (sum, goal) => sum + goal.monthlyContribution,
     0
   );
+  const highPriorityGoals = orderedGoals.filter((goal) => goal.priority === 'High');
+  const nextPriorityGoal = orderedGoals[0];
+  const averageFeasibility =
+    orderedGoals.reduce((sum, goal) => sum + goal.feasibilityProbability, 0) / orderedGoals.length;
 
   return {
     totalSaved,
     totalTarget,
     monthlyContribution,
     totalLeft: totalTarget - totalSaved,
-    activeGoals: financialGoals.length,
+    activeGoals: orderedGoals.length,
+    highPriorityGoals: highPriorityGoals.length,
+    nextPriorityGoal,
+    averageFeasibility,
   };
 }
 
 export function getGoalTimelineRows(goalId?: string | string[] | null) {
   return getFinancialGoalById(goalId).transfers;
+}
+
+export function getGoalsByPriority() {
+  return [...financialGoals].sort((left, right) => left.priorityOrder - right.priorityOrder);
+}
+
+export function getGoalPrioritySummary(goalId?: string | string[] | null) {
+  const goal = getFinancialGoalById(goalId);
+  const blockers = goal.constraintFlags.join(' • ');
+  const conflicts =
+    goal.conflictWithOtherGoals.length > 0
+      ? `Conflicts with ${goal.conflictWithOtherGoals.join(', ')}`
+      : 'No direct goal conflict right now';
+
+  return {
+    goal,
+    blockers,
+    conflicts,
+    feasibilityLabel: `${Math.round(goal.feasibilityProbability * 100)}% feasible`,
+    fundingGapLabel: `$${goal.fundingGap.toFixed(0)} still needs funding`,
+  };
 }

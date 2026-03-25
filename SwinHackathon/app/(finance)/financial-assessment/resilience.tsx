@@ -55,7 +55,7 @@ export default function FinancialAssessmentResilienceScreen() {
       totalSteps={5}
       eyebrow="Section 4 of 5"
       title="Measure resilience, safety and spending discipline."
-      body="The Figma board spreads these prompts across several screens. Grouping them here makes the risk picture much easier to understand in one pass."
+      body="This resilience block brings together household pressure, emergency readiness and spending discipline so the risk engine can update more coherently."
       scrollable
       footer={
         <AssessmentPrimaryButton

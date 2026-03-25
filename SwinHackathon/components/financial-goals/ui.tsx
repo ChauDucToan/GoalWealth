@@ -3,6 +3,7 @@ import { FinanceCard } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
 import {
   FinancialGoalHistoryPoint,
+  FinancialGoalItem,
   FinancialGoalTransfer,
 } from '@/components/financial-goals/data';
 import { Typography } from '@/constants/theme';
@@ -200,6 +201,159 @@ export function GoalTransferList({
   );
 }
 
+export function GoalPriorityStack({
+  goals,
+}: {
+  goals: FinancialGoalItem[];
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.priorityStack}>
+      {goals.map((goal) => (
+        <View
+          key={goal.id}
+          style={[
+            styles.priorityRow,
+            { borderBottomColor: hexToRgba(colors.primaryDark, 0.08) },
+          ]}
+        >
+          <View style={[styles.priorityIndex, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}>
+            <Text style={[styles.priorityIndexText, { color: goal.accent }]}>
+              {goal.priorityOrder}
+            </Text>
+          </View>
+          <View style={styles.priorityCopy}>
+            <Text style={[styles.priorityTitle, { color: colors.text }]}>{goal.title}</Text>
+            <Text style={[styles.priorityMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+              {goal.priority} priority • {goal.allowedRisk}
+            </Text>
+          </View>
+          <Text style={[styles.priorityValue, { color: goal.accent }]}>
+            {Math.round(goal.feasibilityProbability * 100)}%
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export function FeasibilityMeter({
+  probability,
+  accent,
+}: {
+  probability: number;
+  accent: string;
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.meterWrap}>
+      <View
+        style={[
+          styles.meterTrack,
+          { backgroundColor: hexToRgba(accent, 0.14) },
+        ]}
+      >
+        <View
+          style={[
+            styles.meterValue,
+            {
+              width: `${Math.min(probability * 100, 100)}%`,
+              backgroundColor: accent,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.meterLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+        {Math.round(probability * 100)}% estimated feasibility
+      </Text>
+    </View>
+  );
+}
+
+export function FundingGapSummary({
+  gap,
+  monthlyAllocation,
+}: {
+  gap: number;
+  monthlyAllocation: number;
+}) {
+  const { colors } = useTheme();
+  const months = Math.max(1, Math.ceil(gap / Math.max(monthlyAllocation, 1)));
+
+  return (
+    <View
+      style={[
+        styles.fundingGapCard,
+        { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+      ]}
+    >
+      <Text style={[styles.fundingGapValue, { color: colors.text }]}>
+        {formatCurrency(gap)}
+      </Text>
+      <Text style={[styles.fundingGapLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+        still needs funding
+      </Text>
+      <Text style={[styles.fundingGapMeta, { color: colors.primaryDark }]}>
+        About {months} months at the recommended pace
+      </Text>
+    </View>
+  );
+}
+
+export function GoalConflictNotice({
+  conflicts,
+}: {
+  conflicts: string[];
+}) {
+  const { colors } = useTheme();
+
+  if (!conflicts.length) {
+    return null;
+  }
+
+  return (
+    <View
+      style={[
+        styles.conflictCard,
+        { backgroundColor: hexToRgba(colors.warning, 0.08) },
+      ]}
+    >
+      <Text style={[styles.conflictTitle, { color: colors.text }]}>Trade-off notice</Text>
+      <Text style={[styles.conflictBody, { color: hexToRgba(colors.text, 0.56) }]}>
+        Funding this goal earlier will temporarily slow: {conflicts.join(', ')}.
+      </Text>
+    </View>
+  );
+}
+
+export function GoalRecommendationSummary({
+  goal,
+}: {
+  goal: FinancialGoalItem;
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.recommendationCard,
+        { backgroundColor: hexToRgba(goal.accent, 0.08) },
+      ]}
+    >
+      <Text style={[styles.recommendationTitle, { color: colors.text }]}>
+        Why this allocation comes first
+      </Text>
+      <Text style={[styles.recommendationBody, { color: hexToRgba(colors.text, 0.56) }]}>
+        {goal.priority} priority goals are funded first in GoalWealth. This goal currently receives
+        {` ${formatCurrency(goal.recommendedMonthlyAllocation)}/mo `}because it must protect the plan
+        before lower-priority goals absorb the remaining free cash.
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   ringShell: {
     alignItems: 'center',
@@ -309,5 +463,103 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+  },
+  priorityStack: {
+    gap: 2,
+  },
+  priorityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  priorityIndex: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priorityIndexText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  priorityCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  priorityTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  priorityMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  priorityValue: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  meterWrap: {
+    gap: 6,
+  },
+  meterTrack: {
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  meterValue: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  meterLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  fundingGapCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    gap: 4,
+  },
+  fundingGapValue: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  fundingGapLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  fundingGapMeta: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  conflictCard: {
+    borderRadius: 18,
+    padding: 14,
+    gap: 6,
+  },
+  conflictTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  conflictBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  recommendationCard: {
+    borderRadius: 18,
+    padding: 14,
+    gap: 6,
+  },
+  recommendationTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  recommendationBody: {
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

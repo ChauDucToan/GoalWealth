@@ -43,7 +43,7 @@ export default function FinancialAssessmentPlanningScreen() {
       totalSteps={5}
       eyebrow="Section 3 of 5"
       title="Map where your money goes and what it should do next."
-      body="This condensed screen keeps spending, debt, goals and tracking habits together. The original board split them into five separate screens."
+      body="This planning block combines spending pressure, debt load, goal intent and tracking habits so the advisor can judge readiness and trade-offs more coherently."
       scrollable
       footer={
         <AssessmentPrimaryButton

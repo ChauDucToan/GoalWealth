@@ -7,6 +7,7 @@ import {
   communityRules,
   type CommunityPost,
 } from '@/components/community/mock-data';
+import { proposalNewsSignals } from '@/components/home/proposal-data';
 import {
   CommunityAvatar,
   CommunityCard,
@@ -215,7 +216,7 @@ export default function FinanceCommunityScreen() {
             <CommunityAvatar author={communityAuthors.melissa} size={scale(36, 0.76)} />
             <View style={styles.headerBody}>
               <Text style={[styles.feedTitle, { color: colors.text, fontSize: scaleFont(24, 0.76) }]}>
-                Community
+                News Intelligence
               </Text>
               <Text
                 style={[
@@ -223,7 +224,7 @@ export default function FinanceCommunityScreen() {
                   { color: hexToRgba(colors.text, 0.56), fontSize: scaleFont(12, 0.76) },
                 ]}
               >
-                Explore finance-related posts from people.
+                Monitor high-impact signals, then jump into community context and learning.
               </Text>
             </View>
             <Pressable
@@ -242,6 +243,75 @@ export default function FinanceCommunityScreen() {
               <MaterialIcons name="notifications-none" size={scale(22, 0.72)} color={colors.text} />
             </Pressable>
           </View>
+
+          <CommunityCard style={styles.intelligenceCard}>
+            <View style={styles.intelligenceHeader}>
+              <View style={styles.intelligenceHeaderCopy}>
+                <Text style={[styles.intelligenceTitle, { color: colors.text, fontSize: scaleFont(18, 0.76) }]}>
+                  High-impact briefings
+                </Text>
+                <Text
+                  style={[
+                    styles.intelligenceBody,
+                    { color: hexToRgba(colors.text, 0.54), fontSize: scaleFont(12, 0.76) },
+                  ]}
+                >
+                  Proposal-first view: macro events are surfaced before discussion noise.
+                </Text>
+              </View>
+              <Pressable onPress={() => router.push('/news-resources-articles')}>
+                <Text style={[styles.sectionLink, { color: colors.primaryDark, fontSize: scaleFont(12, 0.76) }]}>
+                  Open news
+                </Text>
+              </Pressable>
+            </View>
+
+            {proposalNewsSignals.slice(0, 2).map((signal) => (
+              <Pressable
+                key={signal.id}
+                onPress={() => router.push(signal.route)}
+                style={[
+                  styles.intelligenceSignalRow,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.pointIcon,
+                    { backgroundColor: hexToRgba(colors[signal.tone], 0.12) },
+                  ]}
+                >
+                  <MaterialIcons name={signal.icon} size={scale(16, 0.72)} color={colors[signal.tone]} />
+                </View>
+                <View style={styles.intelligenceSignalCopy}>
+                  <Text
+                    style={[
+                      styles.intelligenceSignalTitle,
+                      { color: colors.text, fontSize: scaleFont(14, 0.76) },
+                    ]}
+                  >
+                    {signal.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.intelligenceSignalImpact,
+                      { color: colors[signal.tone], fontSize: scaleFont(11, 0.76) },
+                    ]}
+                  >
+                    {signal.impact}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.intelligenceSignalSymbol,
+                      { color: hexToRgba(colors.text, 0.48), fontSize: scaleFont(11, 0.76) },
+                    ]}
+                  >
+                    {signal.symbol}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </CommunityCard>
 
           <CommunityCard style={styles.tabCard}>
             <View
@@ -420,10 +490,10 @@ export default function FinanceCommunityScreen() {
       >
         <View style={styles.heroWrap}>
           <Text style={[styles.eyebrow, { color: colors.primaryDark, fontSize: scaleFont(13, 0.76) }]}>
-            FINPAL SOCIAL
+            GOALWEALTH INTELLIGENCE
           </Text>
           <Text style={[styles.title, { color: colors.text, fontSize: scaleFont(31, 0.76) }]}>
-            finpal Finance Community
+            News intelligence and community in one place
           </Text>
           <Text
             style={[
@@ -434,8 +504,8 @@ export default function FinanceCommunityScreen() {
               },
             ]}
           >
-            Let&apos;s join a community where everyone is learning to spend smarter, save consistently
-            and grow together.
+            Track macro and market signals first, then move into community discussion, workshops and
+            practical finance stories.
           </Text>
         </View>
 
@@ -493,6 +563,70 @@ export default function FinanceCommunityScreen() {
           </View>
         </CommunityCard>
 
+        <CommunityCard style={styles.intelligenceCard}>
+          <View style={styles.intelligenceHeader}>
+            <View style={styles.intelligenceHeaderCopy}>
+              <Text style={[styles.intelligenceTitle, { color: colors.text, fontSize: scaleFont(18, 0.76) }]}>
+                What this tab now covers
+              </Text>
+              <Text
+                style={[
+                  styles.intelligenceBody,
+                  { color: hexToRgba(colors.text, 0.54), fontSize: scaleFont(12, 0.76) },
+                ]}
+              >
+                Proposal-aligned modules bring together signals, explainers, workshops and community.
+              </Text>
+            </View>
+          </View>
+
+          {proposalNewsSignals.map((signal) => (
+            <Pressable
+              key={signal.id}
+              onPress={() => router.push(signal.route)}
+              style={[
+                styles.intelligenceSignalRow,
+                { borderBottomColor: colors.border },
+              ]}
+            >
+              <View
+                style={[
+                  styles.pointIcon,
+                  { backgroundColor: hexToRgba(colors[signal.tone], 0.12) },
+                ]}
+              >
+                <MaterialIcons name={signal.icon} size={scale(16, 0.72)} color={colors[signal.tone]} />
+              </View>
+              <View style={styles.intelligenceSignalCopy}>
+                <Text
+                  style={[
+                    styles.intelligenceSignalTitle,
+                    { color: colors.text, fontSize: scaleFont(14, 0.76) },
+                  ]}
+                >
+                  {signal.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.intelligenceSignalImpact,
+                    { color: colors[signal.tone], fontSize: scaleFont(11, 0.76) },
+                  ]}
+                >
+                  {signal.impact}
+                </Text>
+                <Text
+                  style={[
+                    styles.intelligenceSignalSymbol,
+                    { color: hexToRgba(colors.text, 0.48), fontSize: scaleFont(11, 0.76) },
+                  ]}
+                >
+                  {signal.symbol}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </CommunityCard>
+
           <CommunityPrimaryButton
             title="Explore Community"
             onPress={() => {
@@ -534,6 +668,54 @@ function createStyles(colors: ColorTheme) {
     },
     infoCard: {
       gap: 14,
+    },
+    intelligenceCard: {
+      gap: 12,
+    },
+  intelligenceHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  sectionLink: {
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+    intelligenceHeaderCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 4,
+    },
+    intelligenceTitle: {
+      fontWeight: '800',
+      letterSpacing: -0.3,
+    },
+    intelligenceBody: {
+      lineHeight: 18,
+      fontWeight: '500',
+    },
+    intelligenceSignalRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+    },
+    intelligenceSignalCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 3,
+    },
+    intelligenceSignalTitle: {
+      fontWeight: '700',
+      lineHeight: 18,
+    },
+    intelligenceSignalImpact: {
+      fontWeight: '700',
+    },
+    intelligenceSignalSymbol: {
+      fontWeight: '600',
     },
     pointRow: {
       flexDirection: 'row',

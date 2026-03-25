@@ -34,7 +34,7 @@ const routeMeta: Record<
   assistant: { label: 'Assistant', icon: 'smart-toy' },
   profile: { label: 'Profile', icon: 'person-outline' },
   'smart-budgeting': { label: 'Budgeting', icon: 'savings' },
-  insights: { label: 'Insights', icon: 'bar-chart' },
+  insights: { label: 'Strategy', icon: 'bar-chart' },
   achievements: { label: 'Achievements', icon: 'emoji-events' },
   'news-resources': { label: 'News', icon: 'newspaper' },
   'search-notifications': { label: 'Search', icon: 'search' },
@@ -80,7 +80,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
     {
       id: 'smart-budgeting',
       label: 'Smart Budgeting',
-      body: 'Open the budget workspace, setup and receipt import flows.',
+      body: 'Open the budgeting workspace that keeps your monthly plan executable.',
       icon: routeMeta['smart-budgeting'].icon,
       onPress: () => navigateTo('smart-budgeting'),
       active: currentRouteName === 'smart-budgeting',
@@ -88,7 +88,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
     {
       id: 'news',
       label: 'News',
-      body: 'Jump straight to news, resources and community updates.',
+      body: 'Review market signals, explainers and community discussion in one place.',
       icon: routeMeta['news-resources'].icon,
       onPress: () => navigateTo('news-resources'),
       active: currentRouteName === 'news-resources',

@@ -31,7 +31,7 @@ export default function FinancialAssessmentCommitmentScreen() {
       totalSteps={5}
       eyebrow="Section 5 of 5"
       title="Finish with the challenge and commitment layer."
-      body="The last three screens in the design are merged here: biggest challenge, the commitment phrase and the voice-style confirmation card."
+      body="This closing block captures the user’s biggest blocker, the commitment phrase and the final confirmation layer that supports coaching and follow-up."
       scrollable
       footer={
         <AssessmentPrimaryButton
@@ -164,7 +164,7 @@ export default function FinancialAssessmentCommitmentScreen() {
           </View>
 
           <Text style={[styles.voiceBody, { color: hexToRgba(colors.text, 0.58) }]}>
-            Production can later wire this into real microphone capture. For now the screen preserves the final visual beat from the Figma kit.
+            Voice confirmation is currently presented as a guided readiness step. It can later connect to real audio capture without changing the overall advisor flow.
           </Text>
         </View>
       </AssessmentSectionCard>

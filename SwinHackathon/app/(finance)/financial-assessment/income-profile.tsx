@@ -1,5 +1,7 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import {
+  liquidAssetPresets,
+  obligationPresets,
   incomePresets,
   incomeSourceOptions,
   payFrequencyOptions,
@@ -20,8 +22,15 @@ export default function FinancialAssessmentIncomeProfileScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
-  const { state, setIncomeSourceId, setMonthlyIncome, setSavingsRate, setPayFrequencyId } =
-    useFinancialAssessment();
+  const {
+    state,
+    setIncomeSourceId,
+    setMonthlyIncome,
+    setSavingsRate,
+    setLiquidAssets,
+    setMonthlyObligations,
+    setPayFrequencyId,
+  } = useFinancialAssessment();
   const estimatedSaved = Math.round((state.monthlyIncome * state.savingsRate) / 100);
   const isReady = Boolean(state.incomeSourceId && state.payFrequencyId);
 
@@ -31,7 +40,7 @@ export default function FinancialAssessmentIncomeProfileScreen() {
       totalSteps={5}
       eyebrow="Section 2 of 5"
       title="Capture your income profile in one view."
-      body="The Figma board spreads this across several screens. Here the same information stays together so you can compare source, amount, savings rate and pay cycle without context switching."
+      body="This screen keeps income source, cash-flow strength and pay cadence together so suitability and planning can use a cleaner financial-capacity baseline."
       scrollable
       footer={
         <AssessmentPrimaryButton
@@ -48,7 +57,9 @@ export default function FinancialAssessmentIncomeProfileScreen() {
             ${state.monthlyIncome.toLocaleString()}
           </Text>
           <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.6) }]}>
-            About ${estimatedSaved.toLocaleString()} saved monthly at your current pace.
+            About ${estimatedSaved.toLocaleString()} saved monthly at your current pace, with
+            ${` ${state.liquidAssets.toLocaleString()} `}in liquid assets and
+            ${` ${state.monthlyObligations.toLocaleString()} `}in monthly obligations.
           </Text>
         </View>
         <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
@@ -221,6 +232,73 @@ export default function FinancialAssessmentIncomeProfileScreen() {
               >
                 <MaterialIcons name="add" size={20} color={colors.text} />
               </Pressable>
+            </View>
+          </View>
+        </View>
+      </AssessmentSectionCard>
+
+      <AssessmentSectionCard
+        title="Liquidity and obligations"
+        body="These figures strengthen the financial-capacity side of the assessment and later influence suitability checks."
+      >
+        <View style={styles.dualMetricGrid}>
+          <View
+            style={[
+              styles.amountCard,
+              { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.amountLabel, { color: hexToRgba(colors.text, 0.5) }]}>
+              Liquid assets
+            </Text>
+            <Text style={[styles.amountValue, { color: colors.primaryDark }]}>
+              ${state.liquidAssets.toLocaleString()}
+            </Text>
+            <View style={styles.presetWrap}>
+              {liquidAssetPresets.map((item) => (
+                <Pressable
+                  key={item}
+                  style={[
+                    styles.presetChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                  onPress={() => setLiquidAssets(item)}
+                >
+                  <Text style={[styles.presetText, { color: colors.text }]}>
+                    ${item.toLocaleString()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.amountCard,
+              { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.amountLabel, { color: hexToRgba(colors.text, 0.5) }]}>
+              Monthly obligations
+            </Text>
+            <Text style={[styles.amountValue, { color: colors.warning }]}>
+              ${state.monthlyObligations.toLocaleString()}
+            </Text>
+            <View style={styles.presetWrap}>
+              {obligationPresets.map((item) => (
+                <Pressable
+                  key={item}
+                  style={[
+                    styles.presetChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                  onPress={() => setMonthlyObligations(item)}
+                >
+                  <Text style={[styles.presetText, { color: colors.text }]}>
+                    ${item.toLocaleString()}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
         </View>
@@ -467,6 +545,9 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginTop: 6,
       flexDirection: 'row',
       gap: 10,
+    },
+    dualMetricGrid: {
+      gap: 12,
     },
     frequencyGrid: {
       flexDirection: 'row',

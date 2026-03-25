@@ -29,6 +29,7 @@ export default function AssistantChatScreen() {
     activeScenarioId,
     conversation,
     assistantSettings,
+    customThread,
     selectAssistantScenario,
     sendAssistantMessage,
     getAssistantScenario,
@@ -38,18 +39,21 @@ export default function AssistantChatScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const scenarioParam = Array.isArray(params.scenario) ? params.scenario[0] : params.scenario;
+  const isCustomThread = scenarioParam === 'custom' && customThread;
   const normalizedScenarioId =
     scenarioParam && assistantScenarios.some((item) => item.id === scenarioParam)
       ? scenarioParam
       : activeScenarioId;
 
   useEffect(() => {
-    if (normalizedScenarioId && normalizedScenarioId !== activeScenarioId) {
+    if (!isCustomThread && normalizedScenarioId && normalizedScenarioId !== activeScenarioId) {
       selectAssistantScenario(normalizedScenarioId);
     }
-  }, [activeScenarioId, normalizedScenarioId, selectAssistantScenario]);
+  }, [activeScenarioId, isCustomThread, normalizedScenarioId, selectAssistantScenario]);
 
-  const scenario = getAssistantScenario(normalizedScenarioId) ?? assistantScenarios[0];
+  const scenario = isCustomThread
+    ? customThread
+    : getAssistantScenario(normalizedScenarioId) ?? assistantScenarios[0];
 
   return (
     <KeyboardAvoidingView

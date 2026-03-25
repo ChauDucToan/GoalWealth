@@ -4,10 +4,16 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   financialGoalInsights,
   financialGoalIntroHighlights,
-  financialGoals,
+  getGoalsByPriority,
   getGoalTransferSummary,
 } from '@/components/financial-goals/data';
-import { GoalHistoryCard, GoalProgressRing } from '@/components/financial-goals/ui';
+import {
+  GoalConflictNotice,
+  GoalHistoryCard,
+  GoalPriorityStack,
+  GoalProgressRing,
+  GoalRecommendationSummary,
+} from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
 import { Typography } from '@/constants/theme';
@@ -29,8 +35,9 @@ export default function FinancialGoalsScreen() {
     markFinancialGoalsIntroSeen,
   } = useIntroPreferences();
   const summary = getGoalTransferSummary();
+  const orderedGoals = getGoalsByPriority();
   const overallProgress = summary.totalSaved / summary.totalTarget;
-  const leadGoal = financialGoals[0];
+  const leadGoal = orderedGoals[0];
 
   if (!isIntroPreferencesReady) {
     return (
@@ -47,7 +54,7 @@ export default function FinancialGoalsScreen() {
     return (
       <FinanceScreen
         title="Financial Goals"
-        subtitle="Create, fund and review each savings target from one clean workspace."
+        subtitle="Create, prioritize and fund each goal from one planning workspace."
       >
         <View style={styles.stack}>
           <FinanceCard
@@ -62,13 +69,13 @@ export default function FinancialGoalsScreen() {
             <View style={styles.introTop}>
               <View style={styles.introCopy}>
                 <Text style={[styles.introEyebrow, { color: colors.success }]}>Goal center</Text>
-                <Text style={[styles.introTitle, { color: colors.text }]}>
-                  Keep every goal visible and easier to fund.
-                </Text>
-                <Text style={[styles.introBody, { color: hexToRgba(colors.text, 0.58) }]}>
-                  This flow now combines creation, savings account selection, transfer setup,
-                  history and delete states into fewer, clearer screens.
-                </Text>
+              <Text style={[styles.introTitle, { color: colors.text }]}>
+                  Keep every goal visible, prioritized and easier to fund.
+              </Text>
+              <Text style={[styles.introBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                  This flow now combines creation, priority planning, savings account selection,
+                  trade-off review, history and delete states into fewer, clearer screens.
+              </Text>
               </View>
 
               <View style={[styles.introBadge, { backgroundColor: colors.card }]}>
@@ -142,7 +149,7 @@ export default function FinancialGoalsScreen() {
   return (
     <FinanceScreen
       title="Financial Goals"
-      subtitle="Track goal progress, recurring contributions and account-linked savings plans."
+      subtitle="Multi-goal planner with priority order, feasibility signals and funding trade-offs."
       contentStyle={styles.contentStyle}
       rightAccessory={
         <Pressable
@@ -174,7 +181,8 @@ export default function FinancialGoalsScreen() {
               </Text>
               <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
                 saved across {summary.activeGoals} active goals with {formatCurrency(summary.monthlyContribution)}
-                {' '}moving automatically each month
+                {' '}allocated monthly. High-priority goals are funded first before the remaining goals
+                receive residual cash.
               </Text>
             </View>
 
@@ -213,10 +221,10 @@ export default function FinancialGoalsScreen() {
             </View>
             <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
               <Text style={[styles.heroMetricValue, { color: colors.warning }]}>
-                {summary.activeGoals}
+                {summary.highPriorityGoals}
               </Text>
               <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                active goals
+                high-priority goals
               </Text>
             </View>
           </ResponsiveGrid>
@@ -252,15 +260,26 @@ export default function FinancialGoalsScreen() {
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active goals</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Priority funding order</Text>
             <Pressable onPress={() => router.push('/(finance)/financial-goals/create')}>
               <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>New goal</Text>
             </Pressable>
           </View>
 
+          <GoalPriorityStack goals={orderedGoals} />
+        </FinanceCard>
+
+        <FinanceCard>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active goals</Text>
+            <Pressable onPress={() => router.push('/(finance)/financial-goals/history')}>
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>History</Text>
+            </Pressable>
+          </View>
+
           <View style={styles.goalStack}>
-            {financialGoals.map((goal) => {
-              const progress = goal.saved / goal.target;
+            {orderedGoals.map((goal) => {
+              const progress = goal.currentProgress;
 
               return (
                 <Pressable
@@ -284,13 +303,18 @@ export default function FinancialGoalsScreen() {
                     <View style={styles.goalCopy}>
                       <Text style={[styles.goalTitle, { color: colors.text }]}>{goal.title}</Text>
                       <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}>
-                        {goal.category} • {goal.dueLabel}
+                        {goal.priority} priority • {goal.allowedRisk}
                       </Text>
                     </View>
 
-                    <Text style={[styles.goalProgress, { color: goal.accent }]}>
-                      {Math.round(progress * 100)}%
-                    </Text>
+                    <View style={styles.goalProgressWrap}>
+                      <Text style={[styles.goalProgress, { color: goal.accent }]}>
+                        {Math.round(progress * 100)}%
+                      </Text>
+                      <Text style={[styles.goalProgressMeta, { color: hexToRgba(colors.text, 0.48) }]}>
+                        {Math.round(goal.feasibilityProbability * 100)}% feasible
+                      </Text>
+                    </View>
                   </View>
 
                   <View style={[styles.goalTrack, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}>
@@ -307,7 +331,7 @@ export default function FinancialGoalsScreen() {
                       {formatCurrency(goal.saved)} of {formatCurrency(goal.target)}
                     </Text>
                     <Text style={[styles.goalContribution, { color: hexToRgba(colors.text, 0.52) }]}>
-                      +{formatCurrency(goal.monthlyContribution)}/mo
+                      gap {formatCurrency(goal.fundingGap)}
                     </Text>
                   </View>
                 </Pressable>
@@ -315,6 +339,9 @@ export default function FinancialGoalsScreen() {
             })}
           </View>
         </FinanceCard>
+
+        <GoalRecommendationSummary goal={leadGoal} />
+        <GoalConflictNotice conflicts={leadGoal.conflictWithOtherGoals} />
 
         <ResponsiveGrid minItemWidth={190} horizontalPadding={18} gap={12} maxColumns={2}>
           {financialGoalInsights.map((item) => (
@@ -545,6 +572,14 @@ const styles = StyleSheet.create({
   goalProgress: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  goalProgressWrap: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  goalProgressMeta: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   goalTrack: {
     marginTop: 16,

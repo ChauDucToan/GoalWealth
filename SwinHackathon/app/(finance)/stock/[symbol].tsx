@@ -8,6 +8,7 @@ import {
   formatDisplayUnit,
   formatSignedDisplayCurrency,
 } from '@/components/finance/finance-utils';
+import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -23,6 +24,7 @@ function formatSignedPercent(value: number) {
 export default function StockDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { openCustomAssistantThread } = useAssistant();
   const { symbol } = useLocalSearchParams<{ symbol?: string }>();
   const {
     getHoldingBySymbol,
@@ -63,6 +65,43 @@ export default function StockDetailScreen() {
 
   const positionValue = holding ? holding.shares * stock.price : 0;
   const unrealizedPnL = holding ? (stock.price - holding.averageCost) * holding.shares : 0;
+  const stockAdviceTitle = holding
+    ? 'Hold and review concentration'
+    : isWatched
+      ? 'Keep this stock on watch'
+      : 'Review before acting';
+  const stockAdviceBody = holding
+    ? 'You already hold this name. Check goal fit, concentration and timing before adding more exposure.'
+    : isWatched
+      ? 'The name is worth monitoring, but it should be reviewed against your goals before taking a position.'
+      : 'Look at chart context, sector risk and portfolio fit before making a move.';
+
+  const askAboutStock = () => {
+    openCustomAssistantThread({
+      id: `stock-detail-${stock.symbol}`,
+      title: `${stock.symbol} advice`,
+      prompt: `Explain the current advice for ${stock.symbol}.`,
+      icon: 'insights',
+      messages: [
+        {
+          id: `stock-detail-user-${stock.symbol}`,
+          role: 'user',
+          text: `Explain the current advice for ${stock.symbol}.`,
+          meta: 'Now',
+        },
+        {
+          id: `stock-detail-reply-${stock.symbol}`,
+          role: 'assistant',
+          text: `${stock.symbol} is being shown as a decision-support surface, not a direct buy idea. ${stockAdviceBody}`,
+          meta: 'Now',
+        },
+      ],
+    });
+    router.push({
+      pathname: '/(assistant)/chat/[scenario]',
+      params: { scenario: 'custom' },
+    });
+  };
 
   return (
     <FinanceScreen
@@ -149,13 +188,8 @@ export default function StockDetailScreen() {
 
         <View style={styles.buttonRow}>
           <ThemeButton
-            title="Buy now"
-            onPress={() =>
-              router.push({
-                pathname: '/(finance)/buy-stock',
-                params: { symbol: stock.symbol },
-              })
-            }
+            title="Ask Finpal AI"
+            onPress={askAboutStock}
             colorBackground={colors.primaryDark}
             colorText={colors.card}
             style={styles.halfButton}
@@ -171,6 +205,16 @@ export default function StockDetailScreen() {
             ]}
           />
         </View>
+
+        <FinanceCard style={[styles.adviceCard, { backgroundColor: colors.backgroundSoft }]}>
+          <Text style={[styles.adviceLabel, { color: hexToRgba(colors.text, 0.5) }]}>
+            CURRENT ADVICE
+          </Text>
+          <Text style={[styles.adviceTitle, { color: colors.text }]}>{stockAdviceTitle}</Text>
+          <Text style={[styles.adviceBody, { color: hexToRgba(colors.text, 0.56) }]}>
+            {stockAdviceBody}
+          </Text>
+        </FinanceCard>
 
         <MarketDisplayControls
           currency={displayCurrency}
@@ -256,7 +300,7 @@ export default function StockDetailScreen() {
             </View>
           ) : (
             <Text style={[styles.emptyText, { color: hexToRgba(colors.text, 0.58) }]}>
-              You are not holding this stock yet. Use Buy now to add a position.
+              You are not holding this stock yet. Keep it on watch or ask Finpal AI for context.
             </Text>
           )}
         </FinanceCard>
@@ -333,6 +377,23 @@ const styles = StyleSheet.create({
   },
   halfButton: {
     flex: 1,
+  },
+  adviceCard: {
+    gap: 6,
+  },
+  adviceLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  adviceTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  adviceBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
   },
   statRow: {
     flexDirection: 'row',

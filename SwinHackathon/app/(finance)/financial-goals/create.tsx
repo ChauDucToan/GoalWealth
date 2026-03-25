@@ -6,6 +6,8 @@ import {
   getGoalAccountById,
   goalDeadlineOptions,
   goalFrequencyOptions,
+  goalPriorityOptions,
+  goalRiskOptions,
   goalTemplates,
   targetPresets,
 } from '@/components/financial-goals/data';
@@ -42,6 +44,8 @@ export default function CreateFinancialGoalScreen() {
   const [selectedFrequency, setSelectedFrequency] = useState<typeof goalFrequencyOptions[number]>(
     goalFrequencyOptions[2]
   );
+  const [selectedPriority, setSelectedPriority] = useState(goal.priority);
+  const [selectedRisk, setSelectedRisk] = useState(goal.allowedRisk);
   const [selectedDeadline, setSelectedDeadline] = useState<typeof goalDeadlineOptions[number]>(
     goalDeadlineOptions[1]
   );
@@ -49,6 +53,7 @@ export default function CreateFinancialGoalScreen() {
   const selectedTemplateMeta =
     goalTemplates.find((item) => item.id === selectedTemplate) ?? goalTemplates[0];
   const projectedMonths = Math.max(1, Math.ceil(selectedTarget / Math.max(selectedContribution, 1)));
+  const estimatedFundingGap = Math.max(selectedTarget - goal.saved, 0);
   const previewTitle = isEditMode ? goal.title : selectedTemplateMeta.label;
 
   return (
@@ -76,8 +81,8 @@ export default function CreateFinancialGoalScreen() {
                 {previewTitle}
               </Text>
               <Text style={[styles.headerBody, { color: hexToRgba(colors.text, 0.56) }]}>
-                Fewer steps than the original kit flow, but still covers category, amount,
-                cadence, account and preview before saving.
+                This screen keeps the full planning context together: amount, cadence, priority,
+                allowed risk, account selection and planner preview before saving.
               </Text>
             </View>
 
@@ -236,6 +241,63 @@ export default function CreateFinancialGoalScreen() {
         </FinanceCard>
 
         <FinanceCard>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Planner priority</Text>
+          <View style={styles.priorityStack}>
+            {goalPriorityOptions.map((item) => {
+              const active = item.id === selectedPriority;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  style={[
+                    styles.priorityCard,
+                    {
+                      backgroundColor: active ? hexToRgba(colors.primaryDark, 0.08) : colors.card,
+                      borderColor: active ? colors.primaryDark : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedPriority(item.id)}
+                >
+                  <Text style={[styles.priorityLabel, { color: active ? colors.primaryDark : colors.text }]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[styles.priorityBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                    {item.body}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={[styles.fieldLabel, styles.sectionTop, { color: hexToRgba(colors.text, 0.56) }]}>
+            Allowed risk for this goal
+          </Text>
+          <View style={styles.chipRow}>
+            {goalRiskOptions.map((item) => {
+              const active = item.id === selectedRisk;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  style={[
+                    styles.inlineChip,
+                    {
+                      backgroundColor: active ? hexToRgba(colors.success, 0.14) : colors.backgroundSoft,
+                      borderColor: active ? colors.success : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedRisk(item.id)}
+                >
+                  <Text style={[styles.inlineChipText, { color: active ? colors.success : colors.text }]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </FinanceCard>
+
+        <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Savings account</Text>
             <Pressable
@@ -296,20 +358,39 @@ export default function CreateFinancialGoalScreen() {
           <View style={styles.previewMetaGrid}>
             <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}>
               <Text style={[styles.previewMetaValue, { color: colors.success }]}>
-                {selectedFrequency}
+                {selectedPriority}
               </Text>
               <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                transfer rhythm
+                priority level
               </Text>
             </View>
             <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}>
               <Text style={[styles.previewMetaValue, { color: colors.primaryDark }]}>
-                {selectedDeadline}
+                {selectedRisk}
               </Text>
               <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                planning window
+                allowed risk
               </Text>
             </View>
+          </View>
+
+          <View
+            style={[
+              styles.previewExplainCard,
+              {
+                backgroundColor: hexToRgba(colors.primaryDark, 0.06),
+                borderColor: hexToRgba(colors.primaryDark, 0.1),
+              },
+            ]}
+          >
+            <Text style={[styles.previewExplainTitle, { color: colors.text }]}>
+              Planner interpretation
+            </Text>
+            <Text style={[styles.previewExplainBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              A {selectedPriority.toLowerCase()} priority goal with {selectedRisk.toLowerCase()} risk will
+              compete for about {formatCurrency(selectedContribution)}/month. Estimated funding gap after
+              current savings: {formatCurrency(estimatedFundingGap)}.
+            </Text>
           </View>
         </FinanceCard>
 
@@ -480,6 +561,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  priorityStack: {
+    marginTop: 16,
+    gap: 12,
+  },
+  priorityCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    gap: 6,
+  },
+  priorityLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  priorityBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -565,6 +664,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     fontWeight: '700',
+  },
+  previewExplainCard: {
+    marginTop: 16,
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+  },
+  previewExplainTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  previewExplainBody: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 18,
   },
   actionRow: {
     flexDirection: 'row',

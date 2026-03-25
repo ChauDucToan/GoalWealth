@@ -3,6 +3,7 @@ import { FinanceIconName } from '@/components/home/mock-data';
 export type SubscriptionTone = 'primaryDark' | 'success' | 'warning' | 'error';
 export type SubscriptionCycle = 'Monthly' | 'Yearly';
 export type SubscriptionStatus = 'Active' | 'Paused';
+export type SubscriptionSetupType = 'Entertainment' | 'Software' | 'Fitness' | 'Delivery';
 
 export type SubscriptionCharge = {
   id: string;
@@ -45,6 +46,16 @@ export type SubscriptionIntroHighlight = {
   body: string;
   icon: FinanceIconName;
   tone: SubscriptionTone;
+};
+
+export type SubscriptionServiceOption = {
+  id: string;
+  service: string;
+  type: SubscriptionSetupType;
+  amount: number;
+  cycle: SubscriptionCycle;
+  icon: FinanceIconName;
+  accent: string;
 };
 
 export const subscriptionItems: SubscriptionItem[] = [
@@ -134,7 +145,14 @@ export const subscriptionItems: SubscriptionItem[] = [
   },
 ];
 
-export const subscriptionCalendar = [
+export const subscriptionCalendar: {
+  id: string;
+  day: string;
+  month: string;
+  title: string;
+  tone: SubscriptionTone;
+  status: string;
+}[] = [
   { id: 'c1', day: '12', month: 'Jun', title: 'Netflix', tone: 'error', status: 'Due today' },
   { id: 'c2', day: '18', month: 'Jun', title: 'Spotify', tone: 'success', status: 'In 6 days' },
   { id: 'c3', day: '25', month: 'Jun', title: 'Notion', tone: 'primaryDark', status: 'In 13 days' },
@@ -178,9 +196,53 @@ export const subscriptionIntroHighlights: SubscriptionIntroHighlight[] = [
 ];
 
 export const subscriptionCategories = ['Entertainment', 'Music', 'Productivity', 'Health', 'Utilities'];
+export const subscriptionTypes: SubscriptionSetupType[] = [
+  'Entertainment',
+  'Software',
+  'Fitness',
+  'Delivery',
+];
 export const subscriptionCycles: SubscriptionCycle[] = ['Monthly', 'Yearly'];
 export const subscriptionPaymentMethods = ['Main Wallet', 'Visa •• 1260', 'Mastercard •• 4112'];
 export const subscriptionDueDateOptions = ['Jun 12', 'Jun 18', 'Jun 25', 'Jul 04', 'Jul 11'];
+export const subscriptionServices: SubscriptionServiceOption[] = [
+  {
+    id: 'netflix',
+    service: 'Netflix',
+    type: 'Entertainment',
+    amount: 19.1,
+    cycle: 'Monthly',
+    icon: 'smart-display',
+    accent: '#E85D75',
+  },
+  {
+    id: 'spotify',
+    service: 'Spotify',
+    type: 'Entertainment',
+    amount: 12.99,
+    cycle: 'Monthly',
+    icon: 'graphic-eq',
+    accent: '#53B97E',
+  },
+  {
+    id: 'notion',
+    service: 'Notion AI',
+    type: 'Software',
+    amount: 8,
+    cycle: 'Monthly',
+    icon: 'dashboard-customize',
+    accent: '#365CF5',
+  },
+  {
+    id: 'gym',
+    service: 'Pulse Gym',
+    type: 'Fitness',
+    amount: 24,
+    cycle: 'Monthly',
+    icon: 'fitness-center',
+    accent: '#D1A548',
+  },
+];
 
 export function getSubscriptionById(id?: string | null) {
   if (!id) {
@@ -193,16 +255,21 @@ export function getSubscriptionById(id?: string | null) {
 export function getSubscriptionPayments(): SubscriptionPaymentRow[] {
   return subscriptionItems
     .flatMap((item) =>
-      item.charges.map((charge, index) => ({
-        ...charge,
-        subscriptionId: item.id,
-        subscriptionName: item.name,
-        plan: item.plan,
-        paymentMethod: item.paymentMethod,
-        tone: item.tone,
-        icon: item.icon,
-        status: index === 0 && item.status === 'Paused' ? 'Processing' : 'Paid',
-      }))
+      item.charges.map((charge, index) => {
+        const status: SubscriptionPaymentRow['status'] =
+          index === 0 && item.status === 'Paused' ? 'Processing' : 'Paid';
+
+        return {
+          ...charge,
+          subscriptionId: item.id,
+          subscriptionName: item.name,
+          plan: item.plan,
+          paymentMethod: item.paymentMethod,
+          tone: item.tone,
+          icon: item.icon,
+          status,
+        };
+      })
     )
     .sort((left, right) => right.date.localeCompare(left.date));
 }

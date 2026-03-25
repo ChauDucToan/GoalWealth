@@ -35,13 +35,9 @@ export default function SubscriptionSetupCycleScreen() {
               <View>
                 <Text style={[styles.rowText, { color: active ? colors.primaryDark : colors.text }]}>{item}</Text>
                 <Text style={[styles.rowMeta, { color: hexToRgba(colors.text, 0.52) }]}>
-                  {item === 'Weekly'
-                    ? 'Best for weekly memberships or recurring passes'
-                    : item === 'Monthly'
-                      ? 'Best for standard monthly services'
-                      : item === 'Bi-Monthly'
-                        ? 'Best for every-two-month renewals'
-                        : 'Best for annual plans'}
+                  {item === 'Monthly'
+                    ? 'Best for standard monthly services'
+                    : 'Best for annual plans'}
                 </Text>
               </View>
               {active ? <Text style={[styles.rowBadge, { color: colors.primaryDark }]}>Selected</Text> : null}

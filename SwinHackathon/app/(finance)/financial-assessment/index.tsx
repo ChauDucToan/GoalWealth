@@ -1,7 +1,9 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   assessmentFlowBlocks,
+  assessmentOutputHighlights,
   biggestChallengeOptions,
+  buildAssessmentResult,
   financialGoalOptions,
   financeSituationOptions,
   incomeSourceOptions,
@@ -20,7 +22,9 @@ export default function FinancialAssessmentEntryScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const pushRoute = (route: string) => router.push(route as never);
   const { state, restartFirstChunk } = useFinancialAssessment();
+  const result = buildAssessmentResult(state);
 
   const sectionCompletion = {
     essentials: Boolean(state.fullName.trim() && state.purposeId && state.occupation.trim()),
@@ -38,7 +42,6 @@ export default function FinancialAssessmentEntryScreen() {
   } as const;
 
   const completedBlocks = assessmentFlowBlocks.filter((item) => sectionCompletion[item.id]).length;
-  const totalPrompts = assessmentFlowBlocks.reduce((sum, item) => sum + item.stepCount, 0);
   const nextBlock = assessmentFlowBlocks.find((item) => !sectionCompletion[item.id]);
   const nextRoute = nextBlock?.route ?? '/(finance)/financial-assessment/essentials';
   const primaryLabel = nextBlock
@@ -64,7 +67,7 @@ export default function FinancialAssessmentEntryScreen() {
     essentials: state.fullName.trim()
       ? `${state.fullName} • ${state.occupation || 'occupation pending'}`
       : 'Name, work context and purpose',
-    income: `${incomeSourceLabel} • ${payFrequencyLabel}`,
+    income: `${incomeSourceLabel} • ${payFrequencyLabel} • $${state.monthlyObligations.toLocaleString()} obligations`,
     planning: `${state.spendingCategoryIds.length || 0} categories • ${goalLabel}`,
     resilience:
       state.emergencyFundId === 'yes'
@@ -82,10 +85,10 @@ export default function FinancialAssessmentEntryScreen() {
               COMPREHENSIVE ASSESSMENT
             </Text>
             <Text style={[styles.title, { color: colors.text }]}>
-              21 prompts, streamlined into 5 focused blocks.
+              Dynamic assessment with outputs the advisor can actually use.
             </Text>
             <Text style={[styles.body, { color: hexToRgba(colors.text, 0.58) }]}>
-              The original UI kit spreads this onboarding across many screens. The current flow keeps the same information, but groups related prompts to reduce churn and make the logic easier to follow on mobile.
+              GoalWealth uses this flow to combine risk tolerance, financial capacity, behavioural signals and data quality before surfacing planning or portfolio recommendations.
             </Text>
           </View>
           <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
@@ -101,23 +104,23 @@ export default function FinancialAssessmentEntryScreen() {
         <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statRow}>
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{totalPrompts}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{result.riskTolerance.label}</Text>
               <Text style={[styles.statLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                original prompts
+                current risk mode
               </Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>5</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{result.goalReadiness.readinessScore}</Text>
               <Text style={[styles.statLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                optimized blocks
+                readiness score
               </Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{state.fullName ? 'Live' : 'New'}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{result.suitability.status}</Text>
               <Text style={[styles.statLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                profile state
+                suitability
               </Text>
             </View>
           </View>
@@ -137,7 +140,7 @@ export default function FinancialAssessmentEntryScreen() {
                     borderColor: completed ? hexToRgba(colors.primaryDark, 0.24) : colors.border,
                   },
                 ]}
-                onPress={() => router.push(item.route)}
+                onPress={() => pushRoute(item.route)}
               >
                 <View
                   style={[
@@ -198,10 +201,94 @@ export default function FinancialAssessmentEntryScreen() {
           })}
         </View>
 
+        <View style={[styles.outputCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.outputTitle, { color: colors.text }]}>Assessment output</Text>
+            <Text style={[styles.outputMeta, { color: colors.primaryDark }]}>
+              {result.suitability.title}
+            </Text>
+          </View>
+
+          <Text style={[styles.outputBody, { color: hexToRgba(colors.text, 0.58) }]}>
+            {result.riskTolerance.body}
+          </Text>
+
+          <View style={styles.highlightGrid}>
+            {assessmentOutputHighlights.map((item) => (
+              <View
+                key={item.id}
+                style={[
+                  styles.highlightCard,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+              >
+                <View style={[styles.highlightIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.12) }]}>
+                  <MaterialIcons name={item.icon} size={18} color={colors.primaryDark} />
+                </View>
+                <Text style={[styles.highlightTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[styles.highlightBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                  {item.body}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <View
+            style={[
+              styles.guardrailCard,
+              {
+                backgroundColor:
+                  result.suitability.status === 'blocked'
+                    ? hexToRgba(colors.error, 0.08)
+                    : result.suitability.status === 'caution'
+                      ? hexToRgba(colors.warning, 0.08)
+                      : hexToRgba(colors.success, 0.08),
+              },
+            ]}
+          >
+            <Text style={[styles.guardrailTitle, { color: colors.text }]}>
+              {result.suitability.title}
+            </Text>
+            <Text style={[styles.guardrailBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              {result.suitability.body}
+            </Text>
+            <Text style={[styles.guardrailMeta, { color: colors.primaryDark }]}>
+              {result.ocr.title} • {result.ocr.fieldsDetected} detected fields
+            </Text>
+          </View>
+
+          <View style={styles.resultActionStack}>
+            {result.nextActions.map((action) => (
+              <Pressable
+                key={action.id}
+                style={[
+                  styles.resultAction,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+                onPress={() => action.route && pushRoute(action.route)}
+              >
+                <View style={styles.resultActionCopy}>
+                  <Text style={[styles.resultActionTitle, { color: colors.text }]}>
+                    {action.label}
+                  </Text>
+                  <Text style={[styles.resultActionBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                    {action.body}
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name="arrow-forward"
+                  size={18}
+                  color={colors.primaryDark}
+                />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         <View style={[styles.actionGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Pressable
             style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]}
-            onPress={() => router.push(nextRoute)}
+            onPress={() => pushRoute(nextRoute)}
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>{primaryLabel}</Text>
           </Pressable>
@@ -318,6 +405,93 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     },
     sectionList: {
       gap: 12,
+    },
+    outputCard: {
+      borderRadius: 24,
+      borderWidth: 1,
+      padding: 16,
+      gap: 14,
+    },
+    outputTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    outputMeta: {
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    outputBody: {
+      fontSize: Typography.body,
+      lineHeight: 20,
+    },
+    highlightGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    highlightCard: {
+      flexGrow: 1,
+      minWidth: 150,
+      borderRadius: 18,
+      borderWidth: 1,
+      padding: 14,
+      gap: 8,
+    },
+    highlightIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    highlightTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    highlightBody: {
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    guardrailCard: {
+      borderRadius: 18,
+      padding: 14,
+      gap: 6,
+    },
+    guardrailTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    guardrailBody: {
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    guardrailMeta: {
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    resultActionStack: {
+      gap: 10,
+    },
+    resultAction: {
+      borderWidth: 1,
+      borderRadius: 18,
+      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    resultActionCopy: {
+      flex: 1,
+      minWidth: 0,
+      gap: 4,
+    },
+    resultActionTitle: {
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    resultActionBody: {
+      fontSize: 12,
+      lineHeight: 18,
     },
     sectionCard: {
       borderRadius: 24,

@@ -4,8 +4,18 @@ import { StockTrendChart } from '@/components/finance/StockTrendChart';
 import {
   formatCurrency,
   formatDisplayCurrency,
+  formatSignedDisplayCurrency,
 } from '@/components/finance/finance-utils';
-import { budgetCategories, spendingInsights } from '@/components/home/mock-data';
+import { spendingInsights } from '@/components/home/mock-data';
+import {
+  proposalBacktestMetrics,
+  proposalExplainabilityPoints,
+  proposalNewsSignals,
+  proposalRebalanceActions,
+  type ProposalTone,
+} from '@/components/home/proposal-data';
+import { Typography } from '@/constants/theme';
+import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -13,23 +23,21 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Typography } from '@/constants/theme';
 
-function formatSignedPercent(value: number) {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+function toneColor(
+  colors: ReturnType<typeof useTheme>['colors'],
+  tone: ProposalTone
+) {
+  return colors[tone];
 }
 
 export default function InsightsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { openCustomAssistantThread } = useAssistant();
   const { tabBarFloatingClearance } = useTabBarClearance();
-  const { stocks, stockHoldings, watchlistSymbols, displayCurrency, defaultStockSymbol } =
-    useFinance();
-  const [selectedActivityDay, setSelectedActivityDay] = React.useState(
-    spendingInsights[3] ?? spendingInsights[0]
-  );
-  const weeklyAverage =
-    spendingInsights.reduce((sum, item) => sum + item.amount, 0) / spendingInsights.length;
+  const { stocks, stockHoldings, watchlistSymbols, displayCurrency, categories } = useFinance();
+
   const holdings = stockHoldings
     .map((holding) => {
       const stock = stocks.find((item) => item.symbol === holding.symbol);
@@ -39,6 +47,7 @@ export default function InsightsScreen() {
   const watchlist = watchlistSymbols
     .map((symbol) => stocks.find((item) => item.symbol === symbol))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const featuredStock = holdings[0]?.stock ?? watchlist[0] ?? stocks[0];
   const portfolioValue = holdings.reduce(
     (sum, item) => sum + item.holding.shares * item.stock.price,
     0
@@ -47,298 +56,355 @@ export default function InsightsScreen() {
     (sum, item) => sum + item.holding.shares * item.stock.dayChange,
     0
   );
-  const featuredStock =
-    stocks.find((item) => item.symbol === defaultStockSymbol) ??
-    holdings[0]?.stock ??
-    watchlist[0] ??
-    stocks[0];
+  const mostExposedCategory = [...categories].sort((left, right) => right.spent - left.spent)[0];
+  const hottestSpendingDay =
+    [...spendingInsights].sort((left, right) => right.amount - left.amount)[0] ??
+    spendingInsights[0];
+
+  const askAboutFeaturedStock = () => {
+    if (!featuredStock) {
+      return;
+    }
+
+    openCustomAssistantThread({
+      id: `stock-advice-${featuredStock.symbol}`,
+      title: `${featuredStock.symbol} advice`,
+      prompt: `Explain the current advice for ${featuredStock.symbol}.`,
+      icon: 'insights',
+      messages: [
+        {
+          id: `featured-stock-user-${featuredStock.symbol}`,
+          role: 'user',
+          text: `What is your advice for ${featuredStock.symbol} right now?`,
+          meta: 'Now',
+        },
+        {
+          id: `featured-stock-reply-${featuredStock.symbol}`,
+          role: 'assistant',
+          text: `${featuredStock.symbol} should be reviewed against your goals and risk limits first. Use the chart and allocation context before changing exposure.`,
+          meta: 'Now',
+        },
+      ],
+    });
+    router.push({
+      pathname: '/(assistant)/chat/[scenario]',
+      params: { scenario: 'custom' },
+    });
+  };
 
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
       contentContainerStyle={[
         styles.content,
-        { paddingBottom: Math.max(110, tabBarFloatingClearance) },
+        { paddingBottom: Math.max(144, tabBarFloatingClearance) },
       ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={[styles.heroCard, { backgroundColor: colors.primaryDark }]}>
         <Text style={[styles.eyebrow, { color: hexToRgba(colors.card, 0.74) }]}>
-          Insights & markets
+          STRATEGY & EVIDENCE
         </Text>
         <Text style={[styles.title, { color: colors.card }]}>
-          Spending is on track, and your portfolio is still trending upward this week.
+          Every recommendation should show risk context, rebalance logic and historical evidence.
+        </Text>
+        <Text style={[styles.body, { color: hexToRgba(colors.card, 0.8) }]}>
+          This workspace turns holdings, budget pressure and macro news into interpretable moves,
+          not opaque signals.
         </Text>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Portfolio Snapshot</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Portfolio cockpit</Text>
           <Pressable onPress={() => router.push('/(finance)/investments')}>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open</Text>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open desk</Text>
           </Pressable>
         </View>
 
-        <View style={styles.portfolioHeader}>
+        <View style={styles.rowBetween}>
           <View>
-            <Text style={[styles.portfolioValue, { color: colors.text }]}>
+            <Text style={[styles.bigValue, { color: colors.text }]}>
               {formatDisplayCurrency(portfolioValue, displayCurrency)}
             </Text>
             <Text
               style={[
-                styles.portfolioMeta,
+                styles.bigMeta,
                 { color: portfolioDayChange >= 0 ? colors.primaryDark : colors.error },
               ]}
             >
-              {portfolioDayChange >= 0 ? '+' : '-'}
-              {formatDisplayCurrency(Math.abs(portfolioDayChange), displayCurrency)} today
+              {formatSignedDisplayCurrency(portfolioDayChange, displayCurrency)} today
             </Text>
           </View>
-
           <View
             style={[
-              styles.portfolioBadge,
-              { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+              styles.roundBadge,
+              { backgroundColor: hexToRgba(colors.primaryDark, 0.1) },
             ]}
           >
-            <MaterialIcons name="query-stats" size={22} color={colors.primaryDark} />
+            <MaterialIcons name="trending-up" size={22} color={colors.primaryDark} />
           </View>
         </View>
 
         {featuredStock ? (
-          <>
-            <View style={styles.featuredRow}>
+          <View style={styles.chartWrap}>
+            <View style={styles.rowBetween}>
               <View>
-                <Text style={[styles.featuredSymbol, { color: colors.text }]}>
+                <Text style={[styles.stockSymbol, { color: colors.text }]}>
                   {featuredStock.symbol}
                 </Text>
-                <Text style={[styles.featuredName, { color: hexToRgba(colors.text, 0.56) }]}>
+                <Text style={[styles.stockName, { color: hexToRgba(colors.text, 0.52) }]}>
                   {featuredStock.name}
                 </Text>
               </View>
               <Text
                 style={[
-                  styles.featuredChange,
-                  {
-                    color: featuredStock.changePercent >= 0 ? colors.primaryDark : colors.error,
-                  },
+                  styles.stockChange,
+                  { color: featuredStock.changePercent >= 0 ? colors.primaryDark : colors.error },
                 ]}
               >
-                {formatSignedPercent(featuredStock.changePercent)}
+                {featuredStock.changePercent >= 0 ? '+' : ''}
+                {featuredStock.changePercent.toFixed(2)}%
               </Text>
             </View>
 
-            <View style={styles.chartWrap}>
-              <StockTrendChart
-                values={featuredStock.chart}
-                accent={featuredStock.accent}
-                labelColor={hexToRgba(colors.text, 0.44)}
-                height={94}
-                barWidth={10}
-              />
-            </View>
-
-            <View style={styles.buttonRow}>
-              <ThemeButton
-                title="Buy stock"
-                onPress={() =>
-                  router.push({
-                    pathname: '/(finance)/buy-stock',
-                    params: { symbol: featuredStock.symbol },
-                  })
-                }
-                colorBackground={colors.primaryDark}
-                colorText={colors.card}
-                style={styles.halfButton}
-              />
-              <ThemeButton
-                title="View chart"
-                onPress={() =>
-                  router.push({
-                    pathname: '/(finance)/stock/[symbol]',
-                    params: { symbol: featuredStock.symbol },
-                  })
-                }
-                colorBackground={colors.backgroundSoft}
-                colorText={colors.text}
-                style={styles.halfButton}
-              />
-            </View>
-          </>
+            <StockTrendChart
+              values={featuredStock.chart}
+              accent={featuredStock.accent}
+              labelColor={hexToRgba(colors.text, 0.44)}
+              height={96}
+              barWidth={10}
+            />
+          </View>
         ) : null}
+
+        <View style={styles.buttonRow}>
+          <ThemeButton
+            title="Open portfolio"
+            onPress={() => router.push('/(finance)/investments')}
+            colorBackground={colors.primaryDark}
+            colorText={colors.card}
+            style={styles.halfButton}
+          />
+          <ThemeButton
+            title="Ask Finpal AI"
+            onPress={askAboutFeaturedStock}
+            colorBackground={colors.backgroundSoft}
+            colorText={colors.text}
+            style={styles.halfButton}
+          />
+        </View>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Watchlist</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Rebalancing playbook</Text>
           <Pressable onPress={() => router.push('/(finance)/investments')}>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Manage</Text>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Take action</Text>
           </Pressable>
         </View>
 
-        {watchlist.slice(0, 4).map((stock) => (
-          <Pressable
-            key={stock.symbol}
-            style={[
-              styles.watchRow,
-              { borderBottomColor: hexToRgba(colors.primaryDark, 0.08) },
-            ]}
-            onPress={() =>
-              router.push({
-                pathname: '/(finance)/stock/[symbol]',
-                params: { symbol: stock.symbol },
-              })
-            }
-          >
-            <View style={styles.watchLeft}>
-              <View
-                style={[
-                  styles.watchIcon,
-                  { backgroundColor: hexToRgba(stock.accent, 0.12) },
-                ]}
-              >
-                <MaterialIcons name={stock.icon} size={18} color={stock.accent} />
-              </View>
-              <View>
-                <Text style={[styles.watchSymbol, { color: colors.text }]}>{stock.symbol}</Text>
-                <Text style={[styles.watchName, { color: hexToRgba(colors.text, 0.52) }]}>
-                  {stock.sector}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.watchRight}>
-              <Text style={[styles.watchPrice, { color: colors.text }]}>
-                {formatDisplayCurrency(stock.price, displayCurrency)}
-              </Text>
-              <Text
-                style={[
-                  styles.watchChange,
-                  { color: stock.changePercent >= 0 ? colors.primaryDark : colors.error },
-                ]}
-              >
-                {formatSignedPercent(stock.changePercent)}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-      </View>
+        {proposalRebalanceActions.map((action) => {
+          const accent = toneColor(colors, action.tone);
 
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Weekly Activity</Text>
-          <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
-            {selectedActivityDay.label}
-          </Text>
-        </View>
-        <View style={styles.chartRow}>
-          {spendingInsights.map((item) => (
-            <Pressable
-              key={item.label}
-              style={styles.chartColumn}
-              onPress={() => setSelectedActivityDay(item)}
+          return (
+            <View
+              key={action.id}
+              style={[
+                styles.rebalanceRow,
+                { backgroundColor: hexToRgba(accent, 0.06) },
+              ]}
             >
               <View
                 style={[
-                  styles.chartBar,
-                  {
-                    height: 30 + item.value,
-                    backgroundColor:
-                      selectedActivityDay.label === item.label
-                        ? colors.primaryDark
-                        : item.value > 80
-                          ? colors.primaryDark
-                          : hexToRgba(colors.primaryDark, 0.2),
-                  },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.chartLabel,
-                  {
-                    color:
-                      selectedActivityDay.label === item.label
-                        ? colors.primaryDark
-                        : hexToRgba(colors.text, 0.52),
-                  },
+                  styles.rebalanceIcon,
+                  { backgroundColor: hexToRgba(accent, 0.12) },
                 ]}
               >
-                {item.label}
+                <MaterialIcons name={action.icon} size={18} color={accent} />
+              </View>
+              <View style={styles.rebalanceCopy}>
+                <Text style={[styles.rebalanceTitle, { color: colors.text }]}>
+                  {action.title}
+                </Text>
+                <Text style={[styles.rebalanceBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                  {action.body}
+                </Text>
+                <Text style={[styles.rebalanceImpact, { color: accent }]}>{action.impact}</Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Backtesting evidence</Text>
+          <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>5-year view</Text>
+        </View>
+
+        <View style={styles.metricGrid}>
+          {proposalBacktestMetrics.map((metric) => (
+            <View
+              key={metric.id}
+              style={[
+                styles.metricCard,
+                { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.metricLabel, { color: hexToRgba(colors.text, 0.5) }]}>
+                {metric.label}
               </Text>
-            </Pressable>
+              <Text style={[styles.metricValue, { color: colors.text }]}>{metric.value}</Text>
+              <Text style={[styles.metricNote, { color: colors.primaryDark }]}>{metric.note}</Text>
+            </View>
           ))}
+        </View>
+
+        <Text style={[styles.disclaimer, { color: hexToRgba(colors.text, 0.54) }]}>
+          Evidence is presented as context only. It supports decision quality but does not promise
+          future returns.
+        </Text>
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Why the advisor says this</Text>
+          <Pressable onPress={() => router.push('/(tabs)/assistant')}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Ask why</Text>
+          </Pressable>
+        </View>
+
+        {proposalExplainabilityPoints.map((point) => {
+          const accent = toneColor(colors, point.tone);
+
+          return (
+            <View
+              key={point.id}
+              style={[
+                styles.explainRow,
+                { borderBottomColor: hexToRgba(colors.primaryDark, 0.08) },
+              ]}
+            >
+              <View
+                style={[
+                  styles.explainIcon,
+                  { backgroundColor: hexToRgba(accent, 0.12) },
+                ]}
+              >
+                <MaterialIcons name={point.icon} size={18} color={accent} />
+              </View>
+              <View style={styles.explainCopy}>
+                <Text style={[styles.explainTitle, { color: colors.text }]}>{point.title}</Text>
+                <Text style={[styles.explainBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                  {point.body}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Macro and watch signals</Text>
+          <Pressable onPress={() => router.push('/(tabs)/news-resources')}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open news</Text>
+          </Pressable>
+        </View>
+
+        {proposalNewsSignals.map((signal) => {
+          const accent = toneColor(colors, signal.tone);
+
+          return (
+            <Pressable
+              key={signal.id}
+              onPress={() => router.push(signal.route)}
+              style={[
+                styles.signalRow,
+                { borderBottomColor: hexToRgba(colors.primaryDark, 0.08) },
+              ]}
+            >
+              <View
+                style={[
+                  styles.signalIcon,
+                  { backgroundColor: hexToRgba(accent, 0.12) },
+                ]}
+              >
+                <MaterialIcons name={signal.icon} size={18} color={accent} />
+              </View>
+              <View style={styles.signalCopy}>
+                <Text style={[styles.signalTitle, { color: colors.text }]}>{signal.title}</Text>
+                <Text style={[styles.signalImpact, { color: accent }]}>{signal.impact}</Text>
+                <Text style={[styles.signalBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                  {signal.body}
+                </Text>
+                <Text style={[styles.signalSymbol, { color: hexToRgba(colors.text, 0.48) }]}>
+                  {signal.symbol}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Budget pressure points</Text>
+          <Pressable onPress={() => router.push('/(tabs)/smart-budgeting')}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Planner</Text>
+          </Pressable>
         </View>
 
         <View
           style={[
-            styles.activityDetailCard,
-            { backgroundColor: hexToRgba(colors.primaryDark, 0.06) },
+            styles.budgetBanner,
+            { backgroundColor: hexToRgba(colors.warning, 0.08) },
           ]}
         >
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={[styles.activityDetailLabel, { color: hexToRgba(colors.text, 0.52) }]}>
-                {selectedActivityDay.label} spending
-              </Text>
-              <Text style={[styles.activityDetailValue, { color: colors.text }]}>
-                {formatCurrency(selectedActivityDay.amount)}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.activityBadge,
-                { backgroundColor: hexToRgba(colors.primaryDark, 0.1) },
-              ]}
-            >
-              <Text style={[styles.activityBadgeText, { color: colors.primaryDark }]}>
-                {selectedActivityDay.transactions} txns
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[styles.activityDetailBody, { color: hexToRgba(colors.text, 0.58) }]}>
-            Top category: {selectedActivityDay.topCategory}. {selectedActivityDay.summary}
+          <Text style={[styles.budgetBannerTitle, { color: colors.text }]}>
+            Highest category pressure: {mostExposedCategory?.name ?? 'Housing'}
           </Text>
-
-          <Text style={[styles.activityDetailFooter, { color: colors.primaryDark }]}>
-            Weekly average {formatCurrency(weeklyAverage)}
+          <Text style={[styles.budgetBannerBody, { color: hexToRgba(colors.text, 0.56) }]}>
+            Peak spending day this week was {hottestSpendingDay.label} at{' '}
+            {formatCurrency(hottestSpendingDay.amount)}. Review this before the next monthly
+            allocation update.
           </Text>
         </View>
-      </View>
 
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Categories</Text>
-          <Pressable onPress={() => router.push('/(tabs)/smart-budgeting')}>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Open planner</Text>
-          </Pressable>
-        </View>
+        {categories.slice(0, 3).map((category) => {
+          const progress = category.limit > 0 ? category.spent / category.limit : 0;
 
-        {budgetCategories.map((item) => (
-          <View key={item.id} style={styles.categoryRow}>
-            <View style={styles.categoryTextWrap}>
+          return (
+            <View key={category.id} style={styles.categoryRow}>
+              <View style={styles.categoryHeader}>
+                <Text style={[styles.categoryTitle, { color: colors.text }]}>{category.name}</Text>
+                <Text style={[styles.categoryPercent, { color: category.accent }]}>
+                  {Math.round(progress * 100)}%
+                </Text>
+              </View>
+              <Text style={[styles.categoryMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                {formatCurrency(category.spent)} of {formatCurrency(category.limit)}
+              </Text>
               <View
                 style={[
-                  styles.categoryIcon,
-                  { backgroundColor: hexToRgba(item.accent, 0.12) },
+                  styles.progressTrack,
+                  { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
                 ]}
               >
-                <MaterialIcons name={item.icon} size={18} color={item.accent} />
+                <View
+                  style={[
+                    styles.progressValue,
+                    {
+                      width: `${Math.min(progress * 100, 100)}%`,
+                      backgroundColor: category.accent,
+                    },
+                  ]}
+                />
               </View>
-              <Text style={[styles.categoryName, { color: colors.text }]}>{item.name}</Text>
             </View>
-            <Text style={[styles.categoryValue, { color: item.accent }]}>
-              {formatCurrency(item.spent)}
-            </Text>
-          </View>
-        ))}
-
-        <ThemeButton
-          title="Open investment center"
-          onPress={() => router.push('/(finance)/investments')}
-          colorBackground={colors.primaryDark}
-          colorText={colors.card}
-          style={styles.investmentButton}
-        />
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -349,250 +415,263 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingTop: 66,
+    paddingTop: 68,
     paddingHorizontal: 20,
-    paddingBottom: 110,
     gap: 16,
   },
   heroCard: {
-    borderRadius: 26,
-    padding: 20,
-    shadowColor: 'rgba(15,23,42,0.12)',
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 6,
+    borderRadius: 28,
+    padding: 22,
+    gap: 10,
   },
   eyebrow: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   title: {
-    marginTop: 10,
-    fontSize: 22,
-    lineHeight: 30,
-    fontWeight: '800',
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '900',
+    letterSpacing: -0.6,
+  },
+  body: {
+    fontSize: Typography.body,
+    lineHeight: 21,
+    maxWidth: 340,
   },
   card: {
-    borderRadius: 24,
+    borderRadius: 26,
     padding: 18,
-    shadowColor: 'rgba(15,23,42,0.1)',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
+    gap: 14,
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    flexWrap: 'wrap',
   },
   sectionTitle: {
-    fontSize: 17,
+    flex: 1,
+    minWidth: 0,
+    fontSize: 18,
     fontWeight: '800',
+    letterSpacing: -0.3,
   },
   sectionLink: {
-    fontSize: Typography.body,
+    fontSize: 13,
     fontWeight: '700',
   },
-  portfolioHeader: {
-    marginTop: 16,
+  rowBetween: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 14,
-    flexWrap: 'wrap',
+    gap: 12,
   },
-  portfolioValue: {
+  bigValue: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: -0.6,
   },
-  portfolioMeta: {
+  bigMeta: {
     marginTop: 6,
-    fontSize: Typography.body,
+    fontSize: 13,
     fontWeight: '700',
   },
-  portfolioBadge: {
-    width: 48,
-    height: 48,
+  roundBadge: {
+    width: 46,
+    height: 46,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featuredRow: {
-    marginTop: 18,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
+  chartWrap: {
+    gap: 14,
   },
-  featuredSymbol: {
-    fontSize: 18,
+  stockSymbol: {
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  stockName: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stockChange: {
+    fontSize: 14,
     fontWeight: '800',
   },
-  featuredName: {
-    marginTop: 4,
-    fontSize: Typography.body,
-  },
-  featuredChange: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-  },
-  chartWrap: {
-    marginTop: 16,
-  },
   buttonRow: {
-    marginTop: 18,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
   },
   halfButton: {
     flex: 1,
-    flexBasis: 150,
-    minWidth: 0,
   },
-  watchRow: {
-    minHeight: 70,
-    borderBottomWidth: 1,
+  rebalanceRow: {
+    borderRadius: 18,
+    padding: 14,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: 12,
   },
-  watchLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minWidth: 0,
-  },
-  watchIcon: {
+  rebalanceIcon: {
     width: 40,
     height: 40,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  watchSymbol: {
-    fontSize: Typography.body,
-    fontWeight: '800',
-  },
-  watchName: {
-    marginTop: 4,
-    fontSize: Typography.body,
-    flexShrink: 1,
-  },
-  watchRight: {
-    alignItems: 'flex-end',
-    minWidth: 0,
-    marginLeft: 8,
-  },
-  watchPrice: {
-    fontSize: Typography.body,
-    fontWeight: '800',
-  },
-  watchChange: {
-    marginTop: 4,
-    fontSize: Typography.body,
-    fontWeight: '700',
-  },
-  chartRow: {
-    marginTop: 20,
-    height: 150,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  chartColumn: {
-    alignItems: 'center',
-  },
-  chartBar: {
-    width: 24,
-    borderRadius: 12,
-  },
-  chartLabel: {
-    marginTop: 10,
-    fontSize: Typography.body,
-  },
-  activityDetailCard: {
-    marginTop: 18,
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: 'rgba(15,23,42,0.08)',
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
-  },
-  activityDetailLabel: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  activityDetailValue: {
-    marginTop: 6,
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  activityBadge: {
-    minHeight: 28,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityBadgeText: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-  },
-  activityDetailBody: {
-    marginTop: 10,
-    fontSize: Typography.body,
-    lineHeight: 20,
-  },
-  activityDetailFooter: {
-    marginTop: 10,
-    fontSize: Typography.body,
-    fontWeight: '700',
-  },
-  categoryRow: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  categoryTextWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  rebalanceCopy: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
-  categoryIcon: {
+  rebalanceTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  rebalanceBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  rebalanceImpact: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  metricCard: {
+    flexGrow: 1,
+    minWidth: 120,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 4,
+  },
+  metricLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  metricNote: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  disclaimer: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  explainRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  explainIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryName: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-    flexShrink: 1,
+  explainCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
-  categoryValue: {
-    fontSize: Typography.body,
+  explainTitle: {
+    fontSize: 14,
     fontWeight: '800',
   },
-  investmentButton: {
-    marginTop: 20,
-    width: '100%',
+  explainBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  signalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  signalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signalCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
+  },
+  signalTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  signalImpact: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  signalBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  signalSymbol: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  budgetBanner: {
+    borderRadius: 20,
+    padding: 14,
+    gap: 8,
+  },
+  budgetBannerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  budgetBannerBody: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  categoryRow: {
+    gap: 6,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  categoryTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  categoryPercent: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  categoryMeta: {
+    fontSize: 12,
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressValue: {
+    height: '100%',
+    borderRadius: 999,
   },
 });

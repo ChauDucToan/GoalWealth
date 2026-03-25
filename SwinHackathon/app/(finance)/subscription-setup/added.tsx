@@ -33,7 +33,9 @@ export default function SubscriptionSetupAddedScreen() {
         <View style={[styles.checkWrap, { backgroundColor: hexToRgba(colors.primaryDark, 0.1) }]}> 
           <MaterialIcons name="check-circle" size={42} color={colors.primaryDark} />
         </View>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{service.service}</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>
+          {service?.name ?? 'Custom subscription'}
+        </Text>
         <Text style={[styles.cardBody, { color: hexToRgba(colors.text, 0.56) }]}>${state.amount} • {state.cycle} • next on {state.nextPayment}</Text>
         <View style={styles.summaryRow}>
           <View style={[styles.summaryCard, { backgroundColor: colors.backgroundSoft }]}>

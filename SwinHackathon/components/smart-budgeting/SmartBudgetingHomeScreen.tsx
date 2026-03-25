@@ -16,6 +16,7 @@ export function SmartBudgetingHomeScreen() {
   const { isCompact, verticalScale } = useResponsive();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const pushRoute = (route: string) => router.push(route as never);
   const { hasCompletedSetup } = useSmartBudgeting();
   const totalProgress = budgetSummary.spent / budgetSummary.total;
   const quickDestinations = useMemo(
@@ -179,7 +180,7 @@ export function SmartBudgetingHomeScreen() {
             <Pressable
               key={item.id}
               style={[styles.navCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(item.route)}
+              onPress={() => pushRoute(item.route)}
             >
               <View
                 style={[styles.navIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}

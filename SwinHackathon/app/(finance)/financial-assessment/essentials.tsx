@@ -28,7 +28,7 @@ export default function FinancialAssessmentEssentialsScreen() {
       totalSteps={5}
       eyebrow="Section 1 of 5"
       title="Tell us who you are and why you are here."
-      body="The original flow split these questions into several screens. This version keeps the same inputs together so you can finish your profile setup in one pass."
+      body="Identity and purpose stay together here so the advisor can interpret later financial signals with the right user context."
       scrollable
       footer={
         <AssessmentPrimaryButton
@@ -57,7 +57,7 @@ export default function FinancialAssessmentEssentialsScreen() {
 
       <AssessmentSectionCard
         title="About you"
-        body="This block combines the name and occupation steps from the Figma flow."
+        body="Capture the human context that will later shape tone, guidance and follow-up actions."
       >
         <View style={styles.fieldStack}>
           <View>

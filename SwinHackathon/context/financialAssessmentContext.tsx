@@ -7,6 +7,8 @@ export type FinancialAssessmentState = {
   incomeSourceId: string | null;
   monthlyIncome: number;
   savingsRate: number;
+  liquidAssets: number;
+  monthlyObligations: number;
   payFrequencyId: string | null;
   spendingCategoryIds: string[];
   outstandingDebt: number;
@@ -21,6 +23,7 @@ export type FinancialAssessmentState = {
   spendingBehaviourScore: number | null;
   biggestChallengeId: string | null;
   commitmentPhrase: string;
+  ocrImportStatus: 'not-started' | 'review-needed' | 'ready';
   isFirstChunkComplete: boolean;
   isSecondChunkComplete: boolean;
   isThirdChunkComplete: boolean;
@@ -35,6 +38,8 @@ type FinancialAssessmentContextValue = {
   setIncomeSourceId: (value: string) => void;
   setMonthlyIncome: (value: number) => void;
   setSavingsRate: (value: number) => void;
+  setLiquidAssets: (value: number) => void;
+  setMonthlyObligations: (value: number) => void;
   setPayFrequencyId: (value: string) => void;
   toggleSpendingCategoryId: (value: string) => void;
   setOutstandingDebt: (value: number) => void;
@@ -48,6 +53,7 @@ type FinancialAssessmentContextValue = {
   setEmergencyFundMonths: (value: number) => void;
   setSpendingBehaviourScore: (value: number) => void;
   setBiggestChallengeId: (value: string) => void;
+  setOcrImportStatus: (value: 'not-started' | 'review-needed' | 'ready') => void;
   completeFirstChunk: () => void;
   completeSecondChunk: () => void;
   completeThirdChunk: () => void;
@@ -62,6 +68,8 @@ const initialState: FinancialAssessmentState = {
   incomeSourceId: null,
   monthlyIncome: 5000,
   savingsRate: 25,
+  liquidAssets: 9000,
+  monthlyObligations: 1800,
   payFrequencyId: null,
   spendingCategoryIds: [],
   outstandingDebt: 5000,
@@ -76,6 +84,7 @@ const initialState: FinancialAssessmentState = {
   spendingBehaviourScore: null,
   biggestChallengeId: null,
   commitmentPhrase: 'I commit to building a better financial life with Finpal.',
+  ocrImportStatus: 'review-needed',
   isFirstChunkComplete: false,
   isSecondChunkComplete: false,
   isThirdChunkComplete: false,
@@ -98,6 +107,10 @@ export function FinancialAssessmentProvider({ children }: { children: React.Reac
         setState((current) => ({ ...current, monthlyIncome: Math.max(0, Math.round(value)) })),
       setSavingsRate: (value) =>
         setState((current) => ({ ...current, savingsRate: Math.max(0, Math.min(100, Math.round(value))) })),
+      setLiquidAssets: (value) =>
+        setState((current) => ({ ...current, liquidAssets: Math.max(0, Math.round(value)) })),
+      setMonthlyObligations: (value) =>
+        setState((current) => ({ ...current, monthlyObligations: Math.max(0, Math.round(value)) })),
       setPayFrequencyId: (value) => setState((current) => ({ ...current, payFrequencyId: value })),
       toggleSpendingCategoryId: (value) =>
         setState((current) => {
@@ -138,6 +151,7 @@ export function FinancialAssessmentProvider({ children }: { children: React.Reac
       setSpendingBehaviourScore: (value) =>
         setState((current) => ({ ...current, spendingBehaviourScore: Math.max(1, Math.min(5, Math.round(value))) })),
       setBiggestChallengeId: (value) => setState((current) => ({ ...current, biggestChallengeId: value })),
+      setOcrImportStatus: (value) => setState((current) => ({ ...current, ocrImportStatus: value })),
       completeFirstChunk: () => setState((current) => ({ ...current, isFirstChunkComplete: true })),
       completeSecondChunk: () =>
         setState((current) => ({

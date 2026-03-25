@@ -44,3 +44,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# local long-term working memory
+LONG_TERM_MEMORY.md

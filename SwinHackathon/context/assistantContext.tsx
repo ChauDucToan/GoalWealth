@@ -21,11 +21,21 @@ export type AssistantSettings = {
   plan: 'free' | 'pro';
 };
 
+export type AssistantCustomThread = {
+  id: string;
+  title: string;
+  prompt: string;
+  icon: AssistantScenario['icon'];
+  messages: AssistantMessage[];
+};
+
 type AssistantContextValue = {
   activeScenarioId: string;
   conversation: AssistantMessage[];
   assistantSettings: AssistantSettings;
+  customThread: AssistantCustomThread | null;
   selectAssistantScenario: (id: string) => void;
+  openCustomAssistantThread: (thread: AssistantCustomThread) => void;
   sendAssistantMessage: (text: string) => void;
   setAssistantSettings: (patch: Partial<AssistantSettings>) => void;
   resetAssistantMemory: () => void;
@@ -66,6 +76,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [conversation, setConversation] = useState<AssistantMessage[]>(
     buildConversationFromScenario(initialScenario)
   );
+  const [customThread, setCustomThread] = useState<AssistantCustomThread | null>(null);
   const [assistantSettings, setAssistantSettingsState] = useState(initialSettings);
 
   const value = useMemo<AssistantContextValue>(() => {
@@ -79,8 +90,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      setCustomThread(null);
       setActiveScenarioId(scenario.id);
       setConversation(buildConversationFromScenario(scenario));
+    };
+
+    const openCustomAssistantThread = (thread: AssistantCustomThread) => {
+      setCustomThread(thread);
+      setActiveScenarioId('custom');
+      setConversation(thread.messages);
     };
 
     const sendAssistantMessage = (text: string) => {
@@ -114,6 +132,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const resetAssistantMemory = () => {
       setConversation(buildConversationFromScenario(initialScenario));
       setActiveScenarioId(initialScenario?.id ?? defaultAssistantScenarioId);
+      setCustomThread(null);
       setAssistantSettingsState((current) => ({
         ...current,
         memoryNotes: '',
@@ -125,13 +144,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       activeScenarioId,
       conversation,
       assistantSettings,
+      customThread,
       selectAssistantScenario,
+      openCustomAssistantThread,
       sendAssistantMessage,
       setAssistantSettings,
       resetAssistantMemory,
       getAssistantScenario,
     };
-  }, [activeScenarioId, assistantSettings, conversation]);
+  }, [activeScenarioId, assistantSettings, conversation, customThread]);
 
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;
 }

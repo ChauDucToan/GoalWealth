@@ -39,6 +39,7 @@ export default function ProfileScreen() {
   const { tabBarFloatingClearance } = useTabBarClearance();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const pushRoute = (route: string) => router.push(route as never);
   const { profile, notifications, security, display, linkedAccounts, invite, updateNotifications } =
     useProfileSettings();
 
@@ -126,7 +127,7 @@ export default function ProfileScreen() {
             <Pressable
               key={item.id}
               style={[styles.actionCard, { backgroundColor: colors.card }]}
-              onPress={() => router.push(item.route)}
+              onPress={() => pushRoute(item.route)}
             >
               <View
                 style={[
@@ -175,25 +176,25 @@ export default function ProfileScreen() {
               icon="person-outline"
               label="Account"
               summary={`${profile.email} • ${profile.phone}`}
-              onPress={() => router.push('/(profile)/account')}
+              onPress={() => pushRoute('/(profile)/account')}
             />
             <ProfileSettingsRow
               icon="tune"
               label="Preferences"
               summary={`${display.appearance} • ${display.language} • ${display.currency}`}
-              onPress={() => router.push('/(profile)/preferences')}
+              onPress={() => pushRoute('/(profile)/preferences')}
             />
             <ProfileSettingsRow
               icon="notifications-active"
               label="Notification Settings"
               summary={`${enabledNotifications} alerts enabled`}
-              onPress={() => router.push('/(profile)/notifications')}
+              onPress={() => pushRoute('/(profile)/notifications')}
             />
             <ProfileSettingsRow
               icon="credit-card"
               label="Linked Accounts & Cards"
               summary={`${activeAccounts} active sources`}
-              onPress={() => router.push('/(profile)/linked-accounts')}
+              onPress={() => pushRoute('/(profile)/linked-accounts')}
             />
           </View>
         </ProfileSettingsCard>
@@ -209,19 +210,19 @@ export default function ProfileScreen() {
                   ? 'Biometrics on • Login alerts on'
                   : 'Review passcode, password and trusted devices'
               }
-              onPress={() => router.push('/(profile)/security')}
+              onPress={() => pushRoute('/(profile)/security')}
             />
             <ProfileSettingsRow
               icon="lock-outline"
               label="Change Password"
               summary="Refresh account credentials"
-              onPress={() => router.push('/(profile)/password')}
+              onPress={() => pushRoute('/(profile)/password')}
             />
             <ProfileSettingsRow
               icon="pin"
               label="Passcode Protection"
               summary={security.passcodeEnabled ? '4-digit passcode enabled' : 'Set local unlock code'}
-              onPress={() => router.push('/(profile)/passcode')}
+              onPress={() => pushRoute('/(profile)/passcode')}
             />
           </View>
         </ProfileSettingsCard>
@@ -233,13 +234,13 @@ export default function ProfileScreen() {
               icon="support-agent"
               label="Help & Support"
               summary="Feedback, live chat, rating and about"
-              onPress={() => router.push('/(profile)/support')}
+              onPress={() => pushRoute('/(profile)/support')}
             />
             <ProfileSettingsRow
               icon="group-add"
               label="Invite Friends"
               summary={`${invite.rewardLabel} • code ${invite.referralCode}`}
-              onPress={() => router.push('/(profile)/support')}
+              onPress={() => pushRoute('/(profile)/support')}
             />
           </View>
         </ProfileSettingsCard>
