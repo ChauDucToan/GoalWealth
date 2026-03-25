@@ -7,7 +7,9 @@ from .config import AdapterApiConfig
 from .constants import REQUEST_ID_CONTEXT_KEY, USER_CONTEXT_KEY
 from .schemas.auth import UserClaims
 from .services.auth_service import AuthService
+from .services.chat_flow_service import ChatFlowService
 from .services.memory_gateway import MemoryGateway
+from .services.ocr_flow_service import OcrFlowService
 from .services.ocr_gateway import OcrGateway
 from .services.orchestrator_gateway import OrchestratorGateway
 from .services.smart_agent_gateway import SmartAgentGateway
@@ -21,22 +23,56 @@ class ServiceContainer:
     memory_gateway: MemoryGateway
     ocr_gateway: OcrGateway
     smart_agent_gateway: SmartAgentGateway
+    chat_flow_service: ChatFlowService
+    ocr_flow_service: OcrFlowService
+
 
 
 def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
     config = config or AdapterApiConfig.from_env()
+    auth_service = AuthService(config)
+    orchestrator_gateway = OrchestratorGateway(config)
+    memory_gateway = MemoryGateway(config)
+    ocr_gateway = OcrGateway(config)
+    smart_agent_gateway = SmartAgentGateway(config)
+    chat_flow_service = ChatFlowService(
+        orchestrator_gateway=orchestrator_gateway,
+        memory_gateway=memory_gateway,
+        smart_agent_gateway=smart_agent_gateway,
+    )
+    ocr_flow_service = OcrFlowService(
+        ocr_gateway=ocr_gateway,
+    )
     return ServiceContainer(
         config=config,
-        auth_service=AuthService(config),
-        orchestrator_gateway=OrchestratorGateway(config),
-        memory_gateway=MemoryGateway(config),
-        ocr_gateway=OcrGateway(config),
-        smart_agent_gateway=SmartAgentGateway(config),
+        auth_service=auth_service,
+        orchestrator_gateway=orchestrator_gateway,
+        memory_gateway=memory_gateway,
+        ocr_gateway=ocr_gateway,
+        smart_agent_gateway=smart_agent_gateway,
+        chat_flow_service=chat_flow_service,
+        ocr_flow_service=ocr_flow_service,
     )
+
+
+
+def get_services(request: Any) -> ServiceContainer:
+    state = getattr(getattr(request, "app", None), "state", None)
+    services = getattr(state, "services", None)
+    if services is not None:
+        return services
+
+    config = getattr(state, "config", None)
+    services = build_services(config)
+    if state is not None:
+        setattr(state, "services", services)
+    return services
+
 
 
 def get_current_user(request: Any) -> UserClaims | None:
     return getattr(getattr(request, "state", None), USER_CONTEXT_KEY, None)
+
 
 
 def get_request_id(request: Any) -> str | None:

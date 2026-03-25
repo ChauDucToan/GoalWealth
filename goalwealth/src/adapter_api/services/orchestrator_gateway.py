@@ -41,8 +41,9 @@ class OrchestratorGateway:
         context_sources = list(payload.get("context_sources") or [])
         memory_context = payload.get("memory_context")
         smart_agent_context = payload.get("smart_agent_context")
+        context_diagnostics = dict(payload.get("context_diagnostics") or {})
         initial_warnings = list(payload.get("warnings") or [])
-        smart_agent_results = list((smart_agent_context or {}).get("results") or [])
+        smart_agent_results = list(((payload.get("smart_agent_context") or {}).get("results") or []))
 
         return {
             "session_id": session_id,
@@ -61,10 +62,11 @@ class OrchestratorGateway:
                 "smart_agent": "smart_agent" in context_sources,
                 "smart_agent_result_count": len(smart_agent_results),
                 "user_present": bool(user_id),
+                "context_diagnostics": context_diagnostics,
             },
             "meta": {
                 "gateway": "orchestrator_placeholder",
-                "openclaw_config_present": bool(self.config.openclaw_base_url),
+                "openclaw_config_present": bool(self.config.openclaw_base_url and self.config.openclaw_token),
                 "environment": self.config.environment,
                 "memory_summary_present": bool(memory_context),
                 "smart_agent_summary_present": bool(smart_agent_context),
@@ -98,6 +100,7 @@ class OrchestratorGateway:
         reply_text = self._extract_gateway_reply_text(data)
         context_sources = list(payload.get("context_sources") or [])
         smart_agent_results = list(((payload.get("smart_agent_context") or {}).get("results") or []))
+        context_diagnostics = dict(payload.get("context_diagnostics") or {})
 
         return {
             "session_id": payload.get("session_id") or session_key,
@@ -109,6 +112,7 @@ class OrchestratorGateway:
                 "smart_agent": "smart_agent" in context_sources,
                 "smart_agent_result_count": len(smart_agent_results),
                 "user_present": bool(payload.get("user_id")),
+                "context_diagnostics": context_diagnostics,
             },
             "meta": {
                 "gateway": "openclaw_gateway_http",
@@ -138,6 +142,7 @@ class OrchestratorGateway:
         message = str(payload.get("message") or "").strip()
         memory_context = payload.get("memory_context")
         smart_agent_context = payload.get("smart_agent_context")
+        context_diagnostics = payload.get("context_diagnostics")
         locale = payload.get("locale") or "vi-VN"
         user_id = payload.get("user_id")
         subject = payload.get("subject")
@@ -150,6 +155,7 @@ class OrchestratorGateway:
             locale=locale,
             memory_context=memory_context,
             smart_agent_context=smart_agent_context,
+            context_diagnostics=context_diagnostics,
         )
 
         endpoint_kind = (self.config.openclaw_http_endpoint or "chat_completions").strip().lower()
@@ -200,6 +206,7 @@ class OrchestratorGateway:
         locale: Any,
         memory_context: Any,
         smart_agent_context: Any,
+        context_diagnostics: Any,
     ) -> str:
         context_payload = {
             "user_id": user_id,
@@ -207,6 +214,7 @@ class OrchestratorGateway:
             "locale": locale,
             "memory_context": memory_context,
             "smart_agent_context": smart_agent_context,
+            "context_diagnostics": context_diagnostics,
         }
         return (
             "GoalWealth adapter request.\n\n"

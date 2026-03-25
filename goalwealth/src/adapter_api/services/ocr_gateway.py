@@ -53,4 +53,8 @@ class OcrGateway:
                 "forwarded": False,
                 "environment": self.config.environment,
             },
+            "diagnostics": {
+                "auth": "attached" if user_id else "anonymous",
+                "normalization": "not_wired",
+            },
         }

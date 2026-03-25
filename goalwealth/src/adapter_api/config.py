@@ -17,6 +17,8 @@ class AdapterApiConfig:
     oidc_issuer: str | None = None
     oidc_audience: str | None = None
     oidc_jwks_url: str | None = None
+    oidc_tokeninfo_url: str = "https://oauth2.googleapis.com/tokeninfo"
+    oidc_timeout_seconds: float = 10.0
     auth_optional: bool = True
     allow_dev_tokens: bool = True
     internal_api_prefix: str = "GOALWEALTH_INTERNAL_API_"
@@ -41,6 +43,11 @@ class AdapterApiConfig:
         auth_optional = auth_optional_raw in {"1", "true", "yes", "on"}
         allow_dev_tokens_raw = os.environ.get("GOALWEALTH_ADAPTER_ALLOW_DEV_TOKENS", "true").strip().lower()
         allow_dev_tokens = allow_dev_tokens_raw in {"1", "true", "yes", "on"}
+        oidc_timeout_raw = os.environ.get("GOALWEALTH_OIDC_TIMEOUT_SECONDS", "10").strip()
+        try:
+            oidc_timeout_seconds = float(oidc_timeout_raw)
+        except ValueError as exc:
+            raise ValueError(f"Invalid GOALWEALTH_OIDC_TIMEOUT_SECONDS: {oidc_timeout_raw!r}") from exc
 
         return cls(
             service_name=os.environ.get("GOALWEALTH_ADAPTER_SERVICE_NAME", "goalwealth-adapter-api"),
@@ -53,6 +60,8 @@ class AdapterApiConfig:
             oidc_issuer=os.environ.get("GOALWEALTH_OIDC_ISSUER"),
             oidc_audience=os.environ.get("GOALWEALTH_OIDC_AUDIENCE"),
             oidc_jwks_url=os.environ.get("GOALWEALTH_OIDC_JWKS_URL"),
+            oidc_tokeninfo_url=os.environ.get("GOALWEALTH_OIDC_TOKENINFO_URL", "https://oauth2.googleapis.com/tokeninfo"),
+            oidc_timeout_seconds=oidc_timeout_seconds,
             auth_optional=auth_optional,
             allow_dev_tokens=allow_dev_tokens,
             internal_api_prefix=os.environ.get("GOALWEALTH_INTERNAL_API_PREFIX", "GOALWEALTH_INTERNAL_API_"),
@@ -74,6 +83,7 @@ class AdapterApiConfig:
             "auth_optional": self.auth_optional,
             "allow_dev_tokens": self.allow_dev_tokens,
             "has_oidc_config": bool(self.oidc_issuer and self.oidc_audience),
+            "oidc_verify_mode": "google_tokeninfo",
             "has_openclaw_config": bool(self.openclaw_base_url and self.openclaw_token),
             "openclaw_agent_id": self.openclaw_agent_id,
             "openclaw_session_prefix": self.openclaw_session_prefix,

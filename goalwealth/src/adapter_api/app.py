@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .config import AdapterApiConfig
+from .dependencies import build_services
 from .middleware import auth, error_handler, request_id
 from .routers import chat, health, internal, ocr
 from .utils.logging import configure_logging
@@ -35,6 +36,7 @@ def create_app() -> Any:
         openapi_url=openapi_url,
     )
     application.state.config = config
+    application.state.services = build_services(config)
 
     @application.get("/", tags=["meta"])
     def root(request: Any = None) -> dict[str, Any]:

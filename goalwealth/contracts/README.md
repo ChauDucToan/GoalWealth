@@ -1,5 +1,5 @@
 # GoalWealth Contracts
 
-- `api/` internal OpenAPI contracts
+- `api/` public + internal OpenAPI contracts
 - `ocr/` OCR ingress + OCR full + OpenClaw view schemas
 - `memory/` memory service view schemas

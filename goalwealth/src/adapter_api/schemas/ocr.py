@@ -8,6 +8,14 @@ from typing import Any
 class OcrIngressRequest:
     raw_text: str
 
+    @classmethod
+    def from_payload(cls, payload: dict[str, Any] | None) -> "OcrIngressRequest":
+        payload = payload or {}
+        raw_text = str(payload.get("raw_text") or "").strip()
+        if not raw_text:
+            raise ValueError("raw_text is required")
+        return cls(raw_text=raw_text)
+
 
 @dataclass(slots=True)
 class OcrIngressAcceptedResponse:
