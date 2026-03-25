@@ -341,6 +341,11 @@ export default function HomeScreen() {
                     return;
                   }
 
+                  if (action.id === 'receipt') {
+                    router.push('/(finance)/subscriptions');
+                    return;
+                  }
+
                   router.push('/(tabs)/transactions');
                 }}
               >
