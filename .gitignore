@@ -6,11 +6,11 @@ dist/
 wheels/
 *.egg-info
 
-aws/config
-aws/credentials
+aws
 
 # Virtual environments
 .venv
+.build
 
 /SwinHackathon/package-lock.json
 

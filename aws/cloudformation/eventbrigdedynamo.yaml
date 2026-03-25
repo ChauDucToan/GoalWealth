@@ -45,6 +45,12 @@ Resources:
   MemoryTable:
     Type: AWS::DynamoDB::Table
     Properties:
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
       TableName: !Ref TableName
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
@@ -62,11 +68,16 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: get-dynamo-query
+      Tags:
+        Environment: test
+        Project: GoalWealth
       Runtime: python3.12
       Handler: index.get_data
       Role: !GetAtt QueryRetrieveMemory.Arn
       Timeout: 30
       MemorySize: 512
+      Architectures:
+        - arm64
       Environment:
         Variables:
           TABLE_NAME: !Ref MemoryTable

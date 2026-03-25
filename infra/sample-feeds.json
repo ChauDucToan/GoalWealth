@@ -1,0 +1,52 @@
+[
+  {
+    "feed_id": "techcrunch-ai",
+    "feed_url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "source_name": "TechCrunch AI",
+    "category": "ai",
+    "status": "active",
+    "priority": 90,
+    "tags": ["ai", "startups", "tech"],
+    "keywords": ["ai", "artificial intelligence", "openai", "anthropic"]
+  },
+  {
+    "feed_id": "aws-ml-blog",
+    "feed_url": "https://aws.amazon.com/blogs/machine-learning/feed/",
+    "source_name": "AWS Machine Learning Blog",
+    "category": "ai",
+    "status": "active",
+    "priority": 85,
+    "tags": ["aws", "ml", "ai", "bedrock"],
+    "keywords": ["aws", "bedrock", "sagemaker", "machine learning"]
+  },
+  {
+    "feed_id": "nvidia-blog",
+    "feed_url": "https://blogs.nvidia.com/feed/",
+    "source_name": "NVIDIA Blog",
+    "category": "ai",
+    "status": "active",
+    "priority": 80,
+    "tags": ["nvidia", "gpu", "ai"],
+    "keywords": ["nvidia", "gpu", "chips", "ai"]
+  },
+  {
+    "feed_id": "the-verge-tech",
+    "feed_url": "https://www.theverge.com/rss/index.xml",
+    "source_name": "The Verge",
+    "category": "technology",
+    "status": "active",
+    "priority": 70,
+    "tags": ["tech", "gadgets", "ai"],
+    "keywords": ["technology", "ai", "gadgets", "software"]
+  },
+  {
+    "feed_id": "nyt-technology",
+    "feed_url": "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+    "source_name": "New York Times Technology",
+    "category": "technology",
+    "status": "active",
+    "priority": 65,
+    "tags": ["technology", "news"],
+    "keywords": ["technology", "news", "ai", "internet"]
+  }
+]
