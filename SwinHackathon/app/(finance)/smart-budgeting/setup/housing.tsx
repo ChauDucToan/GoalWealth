@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from '../_navigation';
 
 const housingOptions = ['Rent', 'Mortgage', 'Family Home'] as const;
 
@@ -19,7 +20,7 @@ export default function SmartBudgetHousingScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/details')}>
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
           <View style={[styles.progressBar, { backgroundColor: colors.border }]}>

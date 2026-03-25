@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from './_navigation';
 
 export default function DeleteBudgetCategoryScreen() {
   const { colors } = useTheme();
@@ -14,7 +15,7 @@ export default function DeleteBudgetCategoryScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: hexToRgba(colors.text, 0.32) }]} edges={['top', 'bottom']}>
-      <Pressable style={styles.scrim} onPress={() => router.back()} />
+      <Pressable style={styles.scrim} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/manage-categories')} />
       <View style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.iconWrap, { backgroundColor: hexToRgba(colors.error, 0.1) }]}>
           <MaterialIcons name="delete-outline" size={28} color={colors.error} />
@@ -27,7 +28,7 @@ export default function DeleteBudgetCategoryScreen() {
           <Pressable style={[styles.dangerButton, { backgroundColor: colors.error }]} onPress={() => router.replace('/(finance)/smart-budgeting/manage-categories')}>
             <Text style={[styles.dangerButtonText, { color: colors.card }]}>Delete Category</Text>
           </Pressable>
-          <Pressable style={[styles.cancelButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable style={[styles.cancelButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/manage-categories')}>
             <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
           </Pressable>
         </View>

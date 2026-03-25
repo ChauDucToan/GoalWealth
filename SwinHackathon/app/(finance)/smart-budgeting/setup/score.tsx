@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from '../_navigation';
 
 const scoreSteps = [
   { id: 'careful', label: 'Very careful', value: 25 },
@@ -25,7 +26,7 @@ export default function SmartBudgetScoreScreen() {
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.back()}
+            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/start-date')}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>

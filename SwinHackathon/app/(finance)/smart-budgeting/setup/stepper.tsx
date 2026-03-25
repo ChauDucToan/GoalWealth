@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from '../_navigation';
 
 export default function SmartBudgetStepperScreen() {
   const { colors } = useTheme();
@@ -38,7 +39,7 @@ export default function SmartBudgetStepperScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/status')}>
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
           <View style={[styles.progressBar, { backgroundColor: colors.border }]}>

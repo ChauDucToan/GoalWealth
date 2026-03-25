@@ -2,6 +2,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { goSmartBudgetBack } from '@/app/(finance)/smart-budgeting/_navigation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
@@ -47,7 +48,10 @@ export default function SmartBudgetReceiptScanScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.card }]} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable
+            style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
+            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/receipt-gallery')}
+          >
             <MaterialIcons name="close" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Receipt preview</Text>
@@ -74,7 +78,10 @@ export default function SmartBudgetReceiptScanScreen() {
           >
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Process receipt</Text>
           </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable
+            style={[styles.secondaryButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]}
+            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/receipt-gallery')}
+          >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Retake</Text>
           </Pressable>
         </View>

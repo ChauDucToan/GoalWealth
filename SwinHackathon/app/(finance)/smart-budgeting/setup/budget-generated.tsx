@@ -36,7 +36,10 @@ export default function SmartBudgetGeneratedScreen() {
           <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.replace('/(finance)/smart-budgeting/monthly-budget')}>
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Open Monthly Budget</Text>
           </Pressable>
-          <Pressable style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.push('/(finance)/smart-budgeting/setup/receipt-gallery')}>
+          <Pressable
+            style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.replace('/(finance)/smart-budgeting/setup/receipt-gallery')}
+          >
             <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Import Receipt</Text>
           </Pressable>
         </View>

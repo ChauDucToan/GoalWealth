@@ -2,10 +2,11 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from '../_navigation';
 import { smartBudgetSetupSteps } from '../_data';
 
 export default function SmartBudgetSetupStepScreen() {
@@ -20,6 +21,10 @@ export default function SmartBudgetSetupStepScreen() {
   const [selectedOption, setSelectedOption] = useState(currentStep.options[0]?.id);
 
   const isLastStep = safeIndex === smartBudgetSetupSteps.length - 1;
+  const previousRoute: Href =
+    safeIndex === 0
+      ? '/(finance)/smart-budgeting/setup'
+      : `/(finance)/smart-budgeting/setup/${smartBudgetSetupSteps[safeIndex - 1].id}`;
 
   const onContinue = () => {
     if (isLastStep) {
@@ -37,11 +42,11 @@ export default function SmartBudgetSetupStepScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.back()}
+            onPress={() => goSmartBudgetBack(router, previousRoute)}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
@@ -107,7 +112,7 @@ export default function SmartBudgetSetupStepScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -118,10 +123,10 @@ function createStyles(colors: ColorTheme) {
       flex: 1,
     },
     content: {
-      flex: 1,
+      flexGrow: 1,
       paddingHorizontal: 22,
       paddingTop: 16,
-      paddingBottom: 20,
+      paddingBottom: 28,
     },
     headerRow: {
       flexDirection: 'row',
@@ -207,8 +212,8 @@ function createStyles(colors: ColorTheme) {
       justifyContent: 'center',
     },
     bottomArea: {
-      marginTop: 'auto',
-      paddingTop: 18,
+      marginTop: 24,
+      paddingTop: 8,
     },
     primaryButton: {
       minHeight: 50,

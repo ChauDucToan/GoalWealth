@@ -6,6 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { goSmartBudgetBack } from './_navigation';
 import { budgetCategories } from './_data';
 
 export default function ManageCategoriesScreen() {
@@ -18,6 +19,7 @@ export default function ManageCategoriesScreen() {
       title="Organize Category"
       subtitle="Manage order and jump into create/edit flows like the category management screens in the kit."
       contentStyle={styles.contentStyle}
+      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}

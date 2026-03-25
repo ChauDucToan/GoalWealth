@@ -4,8 +4,9 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from '../_navigation';
 
 const categoryPresets = [4, 6, 8, 10];
 const memberPresets = [1, 2, 3, 4];
@@ -19,11 +20,11 @@ export default function SmartBudgetCategoriesMembersScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.back()}
+            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/household')}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
@@ -146,7 +147,7 @@ export default function SmartBudgetCategoriesMembersScreen() {
           <View style={styles.helperCopy}>
             <Text style={[styles.helperTitle, { color: colors.text }]}>Current planner shape</Text>
             <Text style={[styles.helperBody, { color: hexToRgba(colors.text, 0.54) }]}>
-              We&apos;ll start with {categoryCount} categories and {memberCount} budget member{memberCount > 1 ? 's' : ''}.
+              {"We'll"} start with {categoryCount} categories and {memberCount} budget member{memberCount > 1 ? 's' : ''}.
             </Text>
           </View>
         </View>
@@ -159,7 +160,7 @@ export default function SmartBudgetCategoriesMembersScreen() {
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Continue</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -168,10 +169,10 @@ function createStyles(colors: ColorTheme) {
   return StyleSheet.create({
     screen: { flex: 1 },
     content: {
-      flex: 1,
+      flexGrow: 1,
       paddingHorizontal: 22,
       paddingTop: 16,
-      paddingBottom: 20,
+      paddingBottom: 28,
     },
     headerRow: {
       flexDirection: 'row',
@@ -308,8 +309,8 @@ function createStyles(colors: ColorTheme) {
       fontWeight: '500',
     },
     bottomArea: {
-      marginTop: 'auto',
-      paddingTop: 18,
+      marginTop: 24,
+      paddingTop: 8,
     },
     primaryButton: {
       minHeight: 50,

@@ -7,6 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { goSmartBudgetBack } from './_navigation';
 import { budgetInsights } from './_data';
 
 const weeklyBars = [42, 68, 54, 80, 63, 59, 71];
@@ -43,6 +44,7 @@ export default function BudgetInsightsScreen() {
       title="Budget Insights"
       subtitle="Live pacing, category pressure and the next corrective moves."
       contentStyle={styles.contentStyle}
+      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}

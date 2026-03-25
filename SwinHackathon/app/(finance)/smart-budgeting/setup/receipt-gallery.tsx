@@ -5,6 +5,7 @@ import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+import { goSmartBudgetBack } from '@/app/(finance)/smart-budgeting/_navigation';
 import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ export default function SmartBudgetReceiptGalleryScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.card }]} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable style={[styles.headerButton, { backgroundColor: colors.backgroundSoft, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}>
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Choose receipt source</Text>

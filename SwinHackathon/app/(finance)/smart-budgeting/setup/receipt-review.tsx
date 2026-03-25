@@ -2,8 +2,9 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme } from '@/constants/theme';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { goSmartBudgetBack } from '@/app/(finance)/smart-budgeting/_navigation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +17,9 @@ export default function SmartBudgetReceiptReviewScreen() {
   const { categories, activeReceiptDraft, startReceiptDraft, confirmReceiptImport, getReceiptPreset } =
     useSmartBudgeting();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const receiptScanRoute: Href = receiptId
+    ? { pathname: '/(finance)/smart-budgeting/setup/receipt-scan', params: { receiptId } }
+    : '/(finance)/smart-budgeting/setup/receipt-gallery';
 
   const receipt =
     activeReceiptDraft?.id === receiptId
@@ -56,7 +60,10 @@ export default function SmartBudgetReceiptReviewScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => router.back()}>
+          <Pressable
+            style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => goSmartBudgetBack(router, receiptScanRoute)}
+          >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Review receipt</Text>

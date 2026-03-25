@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { goSmartBudgetBack } from '../_navigation';
 
 const budgetPresets = [1500, 2500, 3500, 5000];
 
@@ -21,7 +22,7 @@ export default function SmartBudgetAmountScreen() {
         <View style={styles.headerRow}>
           <Pressable
             style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => router.back()}
+            onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/setup/categories-members')}
           >
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>

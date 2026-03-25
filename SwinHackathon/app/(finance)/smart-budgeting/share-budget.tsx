@@ -6,6 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { goSmartBudgetBack } from './_navigation';
 import { memberInvites } from './_data';
 
 export default function ShareBudgetScreen() {
@@ -18,6 +19,7 @@ export default function ShareBudgetScreen() {
       title="Budget Together Easily"
       subtitle="QR share, add members and review invite status like the collaboration screens in the kit."
       contentStyle={styles.contentStyle}
+      onBackPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting')}
       rightAccessory={
         <Pressable
           style={[styles.headerAction, { backgroundColor: colors.card, borderColor: colors.border }]}
