@@ -6,7 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { categoryColorOptions, categoryIconOptions } from './_data';
+import { categoryColorOptions, categoryIconOptions } from '@/components/smart-budgeting/data';
 
 export default function EditCategoryScreen() {
   const { colors } = useTheme();

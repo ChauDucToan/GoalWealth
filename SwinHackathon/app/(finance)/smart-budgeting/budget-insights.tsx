@@ -7,7 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { budgetInsights } from './_data';
+import { budgetInsights } from '@/components/smart-budgeting/data';
 
 const weeklyBars = [42, 68, 54, 80, 63, 59, 71];
 const weekLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];

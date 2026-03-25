@@ -6,7 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { memberInvites } from './_data';
+import { memberInvites } from '@/components/smart-budgeting/data';
 
 export default function ShareBudgetScreen() {
   const { colors } = useTheme();

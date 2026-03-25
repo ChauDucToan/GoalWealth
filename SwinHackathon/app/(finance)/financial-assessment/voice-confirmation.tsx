@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { AssessmentPrimaryButton, AssessmentShell } from './_shared';
+import { AssessmentPrimaryButton, AssessmentShell } from '@/components/financial-assessment/shared';
 
 const waveform = [18, 10, 26, 16, 34, 20, 40, 22, 14, 28, 18, 36, 20, 12, 24, 16] as const;
 

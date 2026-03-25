@@ -7,7 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { contributionPresets, goalTemplates, targetPresets } from './_data';
+import { contributionPresets, goalTemplates, targetPresets } from '@/components/financial-goals/data';
 
 export default function CreateFinancialGoalScreen() {
   const { colors } = useTheme();

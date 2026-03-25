@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { AssessmentPrimaryButton, AssessmentShell } from './_shared';
+import { AssessmentPrimaryButton, AssessmentShell } from '@/components/financial-assessment/shared';
 
 export default function FinancialAssessmentDependentsScreen() {
   const { colors } = useTheme();

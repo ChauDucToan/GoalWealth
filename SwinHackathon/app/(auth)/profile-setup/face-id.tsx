@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { ProfileSetupShell, SetupPrimaryButton, SetupSecondaryButton } from './_shared';
+import { ProfileSetupShell, SetupPrimaryButton, SetupSecondaryButton } from '@/components/profile-setup/shared';
 
 export default function FaceIdScreen() {
   const { colors } = useTheme();

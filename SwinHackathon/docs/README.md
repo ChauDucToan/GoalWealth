@@ -37,7 +37,7 @@ Thư mục `docs` hiện đã được tách thành nhiều tài liệu để d�
 ### `HeheBoiz-flow-subscription-management.md`
 
 - Tài liệu riêng cho feature `Subscription Management`.
-- Mô tả data mock, màn overview, detail, add/edit, result và trạng thái hiện tại của flow.
+- Mô tả data mock, intro landing lần đầu, các màn chính, các màn phụ trợ, quyết định tinh gọn flow `Add Plan` và trạng thái hiện tại của feature.
 
 ## Tài liệu bổ sung
 
@@ -48,4 +48,4 @@ Thư mục `docs` hiện đã được tách thành nhiều tài liệu để d�
 
 - Phần timeline lịch sử được tổng hợp từ git history hiện còn trong branch `develop`.
 - Phần kiến trúc và flow được đối chiếu lại trực tiếp với source code hiện có trong repo.
-- `Subscription Management` hiện vẫn đang là thay đổi ở worktree, chưa commit vào git tại thời điểm tạo bộ docs này.
+- `Subscription Management` trong docs đã được cập nhật theo hướng dùng một màn `Add Plan` duy nhất thay vì wizard nhiều bước.

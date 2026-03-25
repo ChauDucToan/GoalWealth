@@ -1,3 +1,4 @@
+import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -127,6 +128,7 @@ function HomeIndicator({
 export default function Index() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { hasSeenWelcome, isIntroPreferencesReady } = useIntroPreferences();
 
   const [phase, setPhase] = useState<LoadingPhase>('splash');
   const [progress, setProgress] = useState(0);
@@ -142,6 +144,10 @@ export default function Index() {
   );
 
   useEffect(() => {
+    if (!isIntroPreferencesReady) {
+      return;
+    }
+
     const timers = [
       setTimeout(() => setPhase('progress'), phaseSchedule.splash),
       setTimeout(() => setPhase('photo'), phaseSchedule.splash + phaseSchedule.progress),
@@ -150,7 +156,7 @@ export default function Index() {
         phaseSchedule.splash + phaseSchedule.progress + phaseSchedule.photo
       ),
       setTimeout(
-        () => router.replace('/welcome'),
+        () => router.replace(hasSeenWelcome ? '/(auth)/signIn' : '/welcome'),
         phaseSchedule.splash +
           phaseSchedule.progress +
           phaseSchedule.photo +
@@ -159,7 +165,7 @@ export default function Index() {
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [phaseSchedule, router]);
+  }, [hasSeenWelcome, isIntroPreferencesReady, phaseSchedule, router]);
 
   useEffect(() => {
     if (phase !== 'progress') {

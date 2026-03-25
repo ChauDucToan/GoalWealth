@@ -6,6 +6,7 @@ import {
   assistantIntroSlides,
   assistantScenarios,
 } from '@/components/assistant/mock-data';
+import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -19,9 +20,12 @@ export default function AssistantTabScreen() {
   const router = useRouter();
   const {
     hasSeenAssistantIntro,
+    isIntroPreferencesReady,
+    markAssistantIntroSeen,
+  } = useIntroPreferences();
+  const {
     activeScenarioId,
     assistantSettings,
-    markAssistantIntroSeen,
     selectAssistantScenario,
     getAssistantScenario,
   } = useAssistant();
@@ -41,6 +45,10 @@ export default function AssistantTabScreen() {
       return 0;
     });
   }, [activeScenarioId]);
+
+  if (!isIntroPreferencesReady) {
+    return <View style={[styles.introScreen, { backgroundColor: colors.backgroundSoft }]} />;
+  }
 
   if (!hasSeenAssistantIntro) {
     const slide = assistantIntroSlides[introIndex];

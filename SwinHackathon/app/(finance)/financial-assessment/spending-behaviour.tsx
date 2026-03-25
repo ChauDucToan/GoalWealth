@@ -4,8 +4,8 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { spendingBehaviourScale } from './_data';
-import { AssessmentPrimaryButton, AssessmentShell } from './_shared';
+import { spendingBehaviourScale } from '@/components/financial-assessment/data';
+import { AssessmentPrimaryButton, AssessmentShell } from '@/components/financial-assessment/shared';
 
 export default function FinancialAssessmentSpendingBehaviourScreen() {
   const { colors } = useTheme();

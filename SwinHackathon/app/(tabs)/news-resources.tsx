@@ -17,6 +17,7 @@ import {
   CommunityTagChip,
 } from '@/components/community/ui';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -33,12 +34,17 @@ function getFirstParam(value?: string | string[]) {
 
 export default function FinanceCommunityScreen() {
   const { colors } = useTheme();
+  const {
+    hasSeenCommunityIntro,
+    isIntroPreferencesReady,
+    markCommunityIntroSeen,
+  } = useIntroPreferences();
   const { scale, verticalScale, scaleFont, isCompact } = useResponsive();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{ stage?: string | string[]; tab?: string | string[] }>();
-  const stage = getFirstParam(params.stage) ?? 'landing';
+  const stage = getFirstParam(params.stage) ?? (hasSeenCommunityIntro ? 'feed' : 'landing');
   const tabParam = getFirstParam(params.tab);
   const [activeTab, setActiveTab] = useState<(typeof feedTabs)[number]>(
     tabParam === 'my-posts' ? 'My Posts' : 'Feed'
@@ -66,9 +72,7 @@ export default function FinanceCommunityScreen() {
 
   const setStage = (nextStage: 'landing' | 'rules' | 'feed', nextTab?: 'feed' | 'my-posts') => {
     const paramsObject =
-      nextStage === 'landing'
-        ? {}
-        : nextStage === 'feed' && nextTab
+      nextStage === 'feed' && nextTab
           ? { stage: nextStage, tab: nextTab }
           : { stage: nextStage };
 
@@ -84,6 +88,10 @@ export default function FinanceCommunityScreen() {
       params: { postId: post.id },
     });
   };
+
+  if (!isIntroPreferencesReady) {
+    return <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']} />;
+  }
 
   if (stage === 'rules') {
     return (
@@ -483,7 +491,13 @@ export default function FinanceCommunityScreen() {
           </View>
         </CommunityCard>
 
-        <CommunityPrimaryButton title="Explore Community" onPress={() => setStage('rules')} />
+          <CommunityPrimaryButton
+            title="Explore Community"
+            onPress={() => {
+              markCommunityIntroSeen();
+              setStage('rules');
+            }}
+          />
       </ScrollView>
     </SafeAreaView>
   );

@@ -5,8 +5,8 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
-import { notificationOptions } from './_data';
-import { ProfileSetupShell, SetupPrimaryButton } from './_shared';
+import { notificationOptions } from '@/components/profile-setup/data';
+import { ProfileSetupShell, SetupPrimaryButton } from '@/components/profile-setup/shared';
 
 export default function NotificationsScreen() {
   const { colors } = useTheme();

@@ -322,29 +322,48 @@ Từ `home`:
 
 ### 12.2. Flow hiện tại
 
-1. `subscriptions` - overview
+1. `subscriptions` - intro landing lần đầu, sau đó là overview
 2. `subscription/[id]` - detail
 3. `subscription-add` - add/edit
-4. `subscription-result` - result state
+4. `subscription-upcoming` - renewal timeline
+5. `subscription-payments` - payment history
+6. `subscription-history` - tracked plans history
+7. `subscription-stats` - overview stats
+8. `subscription-confirm` - confirm pause / activate / cancel
+9. `subscription-result` - result state
 
 ### 12.3. Các đường đi chính
 
 Từ overview:
 
-- `Add Subscription` -> `subscription-add`
-- `Open First Plan` -> `subscription/[id]`
+- `Add Plan` -> `subscription-add`
+- `Open Plan` -> `subscription/[id]` ở chế độ chọn plan
 - bấm vào từng subscription -> `subscription/[id]`
+- `Upcoming renewals` -> `subscription-upcoming`
+- `Recent payments` -> `subscription-payments`
+- `History` -> `subscription-history`
+- `Stats` -> `subscription-stats`
+
+Lần đầu mở `subscriptions`:
+
+- route sẽ hiện intro landing trước
+- sau khi chọn CTA hoặc skip, intro được đánh dấu là đã xem trong phiên chạy hiện tại
 
 Từ detail:
 
 - `Change Plan` -> `subscription-add?preset=...`
-- `Pause Subscription` hoặc `Activate Again` -> `subscription-result`
-- `Cancel Subscription` -> `subscription-result`
+- `Pause Subscription` hoặc `Activate Again` -> `subscription-confirm`
+- `Cancel Subscription` -> `subscription-confirm`
 
 Từ add/edit:
 
-- `Save Subscription` hoặc `Save Changes` -> `subscription-result`
+- `Save Plan` hoặc `Save Changes` -> `subscription-result`
 - `Cancel` -> quay lại màn trước
+
+Lưu ý:
+
+- Đã thử một flow wizard `subscription-create/*` nhiều bước cho `Add Plan`.
+- Flow đó đã được gỡ bỏ để quay về một màn `subscription-add` duy nhất, thân thiện hơn trên mobile và ít thao tác hơn.
 
 Từ result:
 

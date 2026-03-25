@@ -52,7 +52,12 @@ Các thay đổi hiện đang có trong worktree và chưa commit:
 - `app/(finance)/subscriptions.tsx`
 - `app/(finance)/subscription/[id].tsx`
 - `app/(finance)/subscription-add.tsx`
+- `app/(finance)/subscription-confirm.tsx`
+- `app/(finance)/subscription-history.tsx`
+- `app/(finance)/subscription-payments.tsx`
 - `app/(finance)/subscription-result.tsx`
+- `app/(finance)/subscription-stats.tsx`
+- `app/(finance)/subscription-upcoming.tsx`
 - `components/finance/subscription-data.ts`
 
 Nói ngắn gọn:
@@ -1092,9 +1097,12 @@ Chức năng:
 
 ### 5.5. Màn detail: `app/(finance)/subscription/[id].tsx`
 
-Màn này dùng để hiển thị chi tiết của một subscription cụ thể.
+Màn này hiện có 2 vai trò:
 
-Những gì có trong màn:
+- detail screen khi `id` hợp lệ
+- plan selector khi `id` không hợp lệ hoặc `id = select`
+
+Ở chế độ detail, màn có:
 
 - Hero section với icon, tên service, category, plan, description.
 - Status pill hiển thị `Active` hoặc `Paused`.
@@ -1104,34 +1112,34 @@ Những gì có trong màn:
   - next payment
   - started on
   - auto renew
-
-Phần thông tin chi tiết:
-
 - `Billing setup`
-  - payment method
-  - renewal cycle
-  - renewal policy
-
 - `Recent charges`
-  - danh sách charge gần đây
 
 Nhóm hành động:
 
 - `Change Plan`
   - đẩy sang màn add/edit với preset tương ứng
 - `Pause Subscription` hoặc `Activate Again`
-  - đẩy sang result screen với mode tương ứng
+  - đẩy sang màn confirm rồi mới sang result
 - `Cancel Subscription`
   - chỉ hiện khi subscription đang active
+  - cũng đi qua màn confirm
+
+Ở chế độ chọn plan:
+
+- user được tự chọn subscription muốn mở
+- tránh mở mặc định vào một plan bất kỳ
+- hợp hơn với hành vi của nút `Open Plan`
 
 ### 5.6. Màn add/edit: `app/(finance)/subscription-add.tsx`
 
-Đây là màn được dựng thêm trong worktree hiện tại.
+Đây là màn add/edit chính hiện tại của flow.
 
 Mục tiêu:
 
-- Bám tinh thần của các screen add/edit trong bộ `Subscription Management` của UI kit.
-- Cho phép tạo mới hoặc sửa một subscription dưới dạng frontend mock.
+- dùng một màn duy nhất cho create và edit
+- tối ưu thao tác trên mobile
+- gom các field quan trọng vào một chỗ thay vì bắt user đi nhiều bước
 
 Các phần chính:
 
@@ -1147,41 +1155,56 @@ Các phần chính:
 
 #### Choose service
 
-- Có ô search `Search subscription / service`.
+- Có ô search `Search plan or service`.
 - Có lưới card service để chọn nhanh service mẫu.
-- Khi đổi service, một số field bên dưới được cập nhật theo preset của item đó.
+- Khi đổi service, các field cốt lõi bên dưới được cập nhật theo preset của item đó.
 
 #### Subscription setup
 
-Bao gồm:
+Bao gồm các field cốt lõi:
 
 - amount
 - next payment due
 - billing cycle
 - category
 - payment method
-- coupon code
-- description
-- auto renew switch
-- smart reminder switch
+- auto renew
 
-#### Preview card cuối màn
+#### Card hành động cuối màn
 
-- Tóm tắt cấu hình hiện tại.
+- Tóm tắt ngắn cấu hình hiện tại.
 - Có 2 action:
-  - `Save Subscription` hoặc `Save Changes`
+  - `Save Plan` hoặc `Save Changes`
   - `Cancel`
 
 Hành vi:
 
 - Nếu đang sửa một subscription có sẵn, save sẽ đẩy sang result screen với mode `updated`.
 - Nếu là tạo mới, save sẽ đẩy sang result screen với mode `added`.
+- Nếu chưa chọn service, nút save sẽ bị disable.
 
 Lưu ý:
 
 - Đây là frontend flow/mock UI.
 - Chưa ghi vào persistent state thật.
 - Chủ yếu phục vụ hiển thị, tương tác giao diện và điều hướng demo.
+
+#### Cập nhật tinh gọn mới nhất
+
+Đã có một lần thử tách `Add Plan` thành wizard nhiều bước.
+
+Sau khi rà lại UX mobile, flow đó đã được gỡ bỏ để:
+
+- quay về 1 màn add/edit duy nhất
+- giảm số lần điều hướng
+- tránh cảm giác form bị rời rạc
+
+Các phần đã cắt:
+
+- `Coupon code`
+- `Description`
+- `Smart reminder`
+- toàn bộ route `subscription-create/*`
 
 ### 5.7. Màn trạng thái kết quả: `app/(finance)/subscription-result.tsx`
 
@@ -1218,7 +1241,27 @@ Button:
 - `Back to subscriptions`
 - `Add another subscription`
 
-### 5.8. Nối entry từ home
+Cập nhật mới:
+
+- `Add another subscription` hiện quay về `subscription-add`
+- không còn đi sang wizard nhiều bước
+
+### 5.8. Các màn phụ trợ mới
+
+Ngoài 4 màn chính, flow hiện còn có các màn phụ trợ:
+
+- `app/(finance)/subscription-upcoming.tsx`
+- `app/(finance)/subscription-payments.tsx`
+- `app/(finance)/subscription-history.tsx`
+- `app/(finance)/subscription-stats.tsx`
+- `app/(finance)/subscription-confirm.tsx`
+
+Vai trò:
+
+- tách các trạng thái phụ như lịch thanh toán, lịch sử, thống kê và confirm action
+- tránh dồn tất cả mọi thứ vào `subscriptions.tsx`
+
+### 5.9. Nối entry từ home
 
 File:
 
@@ -1234,7 +1277,7 @@ Thay đổi:
 - Từ dashboard có thể đi trực tiếp vào flow subscription mới.
 - Không cần truy cập route thủ công.
 
-### 5.9. Nguyên tắc dùng màu
+### 5.10. Nguyên tắc dùng màu
 
 Đây là điểm quan trọng theo đúng yêu cầu.
 
@@ -1261,7 +1304,7 @@ Các màu accent được dùng từ theme:
 - Flow subscription không bị lệch khỏi palette chung của app.
 - Có thể thay đổi theme token về sau mà màn này vẫn đồng bộ.
 
-### 5.10. Kiểm tra chất lượng
+### 5.11. Kiểm tra chất lượng
 
 Đã chạy lệnh:
 
@@ -1273,13 +1316,7 @@ Kết quả:
 
 - Pass
 
-Lưu ý:
-
-- Trong lần chạy lint đầu có 1 warning import type thừa ở `app/(finance)/subscription/[id].tsx`.
-- Warning đó đã được dọn.
-- Sau khi dọn, lint sạch.
-
-### 5.11. Trạng thái hiện tại của flow subscription
+### 5.12. Trạng thái hiện tại của flow subscription
 
 Các file liên quan:
 
@@ -1287,13 +1324,20 @@ Các file liên quan:
 - `app/(finance)/subscriptions.tsx`
 - `app/(finance)/subscription/[id].tsx`
 - `app/(finance)/subscription-add.tsx`
+- `app/(finance)/subscription-confirm.tsx`
+- `app/(finance)/subscription-history.tsx`
+- `app/(finance)/subscription-payments.tsx`
 - `app/(finance)/subscription-result.tsx`
+- `app/(finance)/subscription-stats.tsx`
+- `app/(finance)/subscription-upcoming.tsx`
 - `app/(tabs)/home.tsx`
 
 Trạng thái:
 
 - Đã dựng UI flow đủ để demo.
 - Đã route được từ home.
+- Đã bỏ flow wizard nhiều bước cho `Add Plan`.
+- Đã rút gọn form add/edit để dễ dùng hơn.
 - Đã lint pass.
 - Chưa commit vào git tại thời điểm viết tài liệu này.
 
@@ -1444,7 +1488,12 @@ Vì vậy:
 - `app/(finance)/subscriptions.tsx`
 - `app/(finance)/subscription/[id].tsx`
 - `app/(finance)/subscription-add.tsx`
+- `app/(finance)/subscription-confirm.tsx`
+- `app/(finance)/subscription-history.tsx`
+- `app/(finance)/subscription-payments.tsx`
 - `app/(finance)/subscription-result.tsx`
+- `app/(finance)/subscription-stats.tsx`
+- `app/(finance)/subscription-upcoming.tsx`
 - `components/finance/subscription-data.ts`
 
 ## 9. Kết luận tổng quát
@@ -1461,12 +1510,12 @@ Nếu tóm gọn thành kết quả thực tế đã đạt được, có thể 
 
 1. Giao diện app đã thích ứng với mobile tốt hơn đáng kể nhờ đợt tối ưu responsive và cơ chế `ResponsiveGrid`.
 2. Một hệ `Finance Community` khá đầy đủ đã được thêm vào repo, cùng với việc làm mới các màn liên quan tới `News & Resources`.
-3. Một flow `Subscription Management` theo cảm hứng từ bộ UI kit `Finpal` đã được dựng ra ở mức frontend demo khá hoàn chỉnh, dùng đúng hệ màu từ `constants/theme.ts`.
+3. Một flow `Subscription Management` theo cảm hứng từ bộ UI kit `Finpal` đã được dựng ra ở mức frontend demo khá hoàn chỉnh, dùng đúng hệ màu từ `constants/theme.ts`, sau đó đã được tinh gọn lại để `Add Plan` quay về một màn duy nhất thân thiện hơn với mobile.
 
 Điểm cần nhớ nhất sau khi đọc xong tài liệu này:
 
 - `News & Resources` hiện đang có thay đổi hành vi ở root tab và cần quyết định rõ có giữ community tại đó hay không.
-- `Subscription Management` hiện đã usable về mặt giao diện nhưng vẫn chưa được commit và chưa có persistence thật.
+- `Subscription Management` hiện đã usable về mặt giao diện, đã có thêm các màn phụ trợ, nhưng vẫn chưa có persistence thật.
 
 ---
 

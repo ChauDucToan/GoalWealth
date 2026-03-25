@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ProfileSetupShell, SetupPrimaryButton } from './_shared';
+import { ProfileSetupShell, SetupPrimaryButton } from '@/components/profile-setup/shared';
 
 export default function PasscodeScreen() {
   const { colors } = useTheme();

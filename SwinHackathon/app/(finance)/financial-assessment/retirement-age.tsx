@@ -4,8 +4,8 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { retirementAgeOptions } from './_data';
-import { AssessmentPrimaryButton, AssessmentShell } from './_shared';
+import { retirementAgeOptions } from '@/components/financial-assessment/data';
+import { AssessmentPrimaryButton, AssessmentShell } from '@/components/financial-assessment/shared';
 
 export default function FinancialAssessmentRetirementAgeScreen() {
   const { colors } = useTheme();

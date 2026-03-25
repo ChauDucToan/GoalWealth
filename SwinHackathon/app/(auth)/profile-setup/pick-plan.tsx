@@ -6,8 +6,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { planOptions } from './_data';
-import { ProfileSetupShell, SetupPrimaryButton } from './_shared';
+import { planOptions } from '@/components/profile-setup/data';
+import { ProfileSetupShell, SetupPrimaryButton } from '@/components/profile-setup/shared';
 
 export default function PickPlanScreen() {
   const { colors } = useTheme();

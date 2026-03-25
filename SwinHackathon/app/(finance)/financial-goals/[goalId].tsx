@@ -7,7 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { financialGoals } from './_data';
+import { financialGoals } from '@/components/financial-goals/data';
 
 export default function FinancialGoalDetailScreen() {
   const { goalId } = useLocalSearchParams<{ goalId: string }>();

@@ -1,5 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { receiptPresets } from '@/app/(finance)/smart-budgeting/_data';
+import { receiptPresets } from '@/components/smart-budgeting/data';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';

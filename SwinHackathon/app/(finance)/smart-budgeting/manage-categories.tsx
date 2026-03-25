@@ -6,7 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { budgetCategories } from './_data';
+import { budgetCategories } from '@/components/smart-budgeting/data';
 
 export default function ManageCategoriesScreen() {
   const { colors } = useTheme();

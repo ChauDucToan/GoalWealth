@@ -1,6 +1,7 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -652,6 +653,7 @@ function HomeIndicator({ colors }: { colors: ColorTheme }) {
 }
 
 export default function WelcomeScreen() {
+  const { markWelcomeSeen } = useIntroPreferences();
   const { colors } = useTheme();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
@@ -742,6 +744,7 @@ export default function WelcomeScreen() {
     }
 
     if (isLastSlide) {
+      markWelcomeSeen();
       router.push('/(auth)/signUp');
       return;
     }
@@ -1030,7 +1033,10 @@ export default function WelcomeScreen() {
           {hasSecondaryButton ? (
             <ThemeButton
               title="Sign In"
-              onPress={() => router.push('/(auth)/signIn')}
+              onPress={() => {
+                markWelcomeSeen();
+                router.push('/(auth)/signIn');
+              }}
               colorBackground={hexToRgba(colors.primaryDark, 0)}
               colorText={colors.primaryDark}
               textStyle={styles.secondaryButtonText}
