@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: GoalWealth EventBridge -> Lambda starter
+
+Resources:
+  RefreshDigestLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: goalwealth-refresh-digest-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+                Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+        Policies:
+          - PolicyName: lambda-basic-logs
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                      - logs:CreateLogGroup
+                      - logs:CreateLogStream
+                      - logs:PutLogEvents
+                  Resource: "*"
+
+  RefreshDigestFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: goalwealth-refresh-digest
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt RefreshDigestLambdaRole.Arn
+      Timeout: 15
+      MemorySize: 256
+      Code:
+        ZipFile: |
+          import json
+
+          def handler(event, context):
+              print("Receive event: ", json.dumps(event))
+
+              detail = event.get("detail", {})
+              user_id = detail.get("userId", "unknown")
+              opened_at = detail.get("openedAt", "unknown")
+
+              result = {
+                  "message": "Refresh workflow triggered",
+                  "userId": user_id,
+                  "openedAt": opened_at
+              }
+
+              print("Result:", json.dumps(result))
+              return result
+
+  AppOpenedRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: goalwealth-app-opened-rule
+      Description: Trigger Lambda when mobile app emits app_opened event
+      EventPattern:
+        source:
+            - goalwealth.mobile
+        detail-type:
+            - goalwealth.app_opened
+      Targets:
+        - Arn: !GetAtt RefreshDigestFunction.Arn
+          Id: RefreshDigestLambdaTarget
+
+  AllowEventBridgeInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RefreshDigestFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AppOpenedRule.Arn
+
+Outputs:
+  LambdaName:
+    Value: !Ref RefreshDigestFunction
+
+  RuleName:
+    Value: !Ref AppOpenedRule

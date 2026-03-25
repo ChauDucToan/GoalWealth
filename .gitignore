@@ -5,10 +5,12 @@ build/
 dist/
 wheels/
 *.egg-info
+
 aws
 
 # Virtual environments
 .venv
+.build
 
 /SwinHackathon/package-lock.json
 

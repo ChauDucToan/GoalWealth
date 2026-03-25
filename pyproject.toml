@@ -6,7 +6,11 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "boto3>=1.42.73",
-    "fastapi[standard]",
+    "botocore>=1.42.73",
+    "feedparser>=6.0.12",
+    "opensearch-py>=3.1.0",
+    "pip>=26.0.1",
+    "requests>=2.32.5",
 ]
 
 [project.optional-dependencies]
