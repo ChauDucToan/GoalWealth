@@ -146,14 +146,15 @@ export default function TransactionsScreen() {
           </View>
         </View>
 
-        <View style={styles.heroActionRow}>
+        <View style={[styles.heroActionRow, isSmallPhone && styles.heroActionRowStack]}>
           <View style={styles.heroButtonWrap}>
             <ThemeButton
               title="Add spending"
               onPress={() => router.push('/(finance)/smart-budgeting/add-spending')}
               colorBackground={colors.card}
               colorText={colors.primaryDark}
-              style={styles.heroButton}
+              style={[styles.heroButton, isSmallPhone && styles.heroButtonStack]}
+              textStyle={styles.heroButtonText}
             />
           </View>
           <View style={styles.heroButtonWrap}>
@@ -168,7 +169,8 @@ export default function TransactionsScreen() {
               }
               colorBackground={hexToRgba(colors.card, 0.16)}
               colorText={colors.card}
-              style={styles.heroButton}
+              style={[styles.heroButton, isSmallPhone && styles.heroButtonStack]}
+              textStyle={styles.heroButtonText}
             />
           </View>
         </View>
@@ -477,18 +479,31 @@ const styles = StyleSheet.create({
   heroActionRow: {
     marginTop: 16,
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: 10,
   },
   heroButtonWrap: {
     flex: 1,
     minWidth: 0,
   },
+  heroActionRowStack: {
+    flexDirection: 'column',
+  },
   heroButton: {
     width: '100%',
+    minWidth: 0,
+  },
+  heroButtonStack: {
+    width: '100%',
+  },
+  heroButtonText: {
+    fontSize: 13,
+    lineHeight: 17,
   },
   filterPanel: {
     borderRadius: 24,
-    padding: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     shadowOpacity: 0.1,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 10 },
@@ -523,21 +538,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterWrap: {
-    marginTop: 16,
+    marginTop: 18,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   filterChip: {
     flex: 1,
     minWidth: 0,
-    minHeight: 40,
+    minHeight: 44,
     borderRadius: 20,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  filterChipThird: {
+    flexBasis: '31%',
   },
   filterText: {
     fontSize: 12,

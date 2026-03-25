@@ -49,18 +49,6 @@ export default function TransactionDetailScreen() {
           params: { merchant: transaction.merchant },
         }),
     },
-    {
-      label: 'In Split',
-      value: transaction.type === 'expense' ? 'No' : 'N/A',
-      action:
-        transaction.type === 'expense'
-          ? () =>
-              router.push({
-                pathname: '/(finance)/split-transaction',
-                params: { id: transaction.id },
-              })
-          : undefined,
-    },
     { label: 'Type', value: transaction.type, action: () => router.push('/(finance)/select-type') },
   ];
 
@@ -127,16 +115,8 @@ export default function TransactionDetailScreen() {
         </View>
       </FinanceCard>
 
-      <FinanceCard style={styles.secondaryCard}>
-        <ThemeButton
-          title="Ignore Transaction"
-          onPress={() => router.push('/(finance)/ignore-transaction')}
-          colorBackground={colors.backgroundSoft}
-          colorText={colors.text}
-          style={styles.secondaryButton}
-        />
-
-        {transaction.status === 'Pending' ? (
+      {transaction.status === 'Pending' ? (
+        <FinanceCard style={styles.secondaryCard}>
           <ThemeButton
             title="Mark as Completed"
             onPress={() => markTransactionCompleted(transaction.id)}
@@ -144,8 +124,8 @@ export default function TransactionDetailScreen() {
             colorText={colors.card}
             style={styles.primaryButton}
           />
-        ) : null}
-      </FinanceCard>
+        </FinanceCard>
+      ) : null}
 
       <FinanceCard style={styles.secondaryCard}>
         <View style={styles.sectionHeader}>
@@ -263,11 +243,8 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     fontWeight: '600',
   },
-  secondaryButton: {
-    marginTop: 0,
-  },
   primaryButton: {
-    marginTop: 12,
+    marginTop: 0,
   },
   sectionHeader: {
     flexDirection: 'row',
