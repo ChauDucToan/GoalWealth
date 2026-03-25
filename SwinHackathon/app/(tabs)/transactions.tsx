@@ -1,17 +1,30 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { groupTransactionsByDate } from '@/components/finance/finance-utils';
-import { merchantHighlights, overviewStats } from '@/components/home/mock-data';
+import { Typography } from '@/constants/theme';
 import { useFinance } from '@/hooks/use-finance';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Typography } from '@/constants/theme';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-type FilterKey = 'all' | 'income' | 'expense' | 'pending';
+type FilterKey = 'all' | 'expense' | 'income';
+
+type TransactionSection = {
+  title: string;
+  data: ReturnType<typeof useFinance>['transactions'];
+};
 
 function formatCurrency(value: number) {
   return `${value < 0 ? '-' : ''}$${Math.abs(value).toFixed(2)}`;
@@ -19,201 +32,185 @@ function formatCurrency(value: number) {
 
 export default function TransactionsScreen() {
   const { colors } = useTheme();
+  const { scaleFont, isSmallPhone } = useResponsive();
   const router = useRouter();
   const { tabBarFloatingClearance } = useTabBarClearance();
-  const { transactions, categories } = useFinance();
+  const { transactions } = useFinance();
+  const { categories, totalBudget, importedReceipts, hasCompletedSetup } = useSmartBudgeting();
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [visibleSectionCount, setVisibleSectionCount] = useState(3);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((item) => {
-      if (filter === 'income') return item.type === 'income';
-      if (filter === 'expense') return item.type === 'expense';
-      if (filter === 'pending') return item.status === 'Pending';
-      return true;
-    });
-  }, [filter, transactions]);
-
-  const groupedTransactions = useMemo(
-    () => groupTransactionsByDate(filteredTransactions),
-    [filteredTransactions]
+  const completedTransactions = useMemo(
+    () => transactions.filter((item) => item.status !== 'Pending'),
+    [transactions]
   );
 
-  const pendingCount = transactions.filter((item) => item.status === 'Pending').length;
+  const filteredTransactions = useMemo(() => {
+    return completedTransactions.filter((item) => {
+      if (filter === 'income') return item.type === 'income';
+      if (filter === 'expense') return item.type === 'expense';
+      return true;
+    });
+  }, [completedTransactions, filter]);
 
-  return (
-    <ScrollView
-      style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingBottom: Math.max(120, tabBarFloatingClearance) },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={[styles.headerCard, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-        <Text style={[styles.title, { color: colors.text }]}>My Transactions</Text>
-        <Text style={[styles.subtitle, { color: hexToRgba(colors.text, 0.56) }]}>
-          Track all money in and out in one place.
+  const sections = useMemo<TransactionSection[]>(() => {
+    return Object.entries(groupTransactionsByDate(filteredTransactions)).map(([title, data]) => ({
+      title,
+      data,
+    }));
+  }, [filteredTransactions]);
+
+  useEffect(() => {
+    setVisibleSectionCount(3);
+  }, [filter, filteredTransactions.length]);
+
+  const visibleSections = useMemo(
+    () => sections.slice(0, visibleSectionCount),
+    [sections, visibleSectionCount]
+  );
+
+  const monthSpent = useMemo(
+    () => categories.reduce((sum, item) => sum + item.spent, 0),
+    [categories]
+  );
+  const leftToSpend = Math.max(totalBudget - monthSpent, 0);
+  const spentRatio = totalBudget > 0 ? monthSpent / totalBudget : 0;
+  const topCategories = useMemo(
+    () => [...categories].sort((left, right) => right.spent - left.spent).slice(0, 4),
+    [categories]
+  );
+  const totalCompletedTransactions = filteredTransactions.length;
+
+  const handleLoadMore = () => {
+    if (visibleSectionCount < sections.length) {
+      setVisibleSectionCount((current) => Math.min(current + 3, sections.length));
+    }
+  };
+
+  const filterOptions: { key: FilterKey; label: string; icon: React.ComponentProps<typeof MaterialIcons>['name'] }[] =
+    [
+      { key: 'all', label: 'All entries', icon: 'grid-view' },
+      { key: 'expense', label: 'Spending', icon: 'north-east' },
+      { key: 'income', label: 'Income', icon: 'south-west' },
+    ];
+
+  const listHeader = (
+    <View style={styles.headerStack}>
+      <View style={[styles.heroCard, { backgroundColor: colors.primaryDark, shadowColor: colors.shadow }]}>
+        <Text style={[styles.heroEyebrow, { color: hexToRgba(colors.card, 0.72) }]}>
+          My Transactions
+        </Text>
+        <Text
+          style={[
+            styles.heroTitle,
+            { color: colors.card, fontSize: isSmallPhone ? scaleFont(24, 0.7) : scaleFont(28, 0.72) },
+          ]}
+        >
+          Spending detail and smart budget in one view.
+        </Text>
+        <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.82) }]}>
+          Track category pace, receipt imports and every completed entry without leaving the budget flow.
         </Text>
 
-        <Pressable
-          style={[
-            styles.searchRow,
-            {
-              borderColor: hexToRgba(colors.primaryDark, 0.12),
-              backgroundColor: hexToRgba(colors.primaryDark, 0.03),
-            },
-          ]}
-          onPress={() => router.push('/(finance)/transactions-search')}
-        >
-          <MaterialIcons name="search" size={20} color={hexToRgba(colors.text, 0.46)} />
-          <Text style={[styles.searchText, { color: hexToRgba(colors.text, 0.42) }]}>
-            Search merchant, category, reference
-          </Text>
-        </Pressable>
-
-        <View style={styles.summaryRow}>
-          <View
-            style={[
-              styles.summaryCard,
-              {
-                backgroundColor: hexToRgba(colors.primaryDark, 0.08),
-                shadowColor: colors.shadow,
-              },
-            ]}
-          >
-            <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.58) }]}>
-              Income
+        <View style={styles.heroMetricRow}>
+          <View style={[styles.heroMetricCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
+            <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>
+              Month spent
             </Text>
-            <Text style={[styles.summaryValue, { color: colors.primaryDark }]}>
-              {formatCurrency(overviewStats.income)}
+            <Text style={[styles.heroMetricValue, { color: colors.card }]}>
+              {formatCurrency(monthSpent)}
             </Text>
           </View>
 
-          <View
-            style={[
-              styles.summaryCard,
-              {
-                backgroundColor: hexToRgba(colors.error, 0.08),
-                shadowColor: colors.shadow,
-              },
-            ]}
-          >
-            <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.58) }]}>
-              Expenses
+          <View style={[styles.heroMetricCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
+            <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>
+              Left to spend
             </Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>
-              {formatCurrency(overviewStats.expenses)}
+            <Text style={[styles.heroMetricValue, { color: colors.card }]}>
+              {formatCurrency(leftToSpend)}
             </Text>
           </View>
 
-          <View
-            style={[
-              styles.summaryCard,
-              {
-                backgroundColor: hexToRgba('#F59E0B', 0.12),
-                shadowColor: colors.shadow,
-              },
-            ]}
-          >
-            <Text style={[styles.summaryLabel, { color: hexToRgba(colors.text, 0.58) }]}>
-              Pending
+          <View style={[styles.heroMetricCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
+            <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>
+              Imports
             </Text>
-            <Text style={[styles.summaryValue, { color: '#B45309' }]}>{pendingCount}</Text>
+            <Text style={[styles.heroMetricValue, { color: colors.card }]}>
+              {importedReceipts.length}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.actionRow}>
+        <View style={styles.heroActionRow}>
           <ThemeButton
-            title="Add"
-            onPress={() => router.push('/(finance)/add-transaction')}
-            colorBackground={colors.primaryDark}
+            title="Add spending"
+            onPress={() => router.push('/(finance)/smart-budgeting/add-spending')}
+            colorBackground={colors.card}
+            colorText={colors.primaryDark}
+            style={styles.heroButton}
+          />
+          <ThemeButton
+            title={hasCompletedSetup ? 'Monthly budget' : 'Start budget setup'}
+            onPress={() =>
+              router.push(
+                hasCompletedSetup
+                  ? '/(finance)/smart-budgeting/monthly-budget'
+                  : '/(finance)/smart-budgeting/setup'
+              )
+            }
+            colorBackground={hexToRgba(colors.card, 0.16)}
             colorText={colors.card}
-            style={styles.actionButton}
+            style={styles.heroButton}
           />
-          <ThemeButton
-            title="Send"
-            onPress={() => router.push('/(finance)/send-money')}
-            colorBackground={colors.backgroundSoft}
-            colorText={colors.text}
-            style={styles.actionButton}
-          />
-          <ThemeButton
-            title="Categories"
-            onPress={() => router.push('/(finance)/categories')}
-            colorBackground={colors.backgroundSoft}
-            colorText={colors.text}
-            style={styles.actionButton}
-          />
-        </View>
-
-        <View style={styles.merchantRow}>
-          {merchantHighlights.map((merchant) => (
-            <Pressable
-              key={merchant.id}
-              style={[
-                styles.merchantChip,
-                { backgroundColor: hexToRgba(merchant.accent, 0.1) },
-              ]}
-              onPress={() =>
-                router.push({
-                  pathname: '/(finance)/merchant/[merchant]',
-                  params: { merchant: merchant.label },
-                })
-              }
-            >
-              <MaterialIcons name={merchant.icon} size={16} color={merchant.accent} />
-              <Text style={[styles.merchantText, { color: colors.text }]}>{merchant.label}</Text>
-            </Pressable>
-          ))}
         </View>
       </View>
 
       <View style={[styles.filterPanel, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-        <View style={styles.filterPanelHeader}>
+        <View style={styles.panelHeader}>
           <View>
-            <Text style={[styles.filterPanelTitle, { color: colors.text }]}>Quick Filters</Text>
-            <Text style={[styles.filterPanelBody, { color: hexToRgba(colors.text, 0.54) }]}>
-              {filteredTransactions.length} transactions visible. Sorting and date range live inside Filters.
+            <Text style={[styles.panelTitle, { color: colors.text }]}>Filters</Text>
+            <Text style={[styles.panelBody, { color: hexToRgba(colors.text, 0.54) }]}>
+              {totalCompletedTransactions} completed entries in view.
             </Text>
           </View>
           <Pressable
             style={[
-              styles.filterWorkspaceButton,
+              styles.iconButton,
               {
-                backgroundColor: hexToRgba(colors.primaryDark, 0.08),
-                borderColor: hexToRgba(colors.primaryDark, 0.12),
+                backgroundColor: colors.backgroundSoft,
+                borderColor: hexToRgba(colors.primaryDark, 0.08),
               },
             ]}
-            onPress={() => router.push('/(finance)/transactions-filters')}
+            onPress={() => router.push('/(finance)/transactions-search')}
           >
-            <MaterialIcons name="tune" size={18} color={colors.primaryDark} />
-            <Text style={[styles.filterWorkspaceButtonText, { color: colors.primaryDark }]}>
-              Filters
-            </Text>
+            <MaterialIcons name="search" size={18} color={colors.text} />
           </Pressable>
         </View>
 
-        <View style={styles.filterRow}>
-          {(['all', 'income', 'expense', 'pending'] as const).map((item) => {
-            const selected = filter === item;
-            const label = item.charAt(0).toUpperCase() + item.slice(1);
-
+        <View style={styles.filterWrap}>
+          {filterOptions.map((item) => {
+            const active = filter === item.key;
             return (
               <Pressable
-                key={item}
+                key={item.key}
                 style={[
                   styles.filterChip,
                   {
-                    backgroundColor: selected ? colors.primaryDark : colors.backgroundSoft,
-                    borderColor: selected
+                    backgroundColor: active ? colors.primaryDark : colors.backgroundSoft,
+                    borderColor: active
                       ? colors.primaryDark
-                      : hexToRgba(colors.primaryDark, 0.1),
+                      : hexToRgba(colors.primaryDark, 0.08),
                   },
                 ]}
-                onPress={() => setFilter(item)}
+                onPress={() => setFilter(item.key)}
               >
-                <Text style={[styles.filterText, { color: selected ? colors.card : colors.text }]}>
-                  {label}
+                <MaterialIcons
+                  name={item.icon}
+                  size={16}
+                  color={active ? colors.card : colors.primaryDark}
+                />
+                <Text style={[styles.filterText, { color: active ? colors.card : colors.text }]}>
+                  {item.label}
                 </Text>
               </Pressable>
             );
@@ -223,88 +220,181 @@ export default function TransactionsScreen() {
 
       <View style={[styles.categoryPanel, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <View style={styles.panelHeader}>
-          <Text style={[styles.panelTitle, { color: colors.text }]}>Top Categories</Text>
-          <Pressable onPress={() => router.push('/(finance)/categories')}>
+          <View>
+            <Text style={[styles.panelTitle, { color: colors.text }]}>Top categories</Text>
+            <Text style={[styles.panelBody, { color: hexToRgba(colors.text, 0.54) }]}>
+              Highest spending categories this month.
+            </Text>
+          </View>
+          <Pressable onPress={() => router.push('/(finance)/smart-budgeting/manage-categories')}>
             <Text style={[styles.panelMeta, { color: colors.primaryDark }]}>Edit</Text>
           </Pressable>
         </View>
 
-        <View style={styles.categoryWrap}>
-          {categories.slice(0, 4).map((item) => (
-            <View
-              key={item.id}
-              style={[styles.categoryChip, { backgroundColor: hexToRgba(item.accent, 0.1) }]}
-            >
-              <MaterialIcons name={item.icon} size={16} color={item.accent} />
-              <Text style={[styles.categoryChipText, { color: colors.text }]}>{item.name}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <View style={[styles.listCard, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
-        {Object.entries(groupedTransactions).map(([group, items]) => (
-          <View key={group} style={styles.groupWrap}>
-            <Text style={[styles.groupLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-              {group}
-            </Text>
-
-            {items.map((item) => (
-              <Pressable
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScrollContent}
+        >
+          {topCategories.map((item) => {
+            const progress = item.limit > 0 ? item.spent / item.limit : 0;
+            return (
+              <View
                 key={item.id}
-                style={styles.transactionRow}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(finance)/transaction/[id]',
-                    params: { id: item.id },
-                  })
-                }
+                style={[
+                  styles.categoryCard,
+                  {
+                    backgroundColor: hexToRgba(item.accent, 0.1),
+                    borderColor: hexToRgba(item.accent, 0.18),
+                  },
+                ]}
               >
-                <View
-                  style={[
-                    styles.transactionIcon,
-                    { backgroundColor: hexToRgba(item.accent, 0.12) },
-                  ]}
-                >
-                  <MaterialIcons name={item.icon} size={20} color={item.accent} />
-                </View>
-
-                <View style={styles.transactionTextWrap}>
-                  <Text style={[styles.transactionMerchant, { color: colors.text }]}>
-                    {item.merchant}
-                  </Text>
-                  <Text style={[styles.transactionMeta, { color: hexToRgba(colors.text, 0.52) }]}>
-                    {item.category} • {item.timeLabel}
-                  </Text>
-                </View>
-
-                <View style={styles.amountWrap}>
-                  <Text
+                <View style={styles.categoryCardTop}>
+                  <View
                     style={[
-                      styles.transactionAmount,
-                      { color: item.type === 'income' ? colors.primaryDark : colors.text },
+                      styles.categoryIcon,
+                      { backgroundColor: hexToRgba(item.accent, 0.18) },
                     ]}
                   >
-                    {formatCurrency(item.amount)}
+                    <MaterialIcons
+                      name={item.icon as React.ComponentProps<typeof MaterialIcons>['name']}
+                      size={18}
+                      color={item.accent}
+                    />
+                  </View>
+                  <Text style={[styles.categoryPercent, { color: item.accent }]}>
+                    {Math.round(progress * 100)}%
                   </Text>
-                  <Text
+                </View>
+
+                <Text numberOfLines={1} style={[styles.categoryTitle, { color: colors.text }]}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.categoryValue, { color: colors.text }]}>
+                  {formatCurrency(item.spent)}
+                </Text>
+                <Text style={[styles.categoryMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                  Limit {formatCurrency(item.limit)}
+                </Text>
+
+                <View style={[styles.progressTrack, { backgroundColor: hexToRgba(item.accent, 0.14) }]}>
+                  <View
                     style={[
-                      styles.statusText,
+                      styles.progressFill,
                       {
-                        color:
-                          item.status === 'Pending' ? '#B45309' : hexToRgba(colors.text, 0.5),
+                        width: `${Math.min(progress * 100, 100)}%`,
+                        backgroundColor: item.accent,
                       },
                     ]}
-                  >
-                    {item.status}
-                  </Text>
+                  />
                 </View>
-              </Pressable>
-            ))}
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.summaryBarWrap}>
+          <View style={[styles.summaryBarTrack, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
+            <View
+              style={[
+                styles.summaryBarFill,
+                {
+                  width: `${Math.min(spentRatio * 100, 100)}%`,
+                  backgroundColor: colors.primaryDark,
+                },
+              ]}
+            />
           </View>
-        ))}
+          <Text style={[styles.summaryBarText, { color: hexToRgba(colors.text, 0.56) }]}>
+            {Math.round(spentRatio * 100)}% of monthly budget used
+          </Text>
+        </View>
       </View>
-    </ScrollView>
+    </View>
+  );
+
+  return (
+    <SectionList
+      style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: Math.max(120, tabBarFloatingClearance) },
+      ]}
+      sections={visibleSections}
+      keyExtractor={(item) => item.id}
+      renderSectionHeader={({ section }) => (
+        <Text style={[styles.groupLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+          {section.title}
+        </Text>
+      )}
+      renderItem={({ item }) => (
+        <Pressable
+          style={styles.transactionRow}
+          onPress={() =>
+            router.push({
+              pathname: '/(finance)/transaction/[id]',
+              params: { id: item.id },
+            })
+          }
+        >
+          <View
+            style={[
+              styles.transactionIcon,
+              { backgroundColor: hexToRgba(item.accent, 0.12) },
+            ]}
+          >
+            <MaterialIcons name={item.icon} size={20} color={item.accent} />
+          </View>
+
+          <View style={styles.transactionTextWrap}>
+            <Text style={[styles.transactionMerchant, { color: colors.text }]}>
+              {item.merchant}
+            </Text>
+            <Text style={[styles.transactionMeta, { color: hexToRgba(colors.text, 0.52) }]}>
+              {item.category} • {item.timeLabel} • {item.reference}
+            </Text>
+          </View>
+
+          <Text
+            style={[
+              styles.transactionAmount,
+              { color: item.type === 'income' ? colors.primaryDark : colors.text },
+            ]}
+          >
+            {formatCurrency(item.amount)}
+          </Text>
+        </Pressable>
+      )}
+      ListHeaderComponent={listHeader}
+      ListHeaderComponentStyle={styles.listHeader}
+      ListEmptyComponent={
+        <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
+          <MaterialIcons name="receipt-long" size={20} color={hexToRgba(colors.text, 0.34)} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No matching entries</Text>
+          <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.54) }]}>
+            Change the filter or add a new spending entry.
+          </Text>
+        </View>
+      }
+      ListFooterComponent={
+        visibleSectionCount < sections.length ? (
+          <Text style={[styles.footerHint, { color: hexToRgba(colors.text, 0.48) }]}>
+            Scroll to load more
+          </Text>
+        ) : (
+          <View style={styles.footerSpacer} />
+        )
+      }
+      stickySectionHeadersEnabled={false}
+      showsVerticalScrollIndicator={false}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={8}
+      onEndReached={handleLoadMore}
+      onEndReachedThreshold={0.35}
+      SectionSeparatorComponent={() => <View style={styles.sectionSpacer} />}
+      ItemSeparatorComponent={() => <View style={styles.itemSpacer} />}
+    />
   );
 }
 
@@ -315,153 +405,72 @@ const styles = StyleSheet.create({
   content: {
     paddingTop: 66,
     paddingHorizontal: 20,
-    paddingBottom: 120,
   },
-  headerCard: {
+  listHeader: {
+    paddingBottom: 18,
+  },
+  headerStack: {
+    gap: 16,
+  },
+  heroCard: {
     borderRadius: 28,
-    padding: 20,
+    padding: 18,
     shadowOpacity: 0.12,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 12 },
     elevation: 6,
   },
-  title: {
-    fontSize: 28,
+  heroEyebrow: {
+    fontSize: 12,
     fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  subtitle: {
+  heroTitle: {
+    marginTop: 8,
+    fontWeight: '900',
+    lineHeight: 34,
+    letterSpacing: -0.7,
+  },
+  heroBody: {
     marginTop: 8,
     fontSize: Typography.body,
-    lineHeight: 22,
+    lineHeight: 21,
   },
-  searchRow: {
-    marginTop: 18,
-    minHeight: 52,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  searchText: {
-    fontSize: Typography.body,
-    flex: 1,
-    minWidth: 0,
-  },
-  summaryRow: {
+  heroMetricRow: {
     marginTop: 18,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  summaryCard: {
+  heroMetricCard: {
     flex: 1,
-    flexBasis: 96,
     minWidth: 0,
     borderRadius: 18,
     padding: 14,
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
   },
-  summaryLabel: {
-    fontSize: Typography.body,
-    fontWeight: '600',
+  heroMetricLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  summaryValue: {
+  heroMetricValue: {
     marginTop: 8,
     fontSize: 18,
     fontWeight: '800',
   },
-  actionRow: {
+  heroActionRow: {
     marginTop: 16,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  actionButton: {
+  heroButton: {
     flex: 1,
-    flexBasis: 100,
     minWidth: 0,
   },
-  merchantRow: {
-    marginTop: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  merchantChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  merchantText: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-  },
-  filterRow: {
-    marginTop: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
   filterPanel: {
-    marginTop: 18,
-    borderRadius: 24,
-    padding: 18,
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
-  },
-  filterPanelHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  filterPanelTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  filterPanelBody: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 19,
-    maxWidth: 240,
-  },
-  filterWorkspaceButton: {
-    minHeight: 38,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  filterWorkspaceButtonText: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  filterChip: {
-    minHeight: 38,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterText: {
-    fontSize: Typography.body,
-    fontWeight: '700',
-  },
-  categoryPanel: {
-    marginTop: 18,
     borderRadius: 24,
     padding: 18,
     shadowOpacity: 0.1,
@@ -473,63 +482,142 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
   panelTitle: {
     fontSize: 16,
     fontWeight: '800',
   },
+  panelBody: {
+    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 19,
+    maxWidth: 250,
+  },
   panelMeta: {
-    fontSize: Typography.body,
+    fontSize: 13,
     fontWeight: '700',
   },
-  categoryWrap: {
-    marginTop: 14,
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterWrap: {
+    marginTop: 16,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  categoryChip: {
+  filterChip: {
+    minHeight: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: 8,
   },
-  categoryChipText: {
-    fontSize: Typography.body,
-    fontWeight: '600',
+  filterText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-  listCard: {
-    marginTop: 18,
-    borderRadius: 26,
+  categoryPanel: {
+    borderRadius: 24,
     padding: 18,
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 6,
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
-  groupWrap: {
-    marginTop: 6,
+  categoryScrollContent: {
+    paddingTop: 16,
+    gap: 12,
+  },
+  categoryCard: {
+    width: 196,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 16,
+  },
+  categoryCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  categoryIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryPercent: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  categoryTitle: {
+    marginTop: 14,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  categoryValue: {
+    marginTop: 8,
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  categoryMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  progressTrack: {
+    marginTop: 14,
+    height: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  summaryBarWrap: {
+    marginTop: 16,
+    gap: 8,
+  },
+  summaryBarTrack: {
+    height: 8,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  summaryBarFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  summaryBarText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   groupLabel: {
     marginBottom: 10,
-    fontSize: Typography.body,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 1.1,
+    letterSpacing: 0.5,
   },
   transactionRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
+    alignItems: 'center',
     gap: 12,
   },
   transactionIcon: {
-    width: 46,
-    height: 46,
+    width: 44,
+    height: 44,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -539,27 +627,47 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   transactionMerchant: {
-    fontSize: Typography.body,
+    fontSize: 15,
     fontWeight: '700',
-    flexShrink: 1,
   },
   transactionMeta: {
     marginTop: 4,
-    fontSize: Typography.body,
-    flexShrink: 1,
-  },
-  amountWrap: {
-    alignItems: 'flex-end',
-    minWidth: 0,
-    marginLeft: 8,
+    fontSize: 12,
+    lineHeight: 17,
   },
   transactionAmount: {
-    fontSize: Typography.body,
+    fontSize: 14,
     fontWeight: '800',
   },
-  statusText: {
-    marginTop: 4,
-    fontSize: Typography.body,
-    fontWeight: '700',
+  sectionSpacer: {
+    height: 18,
+  },
+  itemSpacer: {
+    height: 12,
+  },
+  emptyState: {
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  emptyBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  footerHint: {
+    paddingVertical: 18,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  footerSpacer: {
+    height: 6,
   },
 });

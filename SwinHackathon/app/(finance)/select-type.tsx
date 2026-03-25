@@ -7,13 +7,15 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { Typography } from '@/constants/theme';
 
-const types = ['expense', 'income', 'transfer'] as const;
+const types = ['expense', 'income'] as const;
 
 export default function SelectTypeScreen() {
   const { transactionDraft, updateTransactionDraft } = useFinance();
   const { colors } = useTheme();
   const router = useRouter();
-  const [selected, setSelected] = useState(transactionDraft.type);
+  const [selected, setSelected] = useState(
+    transactionDraft.type === 'transfer' ? 'expense' : transactionDraft.type
+  );
 
   return (
     <FinanceScreen title="Select Type" subtitle="Transaction type for the current draft">
