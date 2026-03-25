@@ -70,14 +70,14 @@ fi
 echo "[build] dependency installer used: $INSTALLER_USED"
 cp -R "$WORKDIR/src/." "$LAMBDA_SRC_DIR/"
 
-python3 - <<'PY' "$WORKDIR/infra/template.yaml" "$BUILD_TEMPLATE"
+python3 - <<'PY' "$WORKDIR/infra/sam/template.yaml" "$BUILD_TEMPLATE"
 from pathlib import Path
 import sys
 
 src = Path(sys.argv[1])
 out = Path(sys.argv[2])
 text = src.read_text()
-text = text.replace('CodeUri: ../src/', 'CodeUri: lambda-src/')
+text = text.replace('CodeUri: ../../src/', 'CodeUri: lambda-src/')
 out.write_text(text)
 print(out)
 PY

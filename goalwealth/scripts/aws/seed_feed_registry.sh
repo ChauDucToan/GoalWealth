@@ -24,7 +24,7 @@ esac
 WORKDIR="$(cd "$(dirname "$0")/../.." && pwd)"
 BUILD_DIR="$WORKDIR/.build/feed-registry"
 TABLE_NAME="$(aws cloudformation describe-stacks --region "$REGION" --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='FeedRegistryTableName'].OutputValue" --output text)"
-SAMPLE_FILE="$WORKDIR/infra/sample-feeds.json"
+SAMPLE_FILE="$WORKDIR/infra/seeds/sample-feeds.json"
 mkdir -p "$BUILD_DIR"
 rm -f "$BUILD_DIR"/*.json "$BUILD_DIR"/*.txt
 

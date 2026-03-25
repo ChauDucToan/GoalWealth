@@ -211,8 +211,8 @@ Resources:
   RssCrawlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../src/
-      Handler: rss_crawler.app.lambda_handler
+      CodeUri: ../../src/
+      Handler: lambdas.rss_crawler.handler.lambda_handler
       Timeout: 300
       MemorySize: 1024
       Role: !GetAtt RssCrawlerRole.Arn
@@ -289,8 +289,8 @@ Resources:
   SmartAgentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../src/
-      Handler: smart_agent.app.lambda_handler
+      CodeUri: ../../src/
+      Handler: lambdas.smart_agent.handler.lambda_handler
       Timeout: 60
       MemorySize: 1024
       Role: !GetAtt SmartAgentRole.Arn

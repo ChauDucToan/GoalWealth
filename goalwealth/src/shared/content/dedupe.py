@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from shared.normalization import normalize_text, normalize_title, normalize_url
+from shared.content.normalization import normalize_text, normalize_title, normalize_url
 
 
 def _sha256(value: str) -> str:

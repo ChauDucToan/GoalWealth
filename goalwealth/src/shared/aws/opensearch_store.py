@@ -87,8 +87,16 @@ class OpenSearchStore:
             existing_hash = existing.get("_source", {}).get("content_hash")
             if existing_hash == document.get("content_hash"):
                 return existing.get("_id", ""), "unchanged"
-            self.client.index(index=self.index_name, id=existing["_id"], body=document, refresh=False)
-            return existing["_id"], "updated"
+
+            existing_id = existing.get("_id")
+            if existing_id:
+                try:
+                    self.client.delete(index=self.index_name, id=existing_id, refresh=False)
+                except NotFoundError:
+                    pass
+
+            response = self.client.index(index=self.index_name, body=document, refresh=False)
+            return response.get("_id", ""), "updated"
 
         response = self.client.index(index=self.index_name, body=document, refresh=False)
         return response.get("_id", ""), "created"

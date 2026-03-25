@@ -13,10 +13,10 @@ from boto3.dynamodb.conditions import Attr
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from shared.bedrock_embeddings import embed_text
-from shared.dedupe import build_article_id, build_content_hash
-from shared.normalization import iso_now, normalize_text, normalize_url, parse_datetime
-from shared.opensearch_store import OpenSearchStore
+from shared.aws.bedrock_embeddings import embed_text
+from shared.content.dedupe import build_article_id, build_content_hash
+from shared.content.normalization import iso_now, normalize_text, normalize_url, parse_datetime
+from shared.aws.opensearch_store import OpenSearchStore
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)

@@ -3,15 +3,16 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
 
 import boto3
 
-from shared.bedrock_embeddings import embed_text
-from shared.normalization import normalize_text
-from shared.opensearch_store import OpenSearchStore
+from shared.aws.bedrock_embeddings import embed_text
+from shared.content.normalization import normalize_text
+from shared.aws.opensearch_store import OpenSearchStore
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -36,6 +37,36 @@ SEMANTIC_KEYWORDS = {
     "so sánh",
     "giải thích",
 }
+
+SEARCH_STOPWORDS = {
+    "tin",
+    "bai",
+    "bài",
+    "cac",
+    "các",
+    "ve",
+    "về",
+    "va",
+    "và",
+    "moi",
+    "mới",
+    "nhat",
+    "nhất",
+    "hom",
+    "hôm",
+    "nay",
+    "sang",
+    "sáng",
+    "new",
+    "news",
+    "latest",
+    "recent",
+    "today",
+    "breaking",
+    "search",
+    "semantic",
+}
+QUERY_TOKEN_RE = re.compile(r"[\w-]+", re.UNICODE)
 
 RECENCY_THRESHOLD_MINUTES = int(os.environ.get("RECENCY_THRESHOLD_MINUTES", "180"))
 DEFAULT_RESULT_LIMIT = int(os.environ.get("DEFAULT_RESULT_LIMIT", "10"))
@@ -62,6 +93,8 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         ensure_search_ready()
         results = fetch_results(query, route)
         freshness = infer_freshness(results)
+        match_quality = assess_match_quality(route, query, results)
+        relevance_threshold_passed = match_quality != "none"
         refresh_triggered = maybe_trigger_refresh(
             route=route,
             query=query,
@@ -73,11 +106,13 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             "status": "ok",
             "route": route,
             "results": results,
-            "summary": build_summary(route, results, freshness, refresh_triggered),
+            "summary": build_summary(route, results, freshness, refresh_triggered, match_quality),
             "meta": {
                 "query": query,
                 "total_results": len(results),
                 "freshness": freshness,
+                "match_quality": match_quality,
+                "relevance_threshold_passed": relevance_threshold_passed,
                 "refresh_triggered": refresh_triggered,
                 "took_ms": int((time.time() - started) * 1000),
                 "trace_id": getattr(context, "aws_request_id", f"local-{int(started)}"),
@@ -143,16 +178,33 @@ def fetch_fresh_results(query: str) -> list[dict[str, Any]]:
     query_token_set = query_terms(query)
     keyword_items = format_hits(store.keyword_search(query, size=DEFAULT_RESULT_LIMIT))
     recent_items = format_hits(store.recent_search(size=max(DEFAULT_RESULT_LIMIT * 3, 20)))
-    relevant_recent_items = filter_recent_items(recent_items, query_token_set)
 
-    if not relevant_recent_items and not keyword_items:
-        return rank_result_items(recent_items[:DEFAULT_RESULT_LIMIT], score_weight=0.3, freshness_weight=0.7)
+    if not query_token_set:
+        if not recent_items and not keyword_items:
+            return []
+        if not recent_items:
+            return rank_result_items(keyword_items, score_weight=0.4, freshness_weight=0.6)
+        return merge_result_items(
+            keyword_items,
+            recent_items,
+            score_weight=0.4,
+            freshness_weight=0.6,
+        )
+
+    relevant_keyword_items = filter_result_items(keyword_items, query_token_set)
+    relevant_recent_items = filter_result_items(recent_items, query_token_set)
+
+    if not relevant_recent_items and not relevant_keyword_items:
+        return []
 
     if not relevant_recent_items:
-        return rank_result_items(keyword_items, score_weight=0.4, freshness_weight=0.6)
+        return rank_result_items(relevant_keyword_items, score_weight=0.4, freshness_weight=0.6)
+
+    if not relevant_keyword_items:
+        return rank_result_items(relevant_recent_items, score_weight=0.3, freshness_weight=0.7)
 
     return merge_result_items(
-        keyword_items,
+        relevant_keyword_items,
         relevant_recent_items,
         score_weight=0.4,
         freshness_weight=0.6,
@@ -172,11 +224,41 @@ def format_hits(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "source": source.get("source", "unknown"),
                 "published_at": source.get("published_at"),
                 "summary": source.get("summary", ""),
-                "score": float(hit.get("_score", 0.0)),
+                "score": coerce_score(hit.get("_score")),
                 "freshness_score": compute_freshness_score(source.get("published_at")),
             }
         )
-    return results
+    return dedupe_result_items(results)
+
+
+def coerce_score(value: Any) -> float:
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def result_business_key(item: dict[str, Any]) -> str:
+    return str(item.get("url") or item.get("id") or "")
+
+
+def dedupe_result_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: dict[str, dict[str, Any]] = {}
+    for item in items:
+        key = result_business_key(item)
+        if not key:
+            key = str(item.get("id") or len(deduped))
+        if key not in deduped:
+            deduped[key] = dict(item)
+            continue
+        deduped[key]["score"] = max(deduped[key].get("score", 0.0), item.get("score", 0.0))
+        deduped[key]["freshness_score"] = max(
+            deduped[key].get("freshness_score", 0.0),
+            item.get("freshness_score", 0.0),
+        )
+    return list(deduped.values())
 
 
 def merge_result_items(
@@ -187,13 +269,13 @@ def merge_result_items(
     merged: dict[str, dict[str, Any]] = {}
     for items in item_sets:
         for item in items:
-            article_id = item["id"]
-            if article_id not in merged:
-                merged[article_id] = dict(item)
+            key = result_business_key(item)
+            if key not in merged:
+                merged[key] = dict(item)
                 continue
-            merged[article_id]["score"] = max(merged[article_id]["score"], item["score"])
-            merged[article_id]["freshness_score"] = max(
-                merged[article_id]["freshness_score"],
+            merged[key]["score"] = max(merged[key]["score"], item["score"])
+            merged[key]["freshness_score"] = max(
+                merged[key]["freshness_score"],
                 item["freshness_score"],
             )
 
@@ -210,37 +292,55 @@ def rank_result_items(
     score_weight: float,
     freshness_weight: float,
 ) -> list[dict[str, Any]]:
+    deduped = dedupe_result_items(items)
     return sorted(
-        items,
+        deduped,
         key=lambda item: (item.get("score", 0.0) * score_weight)
         + (item.get("freshness_score", 0.0) * freshness_weight),
         reverse=True,
     )[:DEFAULT_RESULT_LIMIT]
 
 
+def tokenize_terms(value: str) -> set[str]:
+    return {
+        token.lower()
+        for token in QUERY_TOKEN_RE.findall(normalize_text(value).lower())
+        if len(token) > 1 and token.lower() not in SEARCH_STOPWORDS
+    }
+
+
 def query_terms(query: str) -> set[str]:
-    return {token for token in normalize_text(query).lower().split() if len(token) > 1}
+    return tokenize_terms(query)
 
 
-def filter_recent_items(items: list[dict[str, Any]], query_token_set: set[str]) -> list[dict[str, Any]]:
+def item_terms(item: dict[str, Any]) -> set[str]:
+    return tokenize_terms(
+        " ".join(
+            [
+                item.get("title", ""),
+                item.get("summary", ""),
+                item.get("source", ""),
+            ]
+        )
+    )
+
+
+def match_term_count(item: dict[str, Any], query_token_set: set[str]) -> int:
     if not query_token_set:
-        return items[:DEFAULT_RESULT_LIMIT]
+        return 0
+    return len(item_terms(item).intersection(query_token_set))
+
+
+def filter_result_items(items: list[dict[str, Any]], query_token_set: set[str]) -> list[dict[str, Any]]:
+    if not query_token_set:
+        return dedupe_result_items(items)[: DEFAULT_RESULT_LIMIT * 2]
 
     filtered: list[dict[str, Any]] = []
     for item in items:
-        haystack = normalize_text(
-            " ".join(
-                [
-                    item.get("title", ""),
-                    item.get("summary", ""),
-                    item.get("source", ""),
-                ]
-            )
-        ).lower()
-        if any(token in haystack for token in query_token_set):
+        if match_term_count(item, query_token_set) > 0:
             filtered.append(item)
 
-    return filtered[: DEFAULT_RESULT_LIMIT * 2]
+    return dedupe_result_items(filtered)[: DEFAULT_RESULT_LIMIT * 2]
 
 
 def compute_freshness_score(published_at: str | None) -> float:
@@ -309,14 +409,41 @@ def trigger_async_refresh(query: str) -> None:
     )
 
 
+def assess_match_quality(route: str, query: str, results: list[dict[str, Any]]) -> str:
+    if not results:
+        return "none"
+
+    if route != "fresh_news":
+        return "unknown"
+
+    query_token_set = query_terms(query)
+    if not query_token_set:
+        return "broad"
+
+    best_overlap = max(match_term_count(item, query_token_set) for item in results)
+    if best_overlap <= 0:
+        return "none"
+
+    coverage = best_overlap / max(len(query_token_set), 1)
+    if coverage >= 1.0:
+        return "high"
+    if coverage >= 0.5:
+        return "medium"
+    return "low"
+
+
 def build_summary(
     route: str,
     results: list[dict[str, Any]],
     freshness: str,
     refresh_triggered: bool,
+    match_quality: str,
 ) -> dict[str, Any]:
     if not results:
-        text = "Chưa tìm thấy kết quả phù hợp trong index hiện tại."
+        if route == "fresh_news":
+            text = "Chưa thấy bài đủ liên quan cho truy vấn trong dữ liệu hiện tại."
+        else:
+            text = "Chưa tìm thấy kết quả phù hợp trong index hiện tại."
         if refresh_triggered:
             text += " Đã kích hoạt refresh nền để làm mới dữ liệu."
         return {
@@ -335,8 +462,12 @@ def build_summary(
         suffix = " Đã kích hoạt refresh nền để cập nhật thêm kết quả mới."
 
     highlights = [item["title"] for item in results[:3] if item.get("title")]
+    quality_suffix = ""
+    if match_quality not in {"unknown", "broad"}:
+        quality_suffix = f" Match quality: {match_quality}."
+
     return {
-        "text": f"{prefix}. Freshness hiện tại: {freshness}. Tìm được {len(results)} bài.{suffix}",
+        "text": f"{prefix}. Freshness hiện tại: {freshness}. Tìm được {len(results)} bài.{quality_suffix}{suffix}",
         "highlights": highlights,
     }
 
@@ -354,6 +485,8 @@ def error_response(route: str, code: str, message: str, started: float, query: s
             "query": query,
             "total_results": 0,
             "freshness": "unknown",
+            "match_quality": "none",
+            "relevance_threshold_passed": False,
             "refresh_triggered": False,
             "took_ms": int((time.time() - started) * 1000),
             "trace_id": f"error-{int(started)}",
