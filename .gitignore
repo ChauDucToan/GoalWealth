@@ -1,10 +1,18 @@
 # Python-generated files
-__pycache__/
+**/__pycache__/
 *.py[oc]
 build/
 dist/
 wheels/
 *.egg-info
 
+aws
+
 # Virtual environments
 .venv
+.build
+
+/SwinHackathon/package-lock.json
+
+.idea
+/SwinHackathon/finpal_ AI Finance Assistant App UI Kit (Community)/
