@@ -63,7 +63,7 @@ export default function ShareBudgetScreen() {
             </Pressable>
             <Pressable
               style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push('/(finance)/smart-budgeting/add-member')}
+              onPress={() => router.push('/(finance)/smart-budgeting/invite-members')}
             >
               <Text style={[styles.secondaryButtonText, { color: colors.text }]}>Invite Members</Text>
             </Pressable>
@@ -90,7 +90,9 @@ export default function ShareBudgetScreen() {
                     </Text>
                   </View>
                 </View>
-                <MaterialIcons name="chevron-right" size={20} color={hexToRgba(colors.text, 0.34)} />
+                <Pressable onPress={() => router.push('/(finance)/smart-budgeting/invite-members')}>
+                  <MaterialIcons name="chevron-right" size={20} color={hexToRgba(colors.text, 0.34)} />
+                </Pressable>
               </View>
             ))}
           </View>

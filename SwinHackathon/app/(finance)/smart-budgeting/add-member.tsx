@@ -17,7 +17,7 @@ export default function AddBudgetMemberScreen() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/share-budget')}>
+          <Pressable style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => goSmartBudgetBack(router, '/(finance)/smart-budgeting/invite-members')}>
             <MaterialIcons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Add Member to Budget</Text>
@@ -40,7 +40,7 @@ export default function AddBudgetMemberScreen() {
         </View>
 
         <View style={styles.bottomArea}>
-          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.replace('/(finance)/smart-budgeting/share-budget')}>
+          <Pressable style={[styles.primaryButton, { backgroundColor: colors.primaryDark }]} onPress={() => router.replace('/(finance)/smart-budgeting/invite-members')}>
             <Text style={[styles.primaryButtonText, { color: colors.card }]}>Add Member to Budget</Text>
           </Pressable>
         </View>
