@@ -8,6 +8,7 @@ import {
 } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
+import { getTransferBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -28,12 +29,18 @@ export default function FinancialGoalTransferScreen() {
   const [selectedFrequency, setSelectedFrequency] = useState<typeof goalFrequencyOptions[number]>(
     isRecurring ? goalFrequencyOptions[2] : goalFrequencyOptions[0]
   );
+  const backHref = getTransferBackHref({
+    goalId: params.goalId,
+    accountId: params.accountId,
+    mode: params.mode,
+  });
 
   return (
     <FinanceScreen
       title={isRecurring ? 'Recurring Transfer' : 'Add Money'}
       subtitle={isRecurring ? 'Set a clean funding rhythm for this goal.' : 'Top up this goal from a connected savings account.'}
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
         <FinanceCard
@@ -160,7 +167,7 @@ export default function FinancialGoalTransferScreen() {
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title="Cancel"
-              onPress={() => router.back()}
+              onPress={() => router.replace(backHref)}
               colorBackground={colors.card}
               colorText={colors.text}
               style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}
@@ -170,7 +177,7 @@ export default function FinancialGoalTransferScreen() {
             <ThemeButton
               title={isRecurring ? 'Set Transfer' : 'Move Money'}
               onPress={() =>
-                router.push({
+                router.replace({
                   pathname: '/(finance)/financial-goals/result',
                   params: {
                     mode: isRecurring ? 'recurring' : 'transferred',

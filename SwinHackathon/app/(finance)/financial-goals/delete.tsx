@@ -3,6 +3,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { getFinancialGoalById } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
+import { getDeleteBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
@@ -13,12 +14,14 @@ export default function FinancialGoalDeleteScreen() {
   const router = useRouter();
   const { goalId } = useLocalSearchParams<{ goalId?: string }>();
   const goal = getFinancialGoalById(goalId);
+  const backHref = getDeleteBackHref(goalId);
 
   return (
     <FinanceScreen
       title="Delete Goal"
       subtitle="Remove the goal after reviewing its current balance and progress."
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
         <FinanceCard
@@ -59,7 +62,7 @@ export default function FinancialGoalDeleteScreen() {
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title="Keep Goal"
-              onPress={() => router.back()}
+              onPress={() => router.replace(backHref)}
               colorBackground={colors.card}
               colorText={colors.text}
               style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}

@@ -7,16 +7,19 @@ import {
   GoalTransferList,
 } from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
+import { getHistoryBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { hexToRgba } from '@/components/auth/AuthKit';
 
 export default function FinancialGoalHistoryScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const { goalId } = useLocalSearchParams<{ goalId?: string }>();
   const initialGoal = getFinancialGoalById(goalId);
+  const backHref = getHistoryBackHref({ goalId });
   const [selectedGoalId, setSelectedGoalId] = useState(initialGoal.id);
   const selectedGoal = useMemo(
     () => financialGoals.find((goal) => goal.id === selectedGoalId) ?? initialGoal,
@@ -28,6 +31,7 @@ export default function FinancialGoalHistoryScreen() {
       title="Balance History"
       subtitle="Review growth, transfers and recurring funding without leaving the goals flow."
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
         <View style={styles.filterRow}>

@@ -16,6 +16,7 @@ import {
 } from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
+import { getFinancialGoalsDashboardHref } from '@/app/(finance)/financial-goals/navigation';
 import { Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -38,6 +39,7 @@ export default function FinancialGoalDetailScreen() {
       title={goal.title}
       subtitle={`${goal.priority} priority • ${goal.allowedRisk} • ${goal.dueLabel}`}
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(getFinancialGoalsDashboardHref())}
       rightAccessory={
         <Pressable
           style={[

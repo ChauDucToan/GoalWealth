@@ -13,6 +13,7 @@ import {
 } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
+import { getCreateBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -55,12 +56,18 @@ export default function CreateFinancialGoalScreen() {
   const projectedMonths = Math.max(1, Math.ceil(selectedTarget / Math.max(selectedContribution, 1)));
   const estimatedFundingGap = Math.max(selectedTarget - goal.saved, 0);
   const previewTitle = isEditMode ? goal.title : selectedTemplateMeta.label;
+  const backHref = getCreateBackHref({
+    goalId: params.goalId,
+    accountId: params.accountId,
+    mode: params.mode,
+  });
 
   return (
     <FinanceScreen
       title={isEditMode ? 'Edit Goal' : 'Create Goal'}
       subtitle="Set the target, contribution rhythm and savings account in one screen."
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
         <FinanceCard
@@ -398,7 +405,7 @@ export default function CreateFinancialGoalScreen() {
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title={isEditMode ? 'Cancel' : 'Back'}
-              onPress={() => router.back()}
+              onPress={() => router.replace(backHref)}
               colorBackground={colors.card}
               colorText={colors.text}
               style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}
@@ -408,7 +415,7 @@ export default function CreateFinancialGoalScreen() {
             <ThemeButton
               title={isEditMode ? 'Update Goal' : 'Save Goal'}
               onPress={() =>
-                router.push({
+                router.replace({
                   pathname: '/(finance)/financial-goals/result',
                   params: {
                     mode: isEditMode ? 'updated' : 'created',

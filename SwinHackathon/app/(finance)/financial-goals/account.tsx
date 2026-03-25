@@ -7,6 +7,7 @@ import {
 } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
+import { getAccountBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -28,6 +29,12 @@ export default function FinancialGoalAccountScreen() {
     () => financialGoalAccounts.find((item) => item.id === selectedAccountId) ?? initialAccount,
     [initialAccount, selectedAccountId]
   );
+  const backHref = getAccountBackHref({
+    goalId: params.goalId,
+    accountId: params.accountId,
+    origin: params.origin,
+    mode: params.mode,
+  });
 
   const handleContinue = () => {
     if (params.origin === 'transfer') {
@@ -57,6 +64,7 @@ export default function FinancialGoalAccountScreen() {
       title="Select Savings Account"
       subtitle="Choose where this goal should pull or store money from."
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
         <FinanceCard
@@ -123,7 +131,7 @@ export default function FinancialGoalAccountScreen() {
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title="Cancel"
-              onPress={() => router.back()}
+              onPress={() => router.replace(backHref)}
               colorBackground={colors.card}
               colorText={colors.text}
               style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}

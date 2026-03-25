@@ -3,6 +3,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { getFinancialGoalById } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
+import { getResultBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -47,17 +48,13 @@ export default function FinancialGoalResultScreen() {
   const goal = getFinancialGoalById(params.goalId);
   const mode = resultMap[params.mode ?? 'created'] ? (params.mode ?? 'created') : 'created';
   const result = resultMap[mode];
+  const backHref = getResultBackHref({
+    goalId: params.goalId,
+    mode,
+  });
 
   const handlePrimary = () => {
-    if (mode === 'deleted' || mode === 'created') {
-      router.replace('/(finance)/financial-goals');
-      return;
-    }
-
-    router.replace({
-      pathname: '/(finance)/financial-goals/[goalId]',
-      params: { goalId: goal.id },
-    });
+    router.replace(backHref);
   };
 
   return (
@@ -65,6 +62,7 @@ export default function FinancialGoalResultScreen() {
       title={result.title}
       subtitle="One shared success state keeps the flow lighter than the original multi-screen kit."
       contentStyle={styles.contentStyle}
+      onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
         <FinanceCard
