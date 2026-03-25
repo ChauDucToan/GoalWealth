@@ -58,6 +58,16 @@ function encodeFormBody(params: Record<string, string>) {
     .join('&');
 }
 
+function buildAuthorizationToken(accessToken: string, tokenType?: string) {
+  const normalizedTokenType = tokenType?.trim() || 'Bearer';
+
+  if (accessToken.startsWith(`${normalizedTokenType} `)) {
+    return accessToken;
+  }
+
+  return `${normalizedTokenType} ${accessToken}`;
+}
+
 async function parseOAuthError(response: Response) {
   const fallbackMessage = 'OAuth2 sign-in failed. Check credentials and server configuration.';
   const contentType = response.headers.get('content-type') ?? '';
@@ -80,7 +90,7 @@ async function parseOAuthError(response: Response) {
   }
 }
 
-async function fetchUserProfile(accessToken: string, fallbackUsername: string) {
+async function fetchUserProfile(accessToken: string, fallbackUsername: string, tokenType?: string) {
   if (!oauth2Config.userInfoEndpoint) {
     return {
       id: fallbackUsername,
@@ -92,7 +102,7 @@ async function fetchUserProfile(accessToken: string, fallbackUsername: string) {
   const response = await fetch(oauth2Config.userInfoEndpoint, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: buildAuthorizationToken(accessToken, tokenType),
       Accept: 'application/json',
     },
   });
@@ -156,10 +166,17 @@ export async function signInWithOAuth2Password({
     throw new Error('OAuth2 response does not include an access token.');
   }
 
-  const profile = await fetchUserProfile(tokenPayload.access_token, username);
+  const profile = await fetchUserProfile(
+    tokenPayload.access_token,
+    username,
+    tokenPayload.token_type,
+  );
 
   return {
-    accessToken: tokenPayload.access_token,
+    accessToken: buildAuthorizationToken(
+      tokenPayload.access_token,
+      tokenPayload.token_type,
+    ),
     refreshToken: tokenPayload.refresh_token,
     profile,
   };
