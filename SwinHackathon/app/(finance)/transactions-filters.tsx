@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';
 
-const transactionTypes = ['All', 'Income', 'Expense', 'Transfer'];
+const transactionTypes = ['All', 'Income', 'Expense'];
 const datePresets = ['Today', 'Last 7 days', 'This month', 'Last month'];
 
 export default function TransactionsFiltersScreen() {

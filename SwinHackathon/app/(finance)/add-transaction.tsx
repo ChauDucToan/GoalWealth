@@ -50,12 +50,8 @@ export default function AddTransactionScreen() {
 
   const selectedCategory =
     categories.find((item) => item.name === transactionDraft.category) ?? categories[0];
-  const titleLabel =
-    transactionDraft.type === 'transfer'
-      ? 'To'
-      : transactionDraft.type === 'income'
-        ? 'Source'
-        : 'Merchant';
+  const effectiveType = transactionDraft.type === 'transfer' ? 'expense' : transactionDraft.type;
+  const titleLabel = effectiveType === 'income' ? 'Source' : 'Merchant';
   const rawAmount = transactionDraft.amount.trim();
   const parsedAmount = Number(rawAmount);
   const hasAmount = rawAmount.length > 0;
@@ -85,21 +81,16 @@ export default function AddTransactionScreen() {
 
     const transaction = addTransaction({
       merchant: transactionDraft.merchant.trim(),
-      category: transactionDraft.type === 'income' ? 'Income' : transactionDraft.category,
-      amount: transactionDraft.type === 'income' ? parsedAmount : -parsedAmount,
-      type: transactionDraft.type === 'income' ? 'income' : 'expense',
+      category: effectiveType === 'income' ? 'Income' : transactionDraft.category,
+      amount: effectiveType === 'income' ? parsedAmount : -parsedAmount,
+      type: effectiveType === 'income' ? 'income' : 'expense',
       status: 'Completed',
       note: transactionDraft.note.trim() || 'Created from add transaction screen',
-      icon: transactionDraft.type === 'income'
-        ? 'payments'
-        : selectedCategory?.icon ?? 'payments',
-      accent: transactionDraft.type === 'income'
-        ? colors.primaryDark
-        : selectedCategory?.accent ?? colors.primaryDark,
-      paymentMethod:
-        transactionDraft.type === 'transfer' ? 'Transfer helper' : 'Main Wallet',
+      icon: effectiveType === 'income' ? 'payments' : selectedCategory?.icon ?? 'payments',
+      accent: effectiveType === 'income' ? colors.primaryDark : selectedCategory?.accent ?? colors.primaryDark,
+      paymentMethod: 'Main Wallet',
       location: transactionDraft.recurring,
-      reference: makeReference(transactionDraft.type === 'transfer' ? 'TRF' : 'TRX'),
+      reference: makeReference('TRX'),
       dateLabel: transactionDraft.dateLabel,
       timeLabel: 'Just now',
     });
@@ -115,10 +106,10 @@ export default function AddTransactionScreen() {
     {
       key: 'category',
       label: 'Category',
-      value: transactionDraft.type === 'income' ? 'Income' : transactionDraft.category,
+      value: effectiveType === 'income' ? 'Income' : transactionDraft.category,
       icon: 'category',
       action:
-        transactionDraft.type === 'income'
+        effectiveType === 'income'
           ? undefined
           : () => router.push('/(finance)/select-category'),
     },
@@ -134,7 +125,7 @@ export default function AddTransactionScreen() {
   return (
     <FinanceScreen
       title="Add New Transaction"
-      subtitle="Create expense, income or transfer item"
+      subtitle="Create expense or income item"
       rightAccessory={
         <Pressable
           style={[
@@ -164,17 +155,15 @@ export default function AddTransactionScreen() {
           <View style={styles.selectorCopy}>
             <MaterialIcons
               name={
-                transactionDraft.type === 'income'
+                effectiveType === 'income'
                   ? 'south-west'
-                  : transactionDraft.type === 'transfer'
-                    ? 'swap-horiz'
-                    : 'north-east'
+                  : 'north-east'
               }
               size={18}
               color={colors.primaryDark}
             />
             <Text style={[styles.selectorLabel, { color: colors.text }]}>
-              {transactionDraft.type.charAt(0).toUpperCase() + transactionDraft.type.slice(1)}
+              {effectiveType.charAt(0).toUpperCase() + effectiveType.slice(1)}
             </Text>
           </View>
           <MaterialIcons
@@ -186,8 +175,8 @@ export default function AddTransactionScreen() {
 
         {typeMenuOpen ? (
           <View style={styles.typeOptionWrap}>
-            {(['expense', 'income', 'transfer'] as const).map((item) => {
-              const selected = item === transactionDraft.type;
+            {(['expense', 'income'] as const).map((item) => {
+              const selected = item === effectiveType;
               return (
                 <Pressable
                   key={item}
@@ -268,11 +257,7 @@ export default function AddTransactionScreen() {
             value={transactionDraft.merchant}
             onChangeText={(value) => updateTransactionDraft({ merchant: value })}
             placeholder={
-              transactionDraft.type === 'transfer'
-                ? 'Enter recipient'
-                : transactionDraft.type === 'income'
-                  ? 'Enter income source'
-                  : 'Enter merchant name'
+              effectiveType === 'income' ? 'Enter income source' : 'Enter merchant name'
             }
             placeholderTextColor={hexToRgba(colors.text, 0.28)}
             style={[styles.textInput, { color: colors.text }]}
