@@ -34,7 +34,6 @@ const oauth2Config = {
   tokenEndpoint: process.env.EXPO_PUBLIC_OAUTH_TOKEN_ENDPOINT?.trim() ?? '',
   userInfoEndpoint: process.env.EXPO_PUBLIC_OAUTH_USERINFO_ENDPOINT?.trim() ?? '',
   clientId: process.env.EXPO_PUBLIC_OAUTH_CLIENT_ID?.trim() ?? '',
-  clientSecret: process.env.EXPO_PUBLIC_OAUTH_CLIENT_SECRET?.trim() ?? '',
   scope: process.env.EXPO_PUBLIC_OAUTH_SCOPE?.trim() ?? 'openid profile email',
 };
 
@@ -120,7 +119,6 @@ async function fetchUserProfile(accessToken: string, fallbackUsername: string, t
     avatarUrl: payload.picture,
     phone: payload.phone_number,
     language: payload.locale,
-    currency: payload.zoneinfo,
   } satisfies UserProfile;
 }
 
@@ -142,9 +140,6 @@ export async function signInWithOAuth2Password({
     password,
     client_id: oauth2Config.clientId,
     scope: oauth2Config.scope,
-    ...(oauth2Config.clientSecret
-      ? { client_secret: oauth2Config.clientSecret }
-      : {}),
   });
 
   const tokenResponse = await fetch(oauth2Config.tokenEndpoint, {

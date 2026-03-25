@@ -18,7 +18,18 @@ export const receiptImportSourceCards: {
 ];
 
 function buildReceiptImportDraft(
-  draft: Omit<ReceiptImportDraft, 'ocrRawText' | 'ocrStatus' | 'ocrError'>
+  draft: Omit<
+    ReceiptImportDraft,
+    | 'ocrRawText'
+    | 'ocrStatus'
+    | 'ocrError'
+    | 'backendOcrRecordId'
+    | 'backendOcrStatus'
+    | 'backendOcrError'
+    | 'backendOcrWarnings'
+    | 'backendOcrRequestId'
+    | 'backendOcrMessage'
+  >
 ): ReceiptImportDraft {
   return {
     ...draft,
@@ -26,6 +37,12 @@ function buildReceiptImportDraft(
     ocrStatus: draft.kind === 'image' ? 'idle' : 'error',
     ocrError: draft.kind === 'image' ? null : 'OCR only runs on image receipts.',
     ocrProvider: draft.kind === 'image' ? 'manual-review' : 'manual-review',
+    backendOcrRecordId: null,
+    backendOcrStatus: 'idle',
+    backendOcrError: null,
+    backendOcrWarnings: [],
+    backendOcrRequestId: null,
+    backendOcrMessage: null,
   };
 }
 

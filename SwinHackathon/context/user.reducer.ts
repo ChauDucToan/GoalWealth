@@ -15,6 +15,7 @@ export const initialUserState: UserState = {
     biometricsEnabled: false,
   },
   accessToken: null,
+  authMode: null,
   loading: false,
   error: null,
 };
@@ -33,6 +34,7 @@ export function userReducer(state: UserState, action: UserAction): UserState {
         isAuthenticated: true,
         profile: action.payload.profile,
         accessToken: action.payload.accessToken,
+        authMode: action.payload.authMode,
         loading: false,
         error: null,
       };
@@ -86,11 +88,16 @@ export const userActions = {
     type: 'user/set-loading',
     payload: { loading },
   }),
-  signInSuccess: (profile: UserProfile, accessToken: string): UserAction => ({
+  signInSuccess: (
+    profile: UserProfile,
+    accessToken: string,
+    authMode: UserState['authMode']
+  ): UserAction => ({
     type: 'user/sign-in-success',
     payload: {
       profile,
       accessToken,
+      authMode,
     },
   }),
   signOut: (): UserAction => ({

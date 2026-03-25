@@ -1,4 +1,5 @@
 import { useIntroPreferences } from '@/context/introPreferencesContext';
+import { useMyUser } from '@/context/myUserContext';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -129,6 +130,7 @@ export default function Index() {
   const { colors } = useTheme();
   const router = useRouter();
   const { hasSeenWelcome, isIntroPreferencesReady } = useIntroPreferences();
+  const { state, isSessionReady } = useMyUser();
 
   const [phase, setPhase] = useState<LoadingPhase>('splash');
   const [progress, setProgress] = useState(0);
@@ -144,7 +146,7 @@ export default function Index() {
   );
 
   useEffect(() => {
-    if (!isIntroPreferencesReady) {
+    if (!isIntroPreferencesReady || !isSessionReady) {
       return;
     }
 
@@ -156,7 +158,10 @@ export default function Index() {
         phaseSchedule.splash + phaseSchedule.progress + phaseSchedule.photo
       ),
       setTimeout(
-        () => router.replace(hasSeenWelcome ? '/(auth)/signIn' : '/welcome'),
+        () =>
+          router.replace(
+            state.isAuthenticated ? '/(tabs)/home' : hasSeenWelcome ? '/(auth)/signIn' : '/welcome'
+          ),
         phaseSchedule.splash +
           phaseSchedule.progress +
           phaseSchedule.photo +
@@ -165,7 +170,7 @@ export default function Index() {
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [hasSeenWelcome, isIntroPreferencesReady, phaseSchedule, router]);
+  }, [hasSeenWelcome, isIntroPreferencesReady, isSessionReady, phaseSchedule, router, state.isAuthenticated]);
 
   useEffect(() => {
     if (phase !== 'progress') {

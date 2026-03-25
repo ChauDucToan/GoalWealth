@@ -16,8 +16,8 @@ export default function ResetMemoryScreen() {
 
   return (
     <AssistantScreen
-      title="Clear Chatbot Data"
-      subtitle="Reset stored assistant memory, notes and demo conversation history"
+      title="Clear local assistant data"
+      subtitle="Reset local notes, thread state and demo history on this device"
     >
       <View style={styles.stack}>
         <AssistantCard style={[styles.warningCard, { backgroundColor: colors.darkBackground }]}>
@@ -33,7 +33,7 @@ export default function ResetMemoryScreen() {
             This will reset the assistant workspace
           </Text>
           <Text style={[styles.warningBody, { color: hexToRgba(colors.card, 0.78) }]}>
-            Your current demo thread, adaptive memory and saved assistant notes will be cleared.
+            Your current demo thread, local notes and adaptive UX preferences will be cleared from frontend state.
           </Text>
         </AssistantCard>
 
@@ -42,8 +42,8 @@ export default function ResetMemoryScreen() {
           <View style={styles.listStack}>
             {[
               'Current assistant conversation',
-              'Adaptive memory preferences',
-              'Custom memory notes',
+              'Adaptive local preferences',
+              'Local assistant notes',
               'Selected scenario state',
             ].map((item) => (
               <View key={item} style={styles.listRow}>

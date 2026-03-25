@@ -3,9 +3,13 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { getReceiptOcrAvailability, recognizeReceiptText } from '@/components/smart-budgeting/receipt-ocr';
 import { Typography } from '@/constants/theme';
+import { useMyUser } from '@/context/myUserContext';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
+import { normalizeGoalwealthError } from '@/services/api/errors';
+import { getGoalwealthOcrRecord, ingestGoalwealthOcr } from '@/services/api/ocr';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -92,13 +96,36 @@ function extractAmountFromRawText(rawText?: string) {
   return normalized[0].toFixed(2);
 }
 
+function formatBackendOcrStatusLabel(
+  status: 'idle' | 'submitting' | 'accepted' | 'pending_user_context' | 'pending_backend' | 'ready' | 'error' | undefined
+) {
+  switch (status) {
+    case 'submitting':
+      return 'Submitting to GoalWealth...';
+    case 'accepted':
+      return 'Accepted by GoalWealth';
+    case 'pending_user_context':
+      return 'Needs user context';
+    case 'pending_backend':
+      return 'Backend processing';
+    case 'ready':
+      return 'Normalized result ready';
+    case 'error':
+      return 'Sync issue';
+    default:
+      return 'Not submitted';
+  }
+}
+
 export default function SmartBudgetingReceiptScanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const { state: userState } = useMyUser();
   const { receiptImportDraft, setReceiptImportDraft } = useAssistant();
   const { categories, updateTransactionDraft } = useFinance();
   const { isNavigating, runNavigation } = useSetupNavigationDebounce();
+  const liveAdapterEnabled = isGoalwealthLiveAdapterEnabled();
   const importedName = prettifyReceiptName(receiptImportDraft?.name);
   const sourceLabel =
     receiptImportDraft?.source === 'camera'
@@ -129,8 +156,7 @@ export default function SmartBudgetingReceiptScanScreen() {
     if (
       !receiptImportDraft ||
       !receiptImportDraft.uri ||
-      receiptImportDraft.ocrStatus === 'running' ||
-      receiptImportDraft.ocrStatus === 'success'
+      receiptImportDraft.ocrStatus !== 'idle'
     ) {
       return;
     }
@@ -162,6 +188,129 @@ export default function SmartBudgetingReceiptScanScreen() {
     };
   }, [receiptImportDraft, setReceiptImportDraft]);
 
+  useEffect(() => {
+    if (!receiptImportDraft) {
+      return;
+    }
+
+    const trimmedRawText = receiptImportDraft.ocrRawText?.trim() ?? '';
+    const backendStatus = receiptImportDraft.backendOcrStatus ?? 'idle';
+
+    if (
+      !liveAdapterEnabled ||
+      !trimmedRawText ||
+      receiptImportDraft.backendOcrRecordId ||
+      backendStatus === 'submitting' ||
+      backendStatus === 'accepted' ||
+      backendStatus === 'pending_user_context' ||
+      backendStatus === 'pending_backend' ||
+      backendStatus === 'ready' ||
+      backendStatus === 'error'
+    ) {
+      return;
+    }
+
+    if (!userState.accessToken?.trim()) {
+      setReceiptImportDraft({
+        ...receiptImportDraft,
+        backendOcrStatus: 'error',
+        backendOcrError: 'Sign in again to sync OCR with GoalWealth.',
+        backendOcrWarnings: [],
+        backendOcrRequestId: null,
+        backendOcrMessage: null,
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    setReceiptImportDraft({
+      ...receiptImportDraft,
+      backendOcrStatus: 'submitting',
+      backendOcrError: null,
+      backendOcrWarnings: [],
+      backendOcrRequestId: null,
+      backendOcrMessage: null,
+    });
+
+    void ingestGoalwealthOcr({ raw_text: trimmedRawText }, userState.accessToken)
+      .then(async (response) => {
+        if (cancelled) {
+          return;
+        }
+
+        const acceptedDraft = {
+          ...receiptImportDraft,
+          backendOcrRecordId: response.data.ocr_record_id,
+          backendOcrStatus: response.data.status,
+          backendOcrError: null,
+          backendOcrWarnings: response.warnings,
+          backendOcrRequestId: response.requestId,
+          backendOcrMessage: response.data.message,
+        };
+
+        setReceiptImportDraft(acceptedDraft);
+
+        try {
+          const record = await getGoalwealthOcrRecord(
+            response.data.ocr_record_id,
+            userState.accessToken
+          );
+
+          if (cancelled) {
+            return;
+          }
+
+          setReceiptImportDraft({
+            ...acceptedDraft,
+            backendOcrStatus: record.data.status,
+            backendOcrWarnings: [
+              ...new Set([
+                ...(response.warnings ?? []),
+                ...(record.warnings ?? []),
+                ...(record.data.warnings ?? []),
+              ]),
+            ],
+            backendOcrRequestId: record.requestId ?? response.requestId,
+          });
+        } catch (error) {
+          if (cancelled) {
+            return;
+          }
+
+          const normalizedError = normalizeGoalwealthError(error);
+
+          setReceiptImportDraft({
+            ...acceptedDraft,
+            backendOcrStatus: 'error',
+            backendOcrError: normalizedError.message,
+            backendOcrWarnings: normalizedError.warnings,
+            backendOcrRequestId: normalizedError.requestId ?? response.requestId,
+          });
+        }
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        const normalizedError = normalizeGoalwealthError(error);
+
+        setReceiptImportDraft({
+          ...receiptImportDraft,
+          backendOcrStatus: 'error',
+          backendOcrError: normalizedError.message,
+          backendOcrWarnings: normalizedError.warnings,
+          backendOcrRequestId: normalizedError.requestId,
+          backendOcrMessage: null,
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [liveAdapterEnabled, receiptImportDraft, setReceiptImportDraft, userState.accessToken]);
+
   const extractedFields = useMemo(
     () => [
       { label: 'Merchant', value: importedName },
@@ -181,11 +330,21 @@ export default function SmartBudgetingReceiptScanScreen() {
                 : 'No text found'
               : receiptImportDraft?.ocrError ?? 'Not started',
       },
+      ...(liveAdapterEnabled
+        ? [
+            {
+              label: 'GoalWealth sync',
+              value: formatBackendOcrStatusLabel(receiptImportDraft?.backendOcrStatus),
+            },
+          ]
+        : []),
     ],
     [
       detectedAmount,
       importedName,
+      liveAdapterEnabled,
       rawOcrText,
+      receiptImportDraft?.backendOcrStatus,
       receiptImportDraft?.ocrError,
       receiptImportDraft?.ocrProvider,
       receiptImportDraft?.ocrStatus,
@@ -298,6 +457,63 @@ export default function SmartBudgetingReceiptScanScreen() {
             </Text>
           </View>
         </FinanceCard>
+
+        {liveAdapterEnabled ? (
+          <FinanceCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>GoalWealth sync</Text>
+            <Text style={[styles.sectionBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              Raw OCR text is sent to the adapter as `raw_text`. Normalization stays on the backend.
+            </Text>
+            <View style={styles.fieldGroup}>
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.48) }]}>
+                  Status
+                </Text>
+                <Text style={[styles.fieldValue, { color: colors.text }]}>
+                  {formatBackendOcrStatusLabel(receiptImportDraft.backendOcrStatus)}
+                </Text>
+              </View>
+
+              {receiptImportDraft.backendOcrRecordId ? (
+                <View style={styles.fieldRow}>
+                  <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.48) }]}>
+                    OCR record
+                  </Text>
+                  <Text style={[styles.fieldValue, { color: colors.text }]}>
+                    {receiptImportDraft.backendOcrRecordId}
+                  </Text>
+                </View>
+              ) : null}
+
+              {receiptImportDraft.backendOcrMessage ? (
+                <View style={styles.fieldRow}>
+                  <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.48) }]}>
+                    Adapter
+                  </Text>
+                  <Text style={[styles.fieldValue, { color: colors.text }]}>
+                    {receiptImportDraft.backendOcrMessage}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {receiptImportDraft.backendOcrError ? (
+              <Text style={[styles.syncError, { color: colors.error }]}>
+                {receiptImportDraft.backendOcrError}
+              </Text>
+            ) : null}
+
+            {receiptImportDraft.backendOcrWarnings?.length ? (
+              <View style={styles.warningList}>
+                {receiptImportDraft.backendOcrWarnings.map((warning) => (
+                  <Text key={warning} style={[styles.syncWarning, { color: colors.warning }]}>
+                    {warning}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+          </FinanceCard>
+        ) : null}
 
         <FinanceCard>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Budget category</Text>
@@ -475,6 +691,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '500',
+  },
+  syncError: {
+    marginTop: 14,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  warningList: {
+    marginTop: 10,
+    gap: 6,
+  },
+  syncWarning: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
   },
   buttonRow: {
     flexDirection: 'row',

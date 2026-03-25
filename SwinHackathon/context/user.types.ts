@@ -20,6 +20,7 @@ export type UserState = {
   profile: UserProfile | null;
   preferences: UserPreferences;
   accessToken: string | null;
+  authMode: 'goalwealth-dev-bridge' | 'legacy-oauth' | null;
   loading: boolean;
   error: string | null;
 };
@@ -31,6 +32,7 @@ export type UserActionPayloadMap = {
   'user/sign-in-success': {
     profile: UserProfile;
     accessToken: string;
+    authMode: UserState['authMode'];
   };
   'user/sign-out': undefined;
   'user/update-profile': {

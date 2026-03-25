@@ -28,6 +28,7 @@ export default function AssistantChatScreen() {
   const {
     activeScenarioId,
     conversation,
+    activeThreadRuntime,
     assistantSettings,
     customThread,
     selectAssistantScenario,
@@ -54,6 +55,12 @@ export default function AssistantChatScreen() {
   const scenario = isCustomThread
     ? customThread
     : getAssistantScenario(normalizedScenarioId) ?? assistantScenarios[0];
+  const usedContextLabels = [
+    activeThreadRuntime.usedContext?.memory ? 'Memory' : null,
+    activeThreadRuntime.usedContext?.ocr_records?.length ? 'OCR' : null,
+    activeThreadRuntime.usedContext?.smart_agent ? 'Smart agent' : null,
+    activeThreadRuntime.usedContext?.user_present ? 'Profile' : null,
+  ].filter(Boolean) as string[];
 
   return (
     <KeyboardAvoidingView
@@ -120,6 +127,80 @@ export default function AssistantChatScreen() {
               </View>
             </View>
           </AssistantCard>
+
+          {(activeThreadRuntime.status === 'sending' ||
+            activeThreadRuntime.error ||
+            activeThreadRuntime.warnings.length ||
+            activeThreadRuntime.sessionId ||
+            activeThreadRuntime.requestId) ? (
+            <AssistantCard>
+              <View style={styles.runtimeTopRow}>
+                <View
+                  style={[
+                    styles.runtimeBadge,
+                    {
+                      backgroundColor:
+                        activeThreadRuntime.mode === 'goalwealth-adapter'
+                          ? hexToRgba(colors.primaryDark, 0.1)
+                          : hexToRgba(colors.warning, 0.12),
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.runtimeBadgeText,
+                      {
+                        color:
+                          activeThreadRuntime.mode === 'goalwealth-adapter'
+                            ? colors.primaryDark
+                            : '#B45309',
+                      },
+                    ]}
+                  >
+                    {activeThreadRuntime.mode === 'goalwealth-adapter'
+                      ? 'GoalWealth live'
+                      : 'Local preview'}
+                  </Text>
+                </View>
+
+                {activeThreadRuntime.status === 'sending' ? (
+                  <Text style={[styles.runtimeMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                    Sending...
+                  </Text>
+                ) : null}
+              </View>
+
+              {activeThreadRuntime.error ? (
+                <Text style={[styles.runtimeError, { color: colors.error }]}>
+                  {activeThreadRuntime.error}
+                </Text>
+              ) : null}
+
+              {activeThreadRuntime.warnings.map((warning) => (
+                <Text key={warning} style={[styles.runtimeWarning, { color: colors.warning }]}>
+                  {warning}
+                </Text>
+              ))}
+
+              <View style={styles.runtimeMetaStack}>
+                {usedContextLabels.length ? (
+                  <Text style={[styles.runtimeMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                    Used context: {usedContextLabels.join(' • ')}
+                  </Text>
+                ) : null}
+                {activeThreadRuntime.sessionId ? (
+                  <Text style={[styles.runtimeMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                    Session {activeThreadRuntime.sessionId}
+                  </Text>
+                ) : null}
+                {activeThreadRuntime.requestId ? (
+                  <Text style={[styles.runtimeMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                    Request {activeThreadRuntime.requestId}
+                  </Text>
+                ) : null}
+              </View>
+            </AssistantCard>
+          ) : null}
 
           <AssistantConversation messages={conversation} />
         </View>
@@ -200,21 +281,28 @@ export default function AssistantChatScreen() {
             style={[
               styles.composerSend,
               {
-                backgroundColor: draft.trim()
+                backgroundColor: draft.trim() && activeThreadRuntime.status !== 'sending'
                   ? colors.primaryDark
                   : hexToRgba(colors.primaryDark, 0.2),
               },
             ]}
-            onPress={() => {
-              if (!draft.trim()) {
+            onPress={async () => {
+              const trimmed = draft.trim();
+
+              if (!trimmed || activeThreadRuntime.status === 'sending') {
                 return;
               }
 
-              sendAssistantMessage(draft);
               setDraft('');
+              await sendAssistantMessage(trimmed);
             }}
+            disabled={activeThreadRuntime.status === 'sending'}
           >
-            <MaterialIcons name="north-east" size={22} color={colors.card} />
+            <MaterialIcons
+              name={activeThreadRuntime.status === 'sending' ? 'hourglass-top' : 'north-east'}
+              size={22}
+              color={colors.card}
+            />
           </Pressable>
         </Pressable>
       </View>
@@ -302,6 +390,43 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  runtimeTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  runtimeBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  runtimeBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  runtimeMetaStack: {
+    marginTop: 10,
+    gap: 4,
+  },
+  runtimeMeta: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+  runtimeError: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+  },
+  runtimeWarning: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
   },
   bottomDock: {
     paddingHorizontal: 18,

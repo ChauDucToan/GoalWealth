@@ -256,8 +256,8 @@ export default function AssistantSettingsScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Memory & privacy</Text>
               <View style={styles.toggleStack}>
                 <ToggleRow
-                  label="Adaptive memory"
-                  helper="Remember useful preferences across sessions"
+                  label="Adaptive local memory"
+                  helper="Keep local assistant preferences across sessions on this device"
                   value={assistantSettings.adaptiveMemory}
                   onValueChange={(value) => setAssistantSettings({ adaptiveMemory: value })}
                 />
@@ -277,12 +277,15 @@ export default function AssistantSettingsScreen() {
             </AssistantCard>
 
             <AssistantCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Assistant memory notes</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Local assistant notes</Text>
+              <Text style={[styles.memoryHelper, { color: hexToRgba(colors.text, 0.54) }]}>
+                These notes stay in frontend UX state. They do not become GoalWealth product memory or backend truth.
+              </Text>
               <TextInput
                 value={assistantSettings.memoryNotes}
                 onChangeText={(value) => setAssistantSettings({ memoryNotes: value })}
                 multiline
-                placeholder="What should Finpal remember?"
+                placeholder="Add local reminders for this device..."
                 placeholderTextColor={hexToRgba(colors.text, 0.34)}
                 style={[
                   styles.textArea,
@@ -292,7 +295,7 @@ export default function AssistantSettingsScreen() {
 
               <View style={styles.privacyButtons}>
                 <ThemeButton
-                  title="Clear assistant data"
+                  title="Clear local assistant data"
                   onPress={() => router.push('/(assistant)/reset-memory')}
                   colorBackground={colors.primaryDark}
                   colorText={colors.card}
@@ -471,6 +474,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     lineHeight: 21,
     textAlignVertical: 'top',
+  },
+  memoryHelper: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   toggleStack: {
     marginTop: 14,
