@@ -38,7 +38,7 @@ Tài liệu này dành cho người mới vào project và muốn:
 3. Warm sync hoặc targeted refresh gọi `RssCrawlerFunction`
 4. Crawler fetch RSS, parse item, dedupe, embed, upsert vào OpenSearch Serverless
 5. `SmartAgentFunction` query OpenSearch và có thể trigger refresh nền
-6. Smart Agent trả JSON sạch cho orchestrator
+6. `SmartAgentFunction` trả JSON sạch cho orchestrator
 
 ---
 
@@ -50,6 +50,8 @@ Cần có:
 - `python3 -m pip`
 - S3 bucket để chứa CloudFormation packaging artifacts
 - AWS region phù hợp với model embedding đang dùng
+
+Nếu máy có `uv`, deploy script sẽ tự thử dùng `uv` trước rồi fallback về `pip`.
 
 ---
 
@@ -102,10 +104,11 @@ bash scripts/aws/package_and_deploy.sh goalwealth-artifacts-osla-apne1 goalwealt
 ```
 
 Script này sẽ:
-1. cài dependencies từ `src/requirements.txt` vào `.build/lambda-src`
-2. copy source code vào `.build/lambda-src`
-3. package Lambda artifact lên S3
-4. deploy/update CloudFormation stack
+1. nếu có `uv` thì thử `uv pip install` vào `.build/lambda-src`
+2. nếu `uv` không có hoặc fail thì fallback sang `python3 -m pip install`
+3. copy source code vào `.build/lambda-src`
+4. package Lambda artifact lên S3
+5. deploy/update CloudFormation stack
 
 ### Bước 3: seed RSS feeds
 
@@ -167,6 +170,25 @@ Sửa file local xong mà không redeploy thì Lambda trên AWS **không tự c�
 Ở đây:
 - `infra/sample-feeds.json`
 
+### Hiện đang có những nhóm feed nào?
+#### Feed active đã verify được từ môi trường test
+- Tuổi Trẻ
+- Thanh Niên
+- Dân Trí
+- Vietnamnet
+- 24h
+- cùng với các feed quốc tế như TechCrunch/AWS/NVIDIA/The Verge/NYT
+
+#### Feed experimental đang để inactive
+- VnExpress
+- CafeF
+
+Lý do:
+- VnExpress trả HTTP 406 trong môi trường test hiện tại
+- CafeF redirect sang anti-bot/sorry page
+
+Chúng vẫn nằm trong file seed để dễ bật sau khi có adapter phù hợp, nhưng không nên crawl mặc định lúc này.
+
 ### Muốn thêm feed mới
 1. mở `infra/sample-feeds.json`
 2. thêm item mới theo format:
@@ -227,12 +249,17 @@ Khuyến nghị hiện tại:
 
 ## 8. Dự án dùng uv thì cần lưu ý gì?
 
-Hiện project/local env có thể dùng `uv`, nhưng Lambda packaging script hiện đang build từ:
+Hiện project/local env có thể dùng `uv`, và deploy script đã tự thử:
+- `uv pip install ...`
+- nếu fail thì fallback sang `python3 -m pip install ...`
+
+Tuy nhiên input dependency hiện tại vẫn lấy từ:
 - `src/requirements.txt`
 
 Điều đó có nghĩa là:
 - local/dev workflow: có thể dùng `uv`
-- deploy workflow: vẫn phụ thuộc vào `src/requirements.txt`
+- deploy workflow: auto-detect `uv` hay `pip`
+- nhưng dependency source of truth cho Lambda package vẫn là `src/requirements.txt`
 
 ### Quy tắc nên nhớ
 Nếu dependency local đã đổi nhưng `src/requirements.txt` chưa đổi, thì Lambda artifact build ra có thể thiếu package.
@@ -243,16 +270,13 @@ Ví dụ lỗi kiểu:
 
 thường là dấu hiệu package deploy chưa chứa dependency đúng.
 
-### Khuyến nghị
-Giữ `src/requirements.txt` phản ánh đúng dependency dùng thật trong code trước khi redeploy.
-
 ---
 
 ## 9. Các lỗi thường gặp
 
 ### Lỗi 1: `Unknown options: --cli-binary-format`
 Nguyên nhân:
-- dùng AWS CLI v1 với script cũ
+- dùng AWS CLI v1 với script invoke cũ
 
 Trạng thái hiện tại:
 - đã sửa script invoke để dùng `fileb://payload.json`
@@ -295,6 +319,14 @@ Cách xử lý:
 ```bash
 bash scripts/aws/seed_feed_registry.sh <stack-name> <region>
 ```
+
+### Lỗi 5: VnExpress/CafeF không crawl được
+Nguyên nhân thường gặp:
+- anti-bot / header restrictions từ phía publisher
+
+Tình trạng hiện tại:
+- VnExpress và CafeF đang được giữ ở trạng thái `inactive` trong sample seed
+- chỉ nên bật sau khi có custom fetch strategy phù hợp
 
 ---
 

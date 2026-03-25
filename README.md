@@ -35,6 +35,28 @@ Check nhanh:
 aws bedrock list-foundation-models --region ap-northeast-1 | grep titan
 ```
 
+## RSS feed sources
+Danh sách seed ban đầu nằm ở:
+- `infra/sample-feeds.json`
+
+Hiện file này gồm:
+- feed quốc tế (TechCrunch, AWS ML Blog, NVIDIA, The Verge, NYT)
+- feed báo Việt đã verify được từ môi trường test:
+  - Tuổi Trẻ
+  - Thanh Niên
+  - Dân Trí
+  - Vietnamnet
+  - 24h
+- feed experimental đang để `inactive`:
+  - VnExpress
+  - CafeF
+
+Lý do để `inactive` cho VnExpress/CafeF:
+- VnExpress trả HTTP 406 từ môi trường test hiện tại
+- CafeF redirect sang anti-bot/sorry page
+
+Nên hiện tại chúng được giữ trong seed file để dễ bật sau, nhưng không crawl mặc định.
+
 ## Triển khai nhanh
 ### 1. Tạo S3 artifact bucket
 ```bash
@@ -97,18 +119,23 @@ Lưu ý:
 - sửa feed cũ: OK
 - xóa feed khỏi JSON: **không tự xóa khỏi DynamoDB**
 
-Nếu muốn dừng một feed cũ, cách an toàn là cập nhật item trong DynamoDB thành:
+Nếu muốn dừng một feed cũ, cách an toàn là cập nhật item trong JSON thành:
 - `status = inactive`
 
-## Dự án dùng uv nhưng deploy đang package từ requirements.txt
-Hiện tại Lambda packaging script build từ:
-- `src/requirements.txt`
+rồi seed lại.
 
-Nếu anh/em quản lý local env bằng `uv`, hãy đảm bảo dependency thực tế được phản ánh vào `src/requirements.txt` trước khi deploy.
+## Dự án dùng uv nhưng deploy có thể tự chọn uv hoặc pip
+Deploy script hiện sẽ:
+1. nếu máy có `uv` → thử `uv pip install ...`
+2. nếu `uv` không có hoặc fail → fallback sang `python3 -m pip install ...`
+
+Tuy nhiên input dependency vẫn đang lấy từ:
+- `src/requirements.txt`
 
 Nói ngắn gọn:
 - local/dev có thể dùng `uv`
-- deploy script hiện tại vẫn lấy dependency từ `src/requirements.txt`
+- deploy script hiện auto-detect `uv` vs `pip`
+- nhưng dependency source of truth cho Lambda package vẫn là `src/requirements.txt`
 
 ## Tài liệu chi tiết
 Xem runbook đầy đủ tại:

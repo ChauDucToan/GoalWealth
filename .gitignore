@@ -6,7 +6,8 @@ dist/
 wheels/
 *.egg-info
 
-aws/
+aws/config
+aws/credentials
 
 # Virtual environments
 .venv

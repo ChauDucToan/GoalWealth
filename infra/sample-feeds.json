@@ -48,5 +48,118 @@
     "priority": 65,
     "tags": ["technology", "news"],
     "keywords": ["technology", "news", "ai", "internet"]
+  },
+  {
+    "feed_id": "tuoitre-latest",
+    "feed_url": "https://tuoitre.vn/rss/tin-moi-nhat.rss",
+    "source_name": "Tuoi Tre",
+    "category": "vietnam-news",
+    "status": "active",
+    "priority": 88,
+    "tags": ["viet-nam", "news", "general"],
+    "keywords": ["viet nam", "tin moi", "thoi su", "kinh doanh"]
+  },
+  {
+    "feed_id": "thanhnien-home",
+    "feed_url": "https://thanhnien.vn/rss/home.rss",
+    "source_name": "Thanh Nien",
+    "category": "vietnam-news",
+    "status": "active",
+    "priority": 84,
+    "tags": ["viet-nam", "news", "general"],
+    "keywords": ["viet nam", "tin tuc", "thanh nien", "thoi su"]
+  },
+  {
+    "feed_id": "dantri-home",
+    "feed_url": "https://dantri.com.vn/rss/home.rss",
+    "source_name": "Dan Tri",
+    "category": "vietnam-news",
+    "status": "active",
+    "priority": 82,
+    "tags": ["viet-nam", "news", "general"],
+    "keywords": ["dan tri", "viet nam", "tin moi", "xa hoi"]
+  },
+  {
+    "feed_id": "dantri-business",
+    "feed_url": "https://dantri.com.vn/rss/kinh-doanh.rss",
+    "source_name": "Dan Tri Kinh Doanh",
+    "category": "business",
+    "status": "active",
+    "priority": 81,
+    "tags": ["viet-nam", "business", "economy"],
+    "keywords": ["kinh doanh", "tai chinh", "doanh nghiep", "thi truong"]
+  },
+  {
+    "feed_id": "vietnamnet-tech",
+    "feed_url": "https://vietnamnet.vn/cong-nghe.rss",
+    "source_name": "Vietnamnet Cong Nghe",
+    "category": "technology",
+    "status": "active",
+    "priority": 79,
+    "tags": ["viet-nam", "technology", "ai"],
+    "keywords": ["cong nghe", "ai", "internet", "viet nam"]
+  },
+  {
+    "feed_id": "vietnamnet-business",
+    "feed_url": "https://vietnamnet.vn/kinh-doanh.rss",
+    "source_name": "Vietnamnet Kinh Doanh",
+    "category": "business",
+    "status": "active",
+    "priority": 78,
+    "tags": ["viet-nam", "business", "economy"],
+    "keywords": ["kinh doanh", "tai chinh", "viet nam", "doanh nghiep"]
+  },
+  {
+    "feed_id": "24h-home",
+    "feed_url": "https://www.24h.com.vn/upload/rss/trangchu24h.rss",
+    "source_name": "24h",
+    "category": "vietnam-news",
+    "status": "active",
+    "priority": 72,
+    "tags": ["viet-nam", "news", "general"],
+    "keywords": ["24h", "tin tuc", "viet nam", "tong hop"]
+  },
+  {
+    "feed_id": "24h-finance",
+    "feed_url": "https://www.24h.com.vn/upload/rss/taichinhbatdongsan.rss",
+    "source_name": "24h Tai Chinh Bat Dong San",
+    "category": "business",
+    "status": "active",
+    "priority": 71,
+    "tags": ["viet-nam", "finance", "real-estate"],
+    "keywords": ["tai chinh", "bat dong san", "thi truong", "viet nam"]
+  },
+  {
+    "feed_id": "vnexpress-latest-experimental",
+    "feed_url": "https://vnexpress.net/rss/tin-moi-nhat.rss",
+    "source_name": "VnExpress (experimental)",
+    "category": "vietnam-news",
+    "status": "inactive",
+    "priority": 95,
+    "tags": ["viet-nam", "news", "experimental"],
+    "keywords": ["vnexpress", "tin moi", "viet nam"],
+    "notes": "Direct test from current environment returned HTTP 406. Keep inactive until a custom fetch adapter/header strategy is added."
+  },
+  {
+    "feed_id": "vnexpress-business-experimental",
+    "feed_url": "https://vnexpress.net/rss/kinh-doanh.rss",
+    "source_name": "VnExpress Kinh Doanh (experimental)",
+    "category": "business",
+    "status": "inactive",
+    "priority": 94,
+    "tags": ["viet-nam", "business", "experimental"],
+    "keywords": ["vnexpress", "kinh doanh", "tai chinh"],
+    "notes": "Direct test from current environment returned HTTP 406. Keep inactive until a custom fetch adapter/header strategy is added."
+  },
+  {
+    "feed_id": "cafef-home-experimental",
+    "feed_url": "https://cafef.vn/rss.chn",
+    "source_name": "CafeF (experimental)",
+    "category": "business",
+    "status": "inactive",
+    "priority": 93,
+    "tags": ["viet-nam", "business", "stocks", "experimental"],
+    "keywords": ["cafef", "chung khoan", "tai chinh", "doanh nghiep"],
+    "notes": "Direct test from current environment redirected to anti-bot/sorry page. Keep inactive until a custom fetch adapter/browser-backed strategy is added."
   }
 ]
