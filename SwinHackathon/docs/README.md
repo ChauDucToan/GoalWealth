@@ -42,10 +42,10 @@ Thư mục `docs` hiện đã được tách thành nhiều tài liệu để d�
 ## Tài liệu bổ sung
 
 6. [Bộ tài liệu `Kha-*` cho đợt triển khai gần đây](./Kha-README.md)
-7. Nhóm `Kha-*` hiện đã được mở rộng thêm tài liệu riêng cho `Financial Assessment`, `Financial Goals`, và `Profile Setup & Account Completion`.
+7. Nhóm `Kha-*` hiện đã được mở rộng thêm tài liệu riêng cho `Financial Assessment`, `Financial Goals`, `Profile Setup & Account Completion`, và `Subscription Management`.
 
 ## Ghi chú
 
 - Phần timeline lịch sử được tổng hợp từ git history hiện còn trong branch `develop`.
 - Phần kiến trúc và flow được đối chiếu lại trực tiếp với source code hiện có trong repo.
-- `Subscription Management` hiện vẫn đang là thay đổi ở worktree, chưa commit vào git tại thời điểm tạo bộ docs này.
+- `Subscription Management` hiện đã có source và commit riêng trong branch hiện tại; một số mô tả ở nhóm `HeheBoiz-*` có thể phản ánh trạng thái cũ hơn.

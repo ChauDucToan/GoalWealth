@@ -39,6 +39,7 @@ Các file hiện có:
 
 - `app/(finance)/smart-budgeting/_layout.tsx`
 - `app/(finance)/smart-budgeting/_data.ts`
+- `app/(finance)/smart-budgeting/_navigation.ts`
 - `app/(finance)/smart-budgeting/index.tsx`
 - `app/(finance)/smart-budgeting/monthly-budget.tsx`
 - `app/(finance)/smart-budgeting/budget-insights.tsx`
@@ -257,6 +258,60 @@ Nút back của màn này đã được chỉnh để quay thẳng về:
 - `/(finance)/smart-budgeting`
 
 Điều này giúp khi user đi qua setup hoặc receipt flow xong, trở lại hub một cách rõ ràng hơn.
+
+## 10. Chính sách điều hướng back mới trong `Smart Budgeting`
+
+### 10.1. Vấn đề trước khi sửa
+
+Trước đó một số màn trong `Smart Budgeting` dùng:
+
+- `router.back()`
+
+thuần theo history stack.
+
+Điều này dẫn tới trải nghiệm không ổn định:
+
+- hoàn tất flow rồi nhưng back vẫn lần ngược qua màn trung gian
+- một số route vào thẳng từ deep link hoặc từ nhánh `replace()` thì back không nhất quán
+- cùng một màn nhưng hành vi back thay đổi tùy đường đi trước đó
+
+### 10.2. Cách đã sửa
+
+Module hiện dùng helper:
+
+- `app/(finance)/smart-budgeting/_navigation.ts`
+
+Helper này chuẩn hóa back theo route đích cố định bằng `replace()`, thay vì tin vào stack history.
+
+### 10.3. Ý nghĩa UX
+
+Quy tắc hiện tại là:
+
+- nếu đang ở một bước setup thì back về bước trước của setup
+- nếu đã hoàn tất một quy trình như setup hoặc receipt import thì back quay về điểm đầu phù hợp, không lùi qua các màn đã hoàn tất
+- `Monthly Budget` luôn back về hub `Smart Budgeting`
+
+### 10.4. Các khu vực đã áp dụng
+
+Chính sách này đã được áp dụng cho:
+
+- `monthly-budget`
+- `budget-insights`
+- `manage-categories`
+- `share-budget`
+- `edit-category`
+- `add-member`
+- `delete-category`
+- toàn bộ cụm `setup/*`
+- cụm `receipt-gallery`, `receipt-scan`, `receipt-review`
+
+### 10.5. Kết quả
+
+Điều hướng trong `Smart Budgeting` hiện mang tính quyết định hơn:
+
+- user không bị “kẹt trong stack cũ”
+- các flow sau khi hoàn tất quay về đầu rõ ràng hơn
+- trải nghiệm test trên thiết bị thật dễ dự đoán hơn
 
 ## 10. `Budget Insights`
 

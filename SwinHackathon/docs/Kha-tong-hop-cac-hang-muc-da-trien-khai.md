@@ -23,6 +23,7 @@ Trong đợt làm việc này, phần việc tập trung lớn nhất nằm ở 
 5. mở rộng module `Smart Budgeting` từ một màn demo đơn lẻ thành một flow có cấu trúc hơn
 6. bổ sung tài liệu nội bộ để dễ bàn giao hoặc tiếp tục phát triển
 7. mở rộng coverage cho các board còn thiếu trong `fin/` như `Financial Assessment`, `Financial Goals`, `Profile Setup & Account Completion`
+8. dựng và refine thêm module `Subscription Management` cho sát board hơn
 
 ## 3. Các nhóm hạng mục chính đã làm
 
@@ -84,6 +85,21 @@ Các phần mới được bổ sung trong ngày làm việc gần nhất:
 - nối `Sign Up` vào profile setup flow mới
 - nối `Home` vào `Financial Assessment` và `Financial Goals` để có entry test thật
 
+### 3.6. Nhóm subscription management
+
+Các phần đã làm:
+
+- dựng overview workspace
+- dựng detail, add/edit, result, payments, history, stats
+- dựng setup flow 7 bước
+- nối `Home > Bills` vào module
+- refine thêm:
+  - service library/search state
+  - frequency chooser
+  - confirm overlay cho pause/activate/cancel
+  - payments/history từ list đơn sang workspace rõ hơn
+  - setup flow cho đồng đều hơn giữa các bước
+
 ## 4. Những màn hình hoặc flow đã được dựng theo thiết kế
 
 Dựa trên chuỗi yêu cầu và source code hiện tại, các màn sau đã được dựng hoặc làm mới đáng kể:
@@ -133,7 +149,18 @@ Dựa trên chuỗi yêu cầu và source code hiện tại, các màn sau đã 
 - `create.tsx`
 - `_layout.tsx`, `_data.ts`
 
-### 4.6. Trong `(auth)/profile-setup`
+### 4.6. Trong `(finance)/subscriptions` và `subscription-*`
+
+- `subscriptions.tsx`
+- `subscription/[id].tsx`
+- `subscription-add.tsx`
+- `subscription-result.tsx`
+- `subscription-payments.tsx`
+- `subscription-history.tsx`
+- `subscription-stats.tsx`
+- `subscription-setup/*`
+
+### 4.7. Trong `(auth)/profile-setup`
 
 - `avatar.tsx` đến `premium-success.tsx`
 - `_layout.tsx`, `_shared.tsx`, `_data.ts`
@@ -152,6 +179,7 @@ Không chỉ có dựng giao diện từ ảnh, đợt này còn có nhiều c�
 - sửa modal interaction trong transaction flow
 - chuyển các chỗ đang hardcode màu sang lấy từ theme
 - tách hoặc gộp folder route để phù hợp hơn với cách app đang tổ chức navigator
+- chuẩn hóa điều hướng back của `Smart Budgeting` sang kiểu route đích cố định thay vì phụ thuộc history stack
 
 ## 6. Cách triển khai tổng quát đã được áp dụng
 
@@ -197,7 +225,8 @@ Bộ tài liệu này được tách thành nhiều file để tiện đọc:
 5. `Kha-financial-assessment-flow-va-cac-quyet-dinh-trien-khai.md`
 6. `Kha-financial-goals-flow-va-cach-noi-vao-home.md`
 7. `Kha-profile-setup-account-completion-flow.md`
-8. `Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md`
+8. `Kha-subscription-management-flow-va-cac-refine-gan-day.md`
+9. `Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md`
 
 ## 10. Kết luận
 

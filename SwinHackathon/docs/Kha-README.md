@@ -25,10 +25,11 @@ thì nhóm `Kha-*` tập trung vào:
 5. [Financial Assessment flow và các quyết định triển khai](./Kha-financial-assessment-flow-va-cac-quyet-dinh-trien-khai.md)
 6. [Financial Goals flow và cách nối vào Home](./Kha-financial-goals-flow-va-cach-noi-vao-home.md)
 7. [Profile Setup & Account Completion flow](./Kha-profile-setup-account-completion-flow.md)
-8. [Assistant và các quyết định UX, chat, navigation](./Kha-assistant-va-cac-quyet-dinh-ux-chat-navigation.md)
-9. [File by file reference](./Kha-file-by-file-reference.md)
-10. [News & Resources và các quyết định điều hướng](./Kha-news-resources-va-cac-quyet-dinh-dieu-huong.md)
-11. [Phương pháp triển khai và nguyên tắc thực thi](./Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md)
+8. [Subscription Management flow và các refine gần đây](./Kha-subscription-management-flow-va-cac-refine-gan-day.md)
+9. [Assistant và các quyết định UX, chat, navigation](./Kha-assistant-va-cac-quyet-dinh-ux-chat-navigation.md)
+10. [File by file reference](./Kha-file-by-file-reference.md)
+11. [News & Resources và các quyết định điều hướng](./Kha-news-resources-va-cac-quyet-dinh-dieu-huong.md)
+12. [Phương pháp triển khai và nguyên tắc thực thi](./Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md)
 
 ## Ghi chú
 

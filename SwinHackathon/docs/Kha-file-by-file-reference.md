@@ -259,6 +259,160 @@ Vai trò:
 
 - bọc toàn module bằng provider riêng
 
+### 6.2. `app/(finance)/smart-budgeting/_navigation.ts`
+
+Vai trò:
+
+- helper điều hướng back riêng cho toàn module `Smart Budgeting`
+
+Những gì đã được làm:
+
+- chuẩn hóa `goBack` của module sang kiểu `replace()` về route đích rõ ràng
+- bỏ phụ thuộc vào history stack khi user đã hoàn tất một flow
+
+Khi sửa tiếp nên chú ý:
+
+- đây là file trung tâm cho behavior back của budget
+- nếu muốn đổi UX back của cả module, nên sửa tại đây trước rồi mới chạm từng screen
+
+## 7. Nhóm `Subscription Management`
+
+### 7.1. `app/(finance)/subscriptions.tsx`
+
+Vai trò:
+
+- overview workspace của toàn bộ recurring services
+
+Những gì đã được làm:
+
+- hero tổng quan recurring spend
+- upcoming card
+- signal card
+- stats/payments entry
+- active subscriptions list
+- recent payments
+- optimization recommendations
+
+Khi sửa tiếp nên chú ý:
+
+- đây là entry chính của cả module
+- nếu đổi hierarchy ở đây thì các màn con sẽ cần đồng bộ lại headline/tone
+
+### 7.2. `app/(finance)/subscription/[id].tsx`
+
+Vai trò:
+
+- detail screen của từng subscription
+
+Những gì đã được làm:
+
+- hero detail
+- timeline charges
+- plan summary
+- billing setup
+- recent charges
+- confirm overlay cho `pause / activate / cancel`
+
+Khi sửa tiếp nên chú ý:
+
+- file này đang dùng `Modal` cho confirm state
+- nếu chuyển sang route riêng, phải sửa lại lifecycle flow hiện tại
+
+### 7.3. `app/(finance)/subscription-add.tsx`
+
+Vai trò:
+
+- create/edit subscription screen
+
+Những gì đã được làm:
+
+- local form state
+- service picker
+- service library overlay
+- search-not-found state
+- frequency chooser overlay
+- preview card
+
+Khi sửa tiếp nên chú ý:
+
+- file này hiện là màn lớn nhất trong module
+- nếu tiếp tục mở rộng, nên cân nhắc tách chooser/service library thành component riêng
+
+### 7.4. `app/(finance)/subscription-result.tsx`
+
+Vai trò:
+
+- confirmation/result state sau create/update/lifecycle action
+
+Những gì đã được làm:
+
+- result mode theo action
+- tone màu riêng theo mode
+- summary card
+- action quay lại workspace/detail
+
+### 7.5. `app/(finance)/subscription-payments.tsx`
+
+Vai trò:
+
+- workspace dành riêng cho payment list
+
+Những gì đã được làm:
+
+- hero summary
+- search
+- filter chips
+- visible payment list
+- empty state có action
+
+### 7.6. `app/(finance)/subscription-history.tsx`
+
+Vai trò:
+
+- history ledger cho toàn bộ charges
+
+Những gì đã được làm:
+
+- hero ledger
+- filter state
+- status badge theo row
+
+### 7.7. `app/(finance)/subscription-stats.tsx`
+
+Vai trò:
+
+- màn stats tổng hợp của module
+
+Những gì đã được làm:
+
+- total recurring
+- ring summary
+- KPI cards
+- costly subscriptions
+- recommendations
+
+### 7.8. `app/(finance)/subscription-setup/*`
+
+Vai trò:
+
+- setup wizard 7 bước đầu của module
+
+Những gì đã được làm:
+
+- intro
+- provider
+- type
+- amount
+- next payment
+- cycle
+- added
+- shared shell đồng bộ giữa các bước
+
+Khi sửa tiếp nên chú ý:
+
+- visual consistency giữa các bước hiện phụ thuộc nhiều vào `_shared.tsx`
+- nếu muốn đổi tone của cả setup flow, sửa `_shared.tsx` trước
+
 Ý nghĩa:
 
 - là điểm then chốt để state setup/receipt/budget được chia sẻ giữa nhiều màn
