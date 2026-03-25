@@ -16,6 +16,21 @@ export default function CommunityPostSuccessScreen() {
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: hexToRgba(colors.text, 0.9) }]} edges={['top', 'bottom']}>
+      <Pressable
+        onPress={() => router.replace('/community-home')}
+        style={[
+          styles.backButton,
+          {
+            top: verticalScale(20, 0.76),
+            left: scale(20, 0.8),
+            backgroundColor: colors.card,
+            borderColor: hexToRgba(colors.primaryDark, 0.08),
+          },
+        ]}
+      >
+        <MaterialIcons name="arrow-back" size={scale(18, 0.72)} color={colors.text} />
+      </Pressable>
+
       <View
         style={[
           styles.card,
@@ -71,6 +86,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 22,
+  },
+  backButton: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   card: {
     width: '100%',

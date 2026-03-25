@@ -1,3 +1,4 @@
+import { MotionPressable } from '@/components/MotionPressable';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -6,7 +7,6 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Typography } from '@/constants/theme';
 import {
-  Pressable,
   ScrollView,
   StyleProp,
   StyleSheet,
@@ -78,7 +78,7 @@ export function FinanceScreen({
             ]}
           />
         ) : (
-          <Pressable
+          <MotionPressable
             style={[
               styles.backButton,
               {
@@ -90,9 +90,11 @@ export function FinanceScreen({
               },
             ]}
             onPress={onBackPress ?? (() => router.back())}
+            scaleTo={0.96}
+            translateYTo={1}
           >
             <MaterialIcons name="arrow-back" size={scale(22, 0.72)} color={colors.text} />
-          </Pressable>
+          </MotionPressable>
         )}
 
         <View style={styles.headerText}>

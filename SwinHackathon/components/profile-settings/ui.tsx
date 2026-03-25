@@ -1,10 +1,11 @@
+import { MotionPressable } from '@/components/MotionPressable';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React from 'react';
-import { Pressable, StyleProp, StyleSheet, Switch, Text, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, Switch, Text, View, ViewStyle } from 'react-native';
 
 export function ProfileSettingsCard({
   children,
@@ -176,7 +177,7 @@ export function ProfileSettingsRow({
   const iconColor = danger ? colors.error : colors.primaryDark;
 
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <MotionPressable pressableStyle={styles.row} onPress={onPress} scaleTo={0.985} translateYTo={1}>
       <View style={styles.leading}>
         <View
           style={[
@@ -205,7 +206,7 @@ export function ProfileSettingsRow({
       {trailing ?? (
         <MaterialIcons name="chevron-right" size={20} color={hexToRgba(colors.text, 0.34)} />
       )}
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -256,7 +257,7 @@ export function ProfileOptionChip({
   const tint = accent ?? colors.primaryDark;
 
   return (
-    <Pressable
+    <MotionPressable
       style={[
         styles.optionChip,
         {
@@ -265,6 +266,8 @@ export function ProfileOptionChip({
         },
       ]}
       onPress={onPress}
+      scaleTo={0.975}
+      translateYTo={1}
     >
       <Text
         style={[
@@ -274,7 +277,7 @@ export function ProfileOptionChip({
       >
         {label}
       </Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
 

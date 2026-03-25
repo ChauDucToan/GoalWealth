@@ -3,12 +3,10 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   aboutHighlights,
   feedbackCategories,
-  premiumPerks,
   rateReasons,
   supportThreads,
 } from '@/components/profile-settings/data';
 import {
-  ProfileSettingsBanner,
   ProfileOptionChip,
   ProfileSettingsPill,
   ProfileSettingsCard,
@@ -53,14 +51,6 @@ export default function ProfileSupportScreen() {
             Instead of scattering rating, live chat, invite and about screens, this version keeps them grouped while preserving the important states from the kit.
           </Text>
         </ProfileSettingsCard>
-
-        <ProfileSettingsBanner
-          eyebrow="Premium Member"
-          title="Support is prioritized for your workspace"
-          body={`Your account currently has ${premiumPerks.length} premium perks active, including faster support handling and richer finance guidance.`}
-          icon="workspace-premium"
-          tone="warning"
-        />
 
         <ProfileSettingsCard>
           <ProfileSettingsSectionTitle title="Rate our app" />

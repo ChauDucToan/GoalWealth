@@ -10,11 +10,12 @@ type ProfileIdentity = {
   name: string;
   email: string;
   phone: string;
-  planLabel: string;
   memberSince: string;
   city: string;
   streakLabel: string;
   avatarInitial: string;
+  avatarUri?: string | null;
+  coverUri?: string | null;
 };
 
 type NotificationSettings = {
@@ -71,11 +72,12 @@ const defaultProfile: ProfileIdentity = {
   name: 'Jane Doe Watson',
   email: 'jane.watson@finpal.app',
   phone: '+61 432 991 888',
-  planLabel: 'Premium Member',
   memberSince: 'Joined March 2024',
   city: 'Melbourne, Australia',
   streakLabel: 'Longest streak: 22 days',
   avatarInitial: 'J',
+  avatarUri: null,
+  coverUri: null,
 };
 
 const defaultNotifications: NotificationSettings = {

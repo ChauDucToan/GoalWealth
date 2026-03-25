@@ -52,7 +52,7 @@ export default function ProfileSecurityScreen() {
             <ProfileSettingsStat value={`${securityScore}/4`} label="Security score" icon="shield" tone="success" />
           </View>
           <View style={styles.statItem}>
-            <ProfileSettingsStat value={security.twoFactor ? 'Enabled' : 'Off'} label="2FA status" icon="verified-user" />
+            <ProfileSettingsStat value={security.twoFactor ? 'Enabled' : 'Off'} label="2FA status" icon="shield" />
           </View>
           <View style={styles.statItem}>
             <ProfileSettingsStat value={security.biometrics ? 'Ready' : 'Off'} label="Biometrics" icon="fingerprint" tone="soft" />
@@ -66,7 +66,7 @@ export default function ProfileSecurityScreen() {
           eyebrow="Security State"
           title="Core protection is already turned on"
           body="You can now fine tune credentials and trusted devices from a single security center instead of hopping through multiple shallow screens."
-          icon="verified-user"
+          icon="shield"
           tone="success"
         />
 

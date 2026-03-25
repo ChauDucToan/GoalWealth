@@ -36,7 +36,7 @@ export default function TransactionsScreen() {
   const router = useRouter();
   const { tabBarFloatingClearance } = useTabBarClearance();
   const { transactions } = useFinance();
-  const { categories, totalBudget, importedReceipts, hasCompletedSetup } = useSmartBudgeting();
+  const { categories, totalBudget, hasCompletedSetup } = useSmartBudgeting();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [visibleSectionCount, setVisibleSectionCount] = useState(3);
 
@@ -113,7 +113,14 @@ export default function TransactionsScreen() {
         </Text>
 
         <View style={styles.heroMetricRow}>
-          <View style={[styles.heroMetricCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
+          <View
+            style={[
+              styles.heroMetricCard,
+              styles.heroMetricCardHalf,
+              isSmallPhone && styles.heroMetricCardStack,
+              { backgroundColor: hexToRgba(colors.card, 0.12) },
+            ]}
+          >
             <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>
               Month spent
             </Text>
@@ -122,7 +129,14 @@ export default function TransactionsScreen() {
             </Text>
           </View>
 
-          <View style={[styles.heroMetricCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
+          <View
+            style={[
+              styles.heroMetricCard,
+              styles.heroMetricCardHalf,
+              isSmallPhone && styles.heroMetricCardStack,
+              { backgroundColor: hexToRgba(colors.card, 0.12) },
+            ]}
+          >
             <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>
               Left to spend
             </Text>
@@ -130,38 +144,33 @@ export default function TransactionsScreen() {
               {formatCurrency(leftToSpend)}
             </Text>
           </View>
-
-          <View style={[styles.heroMetricCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
-            <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.card, 0.72) }]}>
-              Imports
-            </Text>
-            <Text style={[styles.heroMetricValue, { color: colors.card }]}>
-              {importedReceipts.length}
-            </Text>
-          </View>
         </View>
 
         <View style={styles.heroActionRow}>
-          <ThemeButton
-            title="Add spending"
-            onPress={() => router.push('/(finance)/smart-budgeting/add-spending')}
-            colorBackground={colors.card}
-            colorText={colors.primaryDark}
-            style={styles.heroButton}
-          />
-          <ThemeButton
-            title={hasCompletedSetup ? 'Monthly budget' : 'Start budget setup'}
-            onPress={() =>
-              router.push(
-                hasCompletedSetup
-                  ? '/(finance)/smart-budgeting/monthly-budget'
-                  : '/(finance)/smart-budgeting/setup'
-              )
-            }
-            colorBackground={hexToRgba(colors.card, 0.16)}
-            colorText={colors.card}
-            style={styles.heroButton}
-          />
+          <View style={styles.heroButtonWrap}>
+            <ThemeButton
+              title="Add spending"
+              onPress={() => router.push('/(finance)/smart-budgeting/add-spending')}
+              colorBackground={colors.card}
+              colorText={colors.primaryDark}
+              style={styles.heroButton}
+            />
+          </View>
+          <View style={styles.heroButtonWrap}>
+            <ThemeButton
+              title={hasCompletedSetup ? 'Monthly budget' : 'Start budget setup'}
+              onPress={() =>
+                router.push(
+                  hasCompletedSetup
+                    ? '/(finance)/smart-budgeting/monthly-budget'
+                    : '/(finance)/smart-budgeting/setup'
+                )
+              }
+              colorBackground={hexToRgba(colors.card, 0.16)}
+              colorText={colors.card}
+              style={styles.heroButton}
+            />
+          </View>
         </View>
       </View>
 
@@ -195,6 +204,7 @@ export default function TransactionsScreen() {
                 key={item.key}
                 style={[
                   styles.filterChip,
+                  styles.filterChipThird,
                   {
                     backgroundColor: active ? colors.primaryDark : colors.backgroundSoft,
                     borderColor: active
@@ -444,10 +454,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   heroMetricCard: {
-    flex: 1,
-    minWidth: 0,
     borderRadius: 18,
     padding: 14,
+  },
+  heroMetricCardHalf: {
+    width: '48%',
+  },
+  heroMetricCardStack: {
+    width: '100%',
   },
   heroMetricLabel: {
     fontSize: 11,
@@ -463,12 +477,14 @@ const styles = StyleSheet.create({
   heroActionRow: {
     marginTop: 16,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 10,
   },
-  heroButton: {
+  heroButtonWrap: {
     flex: 1,
     minWidth: 0,
+  },
+  heroButton: {
+    width: '100%',
   },
   filterPanel: {
     borderRadius: 24,
@@ -509,21 +525,24 @@ const styles = StyleSheet.create({
   filterWrap: {
     marginTop: 16,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   filterChip: {
+    flex: 1,
+    minWidth: 0,
     minHeight: 40,
     borderRadius: 20,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   filterText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   categoryPanel: {
     borderRadius: 24,
