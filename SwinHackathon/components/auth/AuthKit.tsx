@@ -92,24 +92,28 @@ export function AuthScaffold({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <View
-            style={[
-              styles.heroGlow,
-              { backgroundColor: hexToRgba(colors.primaryDark, 0.12) },
-            ]}
-          />
-          <View style={styles.illustrationWrap}>{illustration}</View>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          {subtitle ? (
-            <Text
-              style={[
-                styles.subtitle,
-                { color: hexToRgba(colors.text, 0.58) },
-              ]}
-            >
-              {subtitle}
-            </Text>
-          ) : null}
+          <View style={styles.heroSection}>
+            <View style={styles.heroVisual}>
+              <View
+                style={[
+                  styles.heroGlow,
+                  { backgroundColor: hexToRgba(colors.primaryDark, 0.12) },
+                ]}
+              />
+              <View style={styles.illustrationWrap}>{illustration}</View>
+            </View>
+            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+            {subtitle ? (
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: hexToRgba(colors.text, 0.58) },
+                ]}
+              >
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
           <View style={styles.childrenWrap}>{children}</View>
         </View>
 
@@ -407,25 +411,42 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  heroSection: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  heroVisual: {
+    width: 168,
+    height: 168,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroGlow: {
     position: 'absolute',
-    top: 24,
+    top: 18,
+    left: 18,
     width: 132,
     height: 132,
     borderRadius: 66,
   },
   illustrationWrap: {
-    minHeight: 108,
+    width: 168,
+    minHeight: 168,
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
-    marginTop: 8,
+    width: '100%',
+    maxWidth: 320,
+    marginTop: 18,
     fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
   subtitle: {
+    width: '100%',
+    maxWidth: 340,
     marginTop: 10,
     fontSize: Typography.body,
     lineHeight: 21,
