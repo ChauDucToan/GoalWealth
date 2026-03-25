@@ -108,21 +108,32 @@ bash scripts/aws/package_and_deploy.sh <artifact-bucket> <stack-name> <region> [
 RSS sources ban đầu nằm ở:
 - `infra/sample-feeds.json`
 
-Sau khi sửa file này, chạy lại:
+Sau khi sửa file này, chạy lại seed script với mode phù hợp:
+
 ```bash
 bash scripts/aws/seed_feed_registry.sh <stack-name> <region>
 ```
 
-Lưu ý:
-- script seed hiện tại là **upsert theo `feed_id`**
-- thêm feed mới: OK
-- sửa feed cũ: OK
-- xóa feed khỏi JSON: **không tự xóa khỏi DynamoDB**
+hoặc:
 
-Nếu muốn dừng một feed cũ, cách an toàn là cập nhật item trong JSON thành:
-- `status = inactive`
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> sync-inactive
+```
 
-rồi seed lại.
+hoặc:
+
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> sync-delete
+```
+
+Mode hiện có:
+- `upsert` (mặc định): thêm/cập nhật feed từ JSON, không đụng feed cũ ngoài JSON
+- `sync-inactive`: thêm/cập nhật feed từ JSON, feed cũ ngoài JSON sẽ bị set `status = inactive`
+- `sync-delete`: thêm/cập nhật feed từ JSON, feed cũ ngoài JSON sẽ bị xóa khỏi DynamoDB
+
+Khuyến nghị:
+- dùng `sync-inactive` cho vận hành hằng ngày
+- chỉ dùng `sync-delete` khi thật sự muốn cleanup mạnh tay
 
 ## Dự án dùng uv nhưng deploy có thể tự chọn uv hoặc pip
 Deploy script hiện sẽ:

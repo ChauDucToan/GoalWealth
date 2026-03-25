@@ -219,10 +219,8 @@ bash scripts/aws/seed_feed_registry.sh <stack-name> <region>
 Vì seed hiện là upsert theo `feed_id`, feed cũ sẽ được cập nhật.
 
 ### Muốn dừng một feed
-Có 2 cách:
-
-#### Cách an toàn nhất
-Đổi feed đó trong `infra/sample-feeds.json` thành:
+Cách tốt nhất hiện tại:
+- set trong JSON:
 
 ```json
 "status": "inactive"
@@ -230,20 +228,45 @@ Có 2 cách:
 
 rồi seed lại.
 
-#### Cách thủ công trên DynamoDB
-Vào AWS Console hoặc CLI và update item trực tiếp:
-- `status = inactive`
+### Seed script mode mới
+Seed script giờ hỗ trợ 3 mode:
 
-### Muốn xóa hoàn toàn một feed
-Hiện tại seed script **không tự delete** những feed bị xóa khỏi `infra/sample-feeds.json`.
+#### 1. `upsert` (mặc định)
+- thêm feed mới
+- cập nhật feed đã có
+- **không đụng** những feed đang có trong DynamoDB nhưng không còn trong JSON
 
-Nghĩa là:
-- xóa khỏi file JSON thôi là chưa đủ
-- item cũ vẫn còn trong DynamoDB nếu chưa bị xóa/disable
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region>
+```
 
-Khuyến nghị hiện tại:
-- ưu tiên set `status = inactive`
-- chỉ delete hẳn nếu thực sự muốn cleanup
+hoặc:
+
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> upsert
+```
+
+#### 2. `sync-inactive`
+- thêm/cập nhật feed từ JSON
+- những feed đang có trong DynamoDB nhưng **không còn trong JSON** sẽ bị set:
+  - `status = inactive`
+
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> sync-inactive
+```
+
+#### 3. `sync-delete`
+- thêm/cập nhật feed từ JSON
+- những feed đang có trong DynamoDB nhưng **không còn trong JSON** sẽ bị xóa khỏi table
+
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> sync-delete
+```
+
+### Khuyến nghị vận hành
+- dev/test nhẹ: dùng `upsert`
+- muốn đồng bộ an toàn với lịch sử cũ: dùng `sync-inactive`
+- chỉ dùng `sync-delete` khi thật sự muốn cleanup mạnh tay
 
 ---
 
@@ -340,6 +363,7 @@ Tình trạng hiện tại:
 
 ### Sau khi sửa RSS feeds
 - [ ] update `infra/sample-feeds.json`
+- [ ] chọn mode seed phù hợp (`upsert` / `sync-inactive` / `sync-delete`)
 - [ ] seed lại Feed Registry
 - [ ] chạy warm sync
 - [ ] kiểm tra logs hoặc test smart agent
@@ -353,7 +377,7 @@ aws s3 mb s3://goalwealth-artifacts-osla-apne1 --region ap-northeast-1
 
 bash scripts/aws/package_and_deploy.sh goalwealth-artifacts-osla-apne1 goalwealth-dev-apne1 ap-northeast-1 dev
 
-bash scripts/aws/seed_feed_registry.sh goalwealth-dev-apne1 ap-northeast-1
+bash scripts/aws/seed_feed_registry.sh goalwealth-dev-apne1 ap-northeast-1 sync-inactive
 
 bash scripts/aws/run_warm_sync.sh goalwealth-dev-apne1 ap-northeast-1
 

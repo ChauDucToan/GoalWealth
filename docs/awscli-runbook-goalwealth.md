@@ -81,14 +81,30 @@ bash scripts/aws/package_and_deploy.sh my-goalwealth-artifacts goalwealth-dev ap
 
 ## 2. Seed sample feeds into DynamoDB
 
+Seed script supports 3 modes:
+- `upsert` (default)
+- `sync-inactive`
+- `sync-delete`
+
+### Upsert only
 ```bash
 bash scripts/aws/seed_feed_registry.sh <stack-name> <region>
+```
+
+### Upsert + mark missing feeds inactive
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> sync-inactive
+```
+
+### Upsert + delete missing feeds
+```bash
+bash scripts/aws/seed_feed_registry.sh <stack-name> <region> sync-delete
 ```
 
 Example:
 
 ```bash
-bash scripts/aws/seed_feed_registry.sh goalwealth-dev ap-northeast-1
+bash scripts/aws/seed_feed_registry.sh goalwealth-dev ap-northeast-1 sync-inactive
 ```
 
 ## 3. Run a warm sync manually
@@ -118,7 +134,7 @@ bash scripts/aws/test_smart_agent.sh goalwealth-dev ap-northeast-1 "phân tích 
 
 ## Suggested first test order
 1. Deploy the stack
-2. Seed feeds
+2. Seed feeds (recommended: `sync-inactive`)
 3. Run warm sync
 4. Test smart agent with a fresh-news query
 5. Test smart agent with a semantic-search query
