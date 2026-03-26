@@ -62,7 +62,7 @@ Thư mục `docs` hiện đã được tách thành nhiều tài liệu để d�
 ## Tài liệu bổ sung
 
 8. [Bộ tài liệu `Kha-*` cho đợt triển khai gần đây](./Kha-README.md)
-9. Nhóm `Kha-*` hiện đã được mở rộng thêm tài liệu riêng cho `Financial Assessment`, `Financial Goals`, và `Profile Setup & Account Completion`.
+9. Nhóm `Kha-*` hiện đã được mở rộng thêm tài liệu riêng cho `Financial Assessment`, `Financial Goals`, `Profile Setup & Account Completion`, và phần `frontend <-> backend data/contracts`.
 
 ## Ghi chú
 

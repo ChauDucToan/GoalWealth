@@ -2,6 +2,7 @@ import { ThemeButton } from '@/components/ThemeButton';
 import { FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { ProfileSettingsCard } from '@/components/profile-settings/ui';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -47,6 +48,14 @@ export default function ProfileResultScreen() {
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: keyof typeof resultContent }>();
   const content = resultContent[mode ?? 'profile'] ?? resultContent.profile;
+  const { handlePress: handleProfileSettingsPress, isCoolingDown: isProfileSettingsCoolingDown } =
+    useDebouncedPress(() => {
+      router.replace('/(tabs)/profile');
+    }, 500);
+  const { handlePress: handleBackPress, isCoolingDown: isBackCoolingDown } =
+    useDebouncedPress(() => {
+      router.back();
+    }, 500);
 
   return (
     <FinanceScreen
@@ -77,19 +86,21 @@ export default function ProfileResultScreen() {
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title="Profile Settings"
-              onPress={() => router.replace('/(tabs)/profile')}
+              onPress={handleProfileSettingsPress}
               colorBackground={colors.primaryDark}
               colorText={colors.card}
               style={styles.fullButton}
+              disabled={isProfileSettingsCoolingDown}
             />
           </View>
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title="Back"
-              onPress={() => router.back()}
+              onPress={handleBackPress}
               colorBackground={colors.card}
               colorText={colors.text}
               style={[styles.fullButton, { borderWidth: 1, borderColor: colors.border }]}
+              disabled={isBackCoolingDown}
             />
           </View>
         </View>

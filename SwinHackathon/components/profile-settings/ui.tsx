@@ -2,6 +2,7 @@ import { MotionPressable } from '@/components/MotionPressable';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { Typography } from '@/constants/theme';
+import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React from 'react';
@@ -181,6 +182,9 @@ export function ProfileSettingsRow({
   const iconColor = danger ? colors.error : colors.primaryDark;
   const compact = density === 'compact';
   const singleLineCompact = compact && !summary;
+  const { handlePress, isCoolingDown } = useDebouncedPress(() => {
+    onPress?.();
+  }, 500);
 
   return (
     <MotionPressable
@@ -189,7 +193,8 @@ export function ProfileSettingsRow({
         compact ? styles.rowCompact : null,
         singleLineCompact ? styles.rowSingleLineCompact : null,
       ]}
-      onPress={onPress}
+      onPress={onPress ? handlePress : undefined}
+      disabled={isCoolingDown}
       scaleTo={0.985}
       translateYTo={1}
     >
@@ -351,25 +356,31 @@ export function ProfilePrimaryActions({
   onSecondary: () => void;
 }) {
   const { colors } = useTheme();
+  const { handlePress: handlePrimaryPress, isCoolingDown: isPrimaryCoolingDown } =
+    useDebouncedPress(onPrimary, 500);
+  const { handlePress: handleSecondaryPress, isCoolingDown: isSecondaryCoolingDown } =
+    useDebouncedPress(onSecondary, 500);
 
   return (
     <View style={styles.actionRow}>
       <View style={styles.actionButtonWrap}>
         <ThemeButton
           title={secondaryLabel}
-          onPress={onSecondary}
+          onPress={handleSecondaryPress}
           colorBackground={colors.card}
           colorText={colors.text}
           style={[styles.fullButton, { borderWidth: 1, borderColor: colors.border }]}
+          disabled={isSecondaryCoolingDown}
         />
       </View>
       <View style={styles.actionButtonWrap}>
         <ThemeButton
           title={primaryLabel}
-          onPress={onPrimary}
+          onPress={handlePrimaryPress}
           colorBackground={colors.primaryDark}
           colorText={colors.card}
           style={styles.fullButton}
+          disabled={isPrimaryCoolingDown}
         />
       </View>
     </View>

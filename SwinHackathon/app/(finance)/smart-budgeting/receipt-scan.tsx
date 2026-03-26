@@ -117,6 +117,20 @@ function formatBackendOcrStatusLabel(
   }
 }
 
+function logOcrFlow(step: string, payload: Record<string, unknown>) {
+  console.log(
+    JSON.stringify(
+      {
+        scope: 'smart-budgeting-ocr',
+        step,
+        ...payload,
+      },
+      null,
+      2
+    )
+  );
+}
+
 export default function SmartBudgetingReceiptScanScreen() {
   const { colors } = useTheme();
   const router = useRouter();
@@ -173,6 +187,15 @@ export default function SmartBudgetingReceiptScanScreen() {
       if (cancelled) {
         return;
       }
+
+      console.log(`raw_text:${JSON.stringify(result.text)}`);
+
+      logOcrFlow('mlkit_result', {
+        provider: result.provider,
+        status: result.status,
+        raw_text: result.text ?? '',
+        error: result.error,
+      });
 
       setReceiptImportDraft({
         ...receiptImportDraft,
@@ -233,6 +256,11 @@ export default function SmartBudgetingReceiptScanScreen() {
       backendOcrMessage: null,
     });
 
+    logOcrFlow('goalwealth_ingress_submit', {
+      endpoint: '/v1/ocr/ingress',
+      raw_text: trimmedRawText,
+    });
+
     void ingestGoalwealthOcr({ raw_text: trimmedRawText }, userState.accessToken)
       .then(async (response) => {
         if (cancelled) {
@@ -248,7 +276,7 @@ export default function SmartBudgetingReceiptScanScreen() {
           backendOcrRequestId: response.requestId,
           backendOcrMessage: response.data.message,
         };
-
+        console.log('acceptedDraft', acceptedDraft);
         setReceiptImportDraft(acceptedDraft);
 
         try {
@@ -332,11 +360,11 @@ export default function SmartBudgetingReceiptScanScreen() {
       },
       ...(liveAdapterEnabled
         ? [
-            {
-              label: 'GoalWealth sync',
-              value: formatBackendOcrStatusLabel(receiptImportDraft?.backendOcrStatus),
-            },
-          ]
+          {
+            label: 'GoalWealth sync',
+            value: formatBackendOcrStatusLabel(receiptImportDraft?.backendOcrStatus),
+          },
+        ]
         : []),
     ],
     [

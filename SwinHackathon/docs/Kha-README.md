@@ -29,7 +29,10 @@ thì nhóm `Kha-*` tập trung vào:
 9. [Assistant và các quyết định UX, chat, navigation](./Kha-assistant-va-cac-quyet-dinh-ux-chat-navigation.md)
 10. [File by file reference](./Kha-file-by-file-reference.md)
 11. [News & Resources và các quyết định điều hướng](./Kha-news-resources-va-cac-quyet-dinh-dieu-huong.md)
-12. [Phương pháp triển khai và nguyên tắc thực thi](./Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md)
+12. [Frontend -> Backend data needs](./Kha-frontend-backend-data-needs.md)
+13. [Frontend <-> Backend TypeScript interfaces](./Kha-frontend-backend-typescript-interfaces.md)
+14. [OpenAPI summary cho các endpoint live hiện tại](./Kha-openapi-live-endpoints-summary.md)
+15. [Phương pháp triển khai và nguyên tắc thực thi](./Kha-phuong-phap-trien-khai-va-nguyen-tac-thuc-thi.md)
 
 ## Ghi chú
 

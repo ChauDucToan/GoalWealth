@@ -15,7 +15,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   Alert,
   Image,
@@ -41,7 +41,17 @@ export default function ProfileScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { signOut } = useMyUser();
-  const pushRoute = (route: string) => router.push(route as never);
+  const lastNavigationAtRef = useRef(0);
+  const pushRoute = useCallback((route: string) => {
+    const now = Date.now();
+
+    if (now - lastNavigationAtRef.current < 500) {
+      return;
+    }
+
+    lastNavigationAtRef.current = now;
+    router.push(route as never);
+  }, [router]);
   const { profile, notifications, linkedAccounts, invite, updateNotifications, updateProfile } =
     useProfileSettings();
 

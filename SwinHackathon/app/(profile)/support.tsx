@@ -16,6 +16,7 @@ import {
 import { FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { Typography } from '@/constants/theme';
 import { useProfileSettings } from '@/context/profileSettingsContext';
+import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -28,6 +29,14 @@ export default function ProfileSupportScreen() {
   const router = useRouter();
   const { appRating, feedbackDraft, invite, setAppRating, setFeedbackDraft } = useProfileSettings();
   const [selectedCategory, setSelectedCategory] = useState(feedbackCategories[0]?.id ?? 'bug');
+  const { handlePress: handleFeedbackPress, isCoolingDown: isFeedbackCoolingDown } =
+    useDebouncedPress(() => {
+      router.push({ pathname: '/(profile)/result', params: { mode: 'feedback' } });
+    }, 500);
+  const { handlePress: handleInvitePress, isCoolingDown: isInviteCoolingDown } =
+    useDebouncedPress(() => {
+      router.push({ pathname: '/(profile)/result', params: { mode: 'invite' } });
+    }, 500);
 
   return (
     <FinanceScreen
@@ -113,10 +122,11 @@ export default function ProfileSupportScreen() {
 
           <ThemeButton
             title="Send Feedback"
-            onPress={() => router.push({ pathname: '/(profile)/result', params: { mode: 'feedback' } })}
+            onPress={handleFeedbackPress}
             colorBackground={colors.primaryDark}
             colorText={colors.card}
             style={styles.fullButton}
+            disabled={isFeedbackCoolingDown}
           />
         </ProfileSettingsCard>
 
@@ -160,10 +170,11 @@ export default function ProfileSupportScreen() {
             </Text>
             <ThemeButton
               title="Invite Friend"
-              onPress={() => router.push({ pathname: '/(profile)/result', params: { mode: 'invite' } })}
+              onPress={handleInvitePress}
               colorBackground={colors.success}
               colorText={colors.card}
               style={styles.inviteButton}
+              disabled={isInviteCoolingDown}
             />
           </View>
         </ProfileSettingsCard>

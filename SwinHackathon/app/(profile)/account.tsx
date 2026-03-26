@@ -11,6 +11,7 @@ import {
 } from '@/components/profile-settings/ui';
 import { Typography } from '@/constants/theme';
 import { useProfileSettings } from '@/context/profileSettingsContext';
+import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
@@ -27,6 +28,15 @@ export default function ProfileAccountScreen() {
     email: profile.email,
     phone: profile.phone,
   });
+  const { handlePress: handleExportDataPress, isCoolingDown: isExportDataCoolingDown } =
+    useDebouncedPress(() => {
+      requestExport();
+      router.push({ pathname: '/(profile)/result', params: { mode: 'export' } });
+    }, 500);
+  const { handlePress: handleExportResultPress, isCoolingDown: isExportResultCoolingDown } =
+    useDebouncedPress(() => {
+      router.push({ pathname: '/(profile)/result', params: { mode: 'export' } });
+    }, 500);
 
   return (
     <FinanceScreen
@@ -137,22 +147,21 @@ export default function ProfileAccountScreen() {
             <View style={styles.inlineActionWrap}>
               <ThemeButton
                 title="Export Data"
-                onPress={() => {
-                  requestExport();
-                  router.push({ pathname: '/(profile)/result', params: { mode: 'export' } });
-                }}
+                onPress={handleExportDataPress}
                 colorBackground={colors.primaryDark}
                 colorText={colors.card}
                 style={styles.fullButton}
+                disabled={isExportDataCoolingDown}
               />
             </View>
             <View style={styles.inlineActionWrap}>
               <ThemeButton
                 title="Export Result"
-                onPress={() => router.push({ pathname: '/(profile)/result', params: { mode: 'export' } })}
+                onPress={handleExportResultPress}
                 colorBackground={colors.card}
                 colorText={colors.text}
                 style={[styles.fullButton, { borderWidth: 1, borderColor: colors.border }]}
+                disabled={isExportResultCoolingDown}
               />
             </View>
           </View>
