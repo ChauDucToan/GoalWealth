@@ -245,3 +245,4 @@ next_test:
     -H "Content-Type: application/json" \
     -d '{"message":"Tin AI mới nhất hôm nay là gì?","timezone":"Asia/Ho_Chi_Minh"}'
 EOF
+

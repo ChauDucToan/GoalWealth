@@ -180,3 +180,4 @@ ocr_smoke=$LOG_DIR/ocr-smoke.json
 internal_log=$LOG_DIR/internal-backend.log
 adapter_log=$LOG_DIR/adapter.log
 EOF
+

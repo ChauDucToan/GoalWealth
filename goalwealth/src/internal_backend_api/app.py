@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from adapter_api.utils.logging import configure_logging
+from persistence import build_optional_persistence_bundle
 
 from .config import InternalBackendApiConfig
 from .errors import ApiHttpError
@@ -33,6 +34,8 @@ def create_app() -> Any:
         openapi_url=openapi_url,
     )
     application.state.config = config
+    persistence_bundle = build_optional_persistence_bundle()
+    application.state.persistence_service = persistence_bundle[3] if persistence_bundle is not None else None
 
     @application.exception_handler(ApiHttpError)
     async def handle_api_http_error(_: Request, exc: ApiHttpError) -> JSONResponse:
