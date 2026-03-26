@@ -9,7 +9,7 @@ const AUTH_SESSION_STORAGE_KEY = 'goalwealth.auth.session.v1';
 export type StoredAuthSession = {
   accessToken: string;
   profile: UserProfile;
-  authMode: 'goalwealth-dev-bridge' | 'legacy-oauth';
+  authMode: 'goalwealth-dev-bridge' | 'google-oidc' | 'adapter-bearer' | 'legacy-oauth';
 };
 
 function normalizeUserId(email: string) {

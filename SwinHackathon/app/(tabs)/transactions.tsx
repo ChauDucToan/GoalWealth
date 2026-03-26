@@ -206,7 +206,11 @@ export default function TransactionsScreen() {
                 key={item.key}
                 style={[
                   styles.filterChip,
-                  styles.filterChipThird,
+                  item.key === 'all'
+                    ? isSmallPhone
+                      ? styles.filterChipFull
+                      : styles.filterChipWide
+                    : styles.filterChipThird,
                   {
                     backgroundColor: active ? colors.primaryDark : colors.backgroundSoft,
                     borderColor: active
@@ -549,15 +553,21 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 20,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
+  filterChipWide: {
+    flexBasis: '39%',
+  },
   filterChipThird: {
-    flexBasis: '31%',
+    flexBasis: '28%',
+  },
+  filterChipFull: {
+    flexBasis: '100%',
   },
   filterText: {
     fontSize: 12,

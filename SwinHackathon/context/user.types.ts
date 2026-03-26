@@ -20,7 +20,12 @@ export type UserState = {
   profile: UserProfile | null;
   preferences: UserPreferences;
   accessToken: string | null;
-  authMode: 'goalwealth-dev-bridge' | 'legacy-oauth' | null;
+  authMode:
+    | 'goalwealth-dev-bridge'
+    | 'google-oidc'
+    | 'adapter-bearer'
+    | 'legacy-oauth'
+    | null;
   loading: boolean;
   error: string | null;
 };

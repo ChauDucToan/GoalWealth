@@ -7,7 +7,13 @@ function parseBooleanEnv(value: string | undefined, fallback = false) {
 }
 
 function normalizeBaseUrl(baseUrl: string | undefined) {
-  return (baseUrl ?? '').trim().replace(/\/+$/, '');
+  const trimmed = (baseUrl ?? '').trim().replace(/\/+$/, '');
+
+  if (!trimmed) {
+    return '';
+  }
+
+  return trimmed.replace(/\/(ready|health|v1\/chat\/respond|v1\/ocr\/ingress)$/i, '');
 }
 
 export const goalwealthApiConfig = {

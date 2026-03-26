@@ -5,7 +5,7 @@ import { Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React from 'react';
-import { StyleProp, StyleSheet, Switch, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Switch, Text, View, ViewStyle } from 'react-native';
 
 export function ProfileSettingsCard({
   children,
@@ -165,6 +165,8 @@ export function ProfileSettingsRow({
   onPress,
   trailing,
   danger = false,
+  density = 'default',
+  summaryNumberOfLines,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
@@ -172,16 +174,31 @@ export function ProfileSettingsRow({
   onPress?: () => void;
   trailing?: React.ReactNode;
   danger?: boolean;
+  density?: 'default' | 'compact';
+  summaryNumberOfLines?: number;
 }) {
   const { colors } = useTheme();
   const iconColor = danger ? colors.error : colors.primaryDark;
+  const compact = density === 'compact';
+  const singleLineCompact = compact && !summary;
 
   return (
-    <MotionPressable pressableStyle={styles.row} onPress={onPress} scaleTo={0.985} translateYTo={1}>
+    <MotionPressable
+      style={[
+        styles.row,
+        compact ? styles.rowCompact : null,
+        singleLineCompact ? styles.rowSingleLineCompact : null,
+      ]}
+      onPress={onPress}
+      scaleTo={0.985}
+      translateYTo={1}
+    >
       <View style={styles.leading}>
         <View
           style={[
             styles.iconWrap,
+            compact ? styles.iconWrapCompact : null,
+            singleLineCompact ? styles.iconWrapSingleLineCompact : null,
             {
               backgroundColor: danger
                 ? hexToRgba(colors.error, 0.12)
@@ -196,7 +213,14 @@ export function ProfileSettingsRow({
             {label}
           </Text>
           {summary ? (
-            <Text style={[styles.rowSummary, { color: hexToRgba(colors.text, 0.54) }]}>
+            <Text
+              numberOfLines={summaryNumberOfLines}
+              style={[
+                styles.rowSummary,
+                compact ? styles.rowSummaryCompact : null,
+                { color: hexToRgba(colors.text, 0.54) },
+              ]}
+            >
               {summary}
             </Text>
           ) : null}
@@ -216,29 +240,63 @@ export function ProfileSettingsSwitchRow({
   summary,
   value,
   onValueChange,
+  density = 'default',
+  summaryNumberOfLines,
 }: {
   icon: React.ComponentProps<typeof MaterialIcons>['name'];
   label: string;
   summary?: string;
   value: boolean;
   onValueChange: (next: boolean) => void;
+  density?: 'default' | 'compact';
+  summaryNumberOfLines?: number;
 }) {
   const { colors } = useTheme();
+  const compact = density === 'compact';
 
   return (
-    <ProfileSettingsRow
-      icon={icon}
-      label={label}
-      summary={summary}
-      trailing={
+    <View style={[styles.switchRow, compact ? styles.switchRowCompact : null]}>
+      <Pressable
+        onPress={() => onValueChange(!value)}
+        style={[styles.switchPressArea, compact ? styles.switchPressAreaCompact : null]}
+        android_ripple={{ color: hexToRgba(colors.primaryDark, 0.08), borderless: false }}
+      >
+        <View style={styles.leading}>
+          <View
+            style={[
+              styles.iconWrap,
+              compact ? styles.iconWrapCompact : null,
+              { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+            ]}
+          >
+            <MaterialIcons name={icon} size={18} color={colors.primaryDark} />
+          </View>
+          <View style={styles.copy}>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>{label}</Text>
+            {summary ? (
+              <Text
+                numberOfLines={summaryNumberOfLines}
+                style={[
+                  styles.rowSummary,
+                  compact ? styles.rowSummaryCompact : null,
+                  { color: hexToRgba(colors.text, 0.54) },
+                ]}
+              >
+                {summary}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </Pressable>
+      <View style={styles.switchTrailing}>
         <Switch
           value={value}
           onValueChange={onValueChange}
           thumbColor={colors.card}
           trackColor={{ false: colors.border, true: colors.primaryDark }}
         />
-      }
-    />
+      </View>
+    </View>
   );
 }
 
@@ -400,6 +458,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
+  rowCompact: {
+    minHeight: 52,
+  },
+  rowSingleLineCompact: {
+    minHeight: 44,
+  },
   leading: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -414,6 +478,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconWrapCompact: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+  },
+  iconWrapSingleLineCompact: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+  },
   copy: {
     flex: 1,
     minWidth: 0,
@@ -426,6 +500,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: Typography.body,
     lineHeight: 18,
+  },
+  rowSummaryCompact: {
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  switchRow: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  switchRowCompact: {
+    minHeight: 52,
+  },
+  switchPressArea: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 18,
+    paddingVertical: 6,
+  },
+  switchPressAreaCompact: {
+    paddingVertical: 4,
+  },
+  switchTrailing: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 8,
   },
   optionChip: {
     minHeight: 40,

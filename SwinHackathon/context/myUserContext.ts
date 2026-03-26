@@ -24,6 +24,7 @@ type MyUserContextValue = {
   dispatch: Dispatch<UserAction>;
   actions: typeof userActions;
   isSessionReady: boolean;
+  signOut: () => Promise<void>;
 };
 
 export const MyUserContext = createContext<MyUserContextValue | null>(null);
@@ -81,6 +82,11 @@ export function MyUserProvider({ children }: { children: ReactNode }) {
     state.profile,
   ]);
 
+  const signOut = async () => {
+    await clearStoredAuthSession();
+    dispatch(userActions.signOut());
+  };
+
   return React.createElement(
     MyUserContext.Provider,
     {
@@ -89,6 +95,7 @@ export function MyUserProvider({ children }: { children: ReactNode }) {
         dispatch,
         actions: userActions,
         isSessionReady,
+        signOut,
       },
     },
     children,

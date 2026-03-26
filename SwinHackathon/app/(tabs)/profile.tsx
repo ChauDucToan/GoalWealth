@@ -8,6 +8,7 @@ import {
   ProfileSettingsSwitchRow,
 } from '@/components/profile-settings/ui';
 import { Typography } from '@/constants/theme';
+import { useMyUser } from '@/context/myUserContext';
 import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -39,8 +40,9 @@ export default function ProfileScreen() {
   const { tabBarFloatingClearance } = useTabBarClearance();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const { signOut } = useMyUser();
   const pushRoute = (route: string) => router.push(route as never);
-  const { profile, notifications, security, display, linkedAccounts, invite, updateNotifications, updateProfile } =
+  const { profile, notifications, linkedAccounts, invite, updateNotifications, updateProfile } =
     useProfileSettings();
 
   const enabledNotifications = Object.values(notifications).filter(Boolean).length;
@@ -176,6 +178,8 @@ export default function ProfileScreen() {
               summary="Transactions, reminders and activity"
               value={notifications.push}
               onValueChange={(value) => updateNotifications({ push: value })}
+              density="compact"
+              summaryNumberOfLines={1}
             />
             <ProfileSettingsSwitchRow
               icon="volume-up"
@@ -183,6 +187,8 @@ export default function ProfileScreen() {
               summary="Audio feedback for important actions"
               value={notifications.sound}
               onValueChange={(value) => updateNotifications({ sound: value })}
+              density="compact"
+              summaryNumberOfLines={1}
             />
             <ProfileSettingsSwitchRow
               icon="email"
@@ -190,101 +196,103 @@ export default function ProfileScreen() {
               summary="Digest and support follow-up"
               value={notifications.email}
               onValueChange={(value) => updateNotifications({ email: value })}
+              density="compact"
+              summaryNumberOfLines={1}
             />
           </View>
         </ProfileSettingsCard>
 
-        <Text style={styles.sectionLabel}>Workspace</Text>
-        <ProfileSettingsCard>
-          <View style={styles.sectionStack}>
+        <ProfileSettingsCard style={styles.listSectionCard}>
+          <ProfileSettingsSectionTitle title="Workspace" />
+          <View style={styles.listSectionStack}>
             <ProfileSettingsRow
               icon="person-outline"
               label="Account"
-              summary={`${profile.email} • ${profile.phone}`}
               onPress={() => pushRoute('/(profile)/account')}
+              density="compact"
             />
             <ProfileSettingsRow
               icon="tune"
               label="Preferences"
-              summary={`${display.appearance} • ${display.language} • ${display.currency}`}
               onPress={() => pushRoute('/(profile)/preferences')}
+              density="compact"
             />
             <ProfileSettingsRow
               icon="notifications-active"
               label="Notification Settings"
-              summary={`${enabledNotifications} alerts enabled`}
               onPress={() => pushRoute('/(profile)/notifications')}
+              density="compact"
             />
             <ProfileSettingsRow
               icon="credit-card"
               label="Linked Accounts & Cards"
-              summary={`${activeAccounts} active sources`}
               onPress={() => pushRoute('/(profile)/linked-accounts')}
+              density="compact"
             />
           </View>
         </ProfileSettingsCard>
 
-        <Text style={styles.sectionLabel}>Protection</Text>
-        <ProfileSettingsCard>
-          <View style={styles.sectionStack}>
+        <ProfileSettingsCard style={styles.listSectionCard}>
+          <ProfileSettingsSectionTitle title="Protection" />
+          <View style={styles.listSectionStack}>
             <ProfileSettingsRow
               icon="shield"
               label="Security Settings"
-              summary={
-                security.biometrics
-                  ? 'Biometrics on • Login alerts on'
-                  : 'Review passcode, password and trusted devices'
-              }
               onPress={() => pushRoute('/(profile)/security')}
+              density="compact"
             />
             <ProfileSettingsRow
               icon="lock-outline"
               label="Change Password"
-              summary="Refresh account credentials"
               onPress={() => pushRoute('/(profile)/password')}
+              density="compact"
             />
             <ProfileSettingsRow
               icon="pin"
               label="Passcode Protection"
-              summary={security.passcodeEnabled ? '4-digit passcode enabled' : 'Set local unlock code'}
               onPress={() => pushRoute('/(profile)/passcode')}
+              density="compact"
             />
           </View>
         </ProfileSettingsCard>
 
-        <Text style={styles.sectionLabel}>Support & Rewards</Text>
-        <ProfileSettingsCard>
-          <View style={styles.sectionStack}>
+        <ProfileSettingsCard style={styles.listSectionCard}>
+          <ProfileSettingsSectionTitle title="Support & Rewards" />
+          <View style={styles.listSectionStack}>
             <ProfileSettingsRow
               icon="support-agent"
               label="Help & Support"
-              summary="Feedback, live chat, rating and about"
               onPress={() => pushRoute('/(profile)/support')}
+              density="compact"
             />
             <ProfileSettingsRow
               icon="group-add"
               label="Invite Friends"
-              summary={`${invite.rewardLabel} • code ${invite.referralCode}`}
               onPress={() => pushRoute('/(profile)/support')}
+              density="compact"
             />
           </View>
         </ProfileSettingsCard>
 
-        <Text style={styles.sectionLabel}>Danger Zone</Text>
-        <ProfileSettingsCard>
-          <View style={styles.sectionStack}>
+        <ProfileSettingsCard style={styles.listSectionCard}>
+          <ProfileSettingsSectionTitle title="Danger Zone" />
+          <View style={styles.listSectionStack}>
             <ProfileSettingsRow
               icon="delete-outline"
               label="Close Account"
-              summary="Disable access and start the offboarding flow"
               danger
+              density="compact"
             />
             <ProfileSettingsRow
               icon="logout"
               label="Sign Out"
-              summary="Return to authentication"
               danger
-              onPress={() => router.replace('/(auth)/signIn')}
+              onPress={() => {
+                void signOut().then(() => {
+                  router.replace('/(auth)/signIn');
+                });
+              }}
+              density="compact"
             />
           </View>
         </ProfileSettingsCard>
@@ -493,6 +501,15 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     },
     sectionStack: {
       gap: 6,
+    },
+    listSectionCard: {
+      paddingTop: 14,
+      paddingBottom: 10,
+      paddingHorizontal: 14,
+    },
+    listSectionStack: {
+      gap: 0,
+      marginTop: 2,
     },
   });
 }
