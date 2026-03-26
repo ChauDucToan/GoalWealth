@@ -8,6 +8,7 @@ import {
   SetupSurface,
 } from '@/components/profile-setup/shared';
 import { ColorTheme } from '@/constants/theme';
+import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useProfileSetup } from '@/hooks/use-profile-setup';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -20,6 +21,7 @@ export default function PremiumSuccessScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { state, resetProfileSetup } = useProfileSetup();
+  const { updateNotifications, updateSecurity } = useProfileSettings();
   const selectedPlan = planOptions.find((item) => item.id === state.selectedPlanId) ?? planOptions[0];
 
   return (
@@ -33,6 +35,18 @@ export default function PremiumSuccessScreen() {
           <SetupPrimaryButton
             label="Go to Home"
             onPress={() => {
+              updateNotifications({
+                push: state.notificationsEnabled,
+                email: state.notificationsEnabled,
+                billReminders: state.notificationsEnabled,
+                weeklyDigest: state.notificationsEnabled,
+                communityReplies: state.notificationsEnabled,
+              });
+              updateSecurity({
+                biometrics: state.faceIdEnabled || state.biometricEnabled,
+                passcodeEnabled: Boolean(state.passcode.trim()),
+                twoFactor: Boolean(state.otpCode.trim()),
+              });
               resetProfileSetup();
               router.replace('/(tabs)/home');
             }}

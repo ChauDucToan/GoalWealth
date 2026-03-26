@@ -4,7 +4,8 @@ import {
   LanguageOption,
   linkedAccountsSeed,
 } from '@/components/profile-settings/data';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import { useMyUser } from '@/context/myUserContext';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 type ProfileIdentity = {
   name: string;
@@ -109,7 +110,13 @@ const defaultInvite: InviteSettings = {
   successfulInvites: 3,
 };
 
+function buildAvatarInitial(name: string, email: string) {
+  const source = name.trim() || email.trim();
+  return source.charAt(0).toUpperCase() || 'G';
+}
+
 export function ProfileSettingsProvider({ children }: { children: React.ReactNode }) {
+  const { state: userState } = useMyUser();
   const [profile, setProfile] = useState(defaultProfile);
   const [notifications, setNotifications] = useState(defaultNotifications);
   const [security, setSecurity] = useState(defaultSecurity);
@@ -119,6 +126,24 @@ export function ProfileSettingsProvider({ children }: { children: React.ReactNod
   const [appRating, setAppRating] = useState(4);
   const [exportStatusLabel, setExportStatusLabel] = useState('Last export 2 days ago');
   const [feedbackDraft, setFeedbackDraft] = useState('');
+
+  useEffect(() => {
+    if (!userState.profile) {
+      return;
+    }
+
+    setProfile((current) => ({
+      ...current,
+      name: userState.profile?.name?.trim() || current.name,
+      email: userState.profile?.email?.trim() || current.email,
+      phone: userState.profile?.phone?.trim() || current.phone,
+      avatarUri: userState.profile?.avatarUrl || current.avatarUri,
+      avatarInitial: buildAvatarInitial(
+        userState.profile?.name ?? current.name,
+        userState.profile?.email ?? current.email,
+      ),
+    }));
+  }, [userState.profile]);
 
   const value = useMemo<ProfileSettingsContextValue>(
     () => ({

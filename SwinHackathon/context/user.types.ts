@@ -24,6 +24,7 @@ export type UserState = {
     | 'goalwealth-dev-bridge'
     | 'google-oidc'
     | 'adapter-bearer'
+    | 'registered-password'
     | 'legacy-oauth'
     | null;
   loading: boolean;

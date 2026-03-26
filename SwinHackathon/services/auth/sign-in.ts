@@ -1,6 +1,10 @@
 import type { UserProfile } from '@/context/user.types';
 import { goalwealthApiConfig, isGoalwealthAdapterConfigured } from '@/services/api/config';
 import { getMissingOAuth2EnvVars, signInWithOAuth2Password } from '@/services/oauth2';
+import {
+  buildUserProfileFromLinkedAccount,
+  verifyLinkedUserCredentials,
+} from './user-registry';
 
 import {
   buildAdapterBearerSession,
@@ -74,6 +78,25 @@ export async function signInWithAdapterBearer(input: {
     accessToken: session.accessToken,
     profile: session.profile,
     authMode: session.authMode,
+  };
+}
+
+export async function signInWithRegisteredPassword(input: {
+  email: string;
+  password: string;
+}): Promise<ConfiguredSignInResult> {
+  const account = verifyLinkedUserCredentials(input.email, input.password);
+
+  if (!account) {
+    throw new Error('Email or password does not match a registered account.');
+  }
+
+  const profile = buildUserProfileFromLinkedAccount(account);
+
+  return {
+    accessToken: `Bearer local-user:${account.user_id}`,
+    profile,
+    authMode: 'registered-password',
   };
 }
 

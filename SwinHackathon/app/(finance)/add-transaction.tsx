@@ -383,23 +383,6 @@ export default function AddTransactionScreen() {
           </View>
         </View>
 
-        <View style={styles.helperRow}>
-          <ThemeButton
-            title="Category"
-            onPress={() => router.push('/(finance)/select-category')}
-            colorBackground={colors.backgroundSoft}
-            colorText={colors.text}
-            style={styles.helperButton}
-          />
-          <ThemeButton
-            title="Date"
-            onPress={() => router.push('/(finance)/date-range?mode=draft')}
-            colorBackground={colors.backgroundSoft}
-            colorText={colors.text}
-            style={styles.helperButton}
-          />
-        </View>
-
         <ThemeButton
           title="Create Transaction"
           onPress={handleSave}
@@ -605,17 +588,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-  },
-  helperRow: {
-    marginTop: 18,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  helperButton: {
-    flex: 1,
-    flexBasis: 150,
-    minWidth: 0,
   },
   primaryButton: {
     marginTop: 16,

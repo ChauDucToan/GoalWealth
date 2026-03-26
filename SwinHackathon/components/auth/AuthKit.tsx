@@ -1,4 +1,5 @@
 import { ThemeButton } from '@/components/ThemeButton';
+import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -393,7 +394,19 @@ export function AuthSupportText({
 }
 
 export function AuthPrimaryButton(props: React.ComponentProps<typeof ThemeButton>) {
-  return <ThemeButton {...props} style={[styles.authButton, props.style]} />;
+  const { onPress, disabled, ...restProps } = props;
+  const { handlePress, isCoolingDown } = useDebouncedPress(() => {
+    onPress?.();
+  });
+
+  return (
+    <ThemeButton
+      {...restProps}
+      onPress={handlePress}
+      disabled={disabled || isCoolingDown}
+      style={[styles.authButton, props.style]}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

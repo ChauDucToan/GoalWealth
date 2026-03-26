@@ -8,6 +8,7 @@ import {
   SetupSurface,
 } from '@/components/profile-setup/shared';
 import { ColorTheme } from '@/constants/theme';
+import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useProfileSetup } from '@/hooks/use-profile-setup';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -21,6 +22,7 @@ export default function ConfirmAccountScreen() {
   const styles = useMemo(() => createStyles(colors, width < 390), [colors, width]);
   const router = useRouter();
   const { state, setNotificationsEnabled } = useProfileSetup();
+  const { profile } = useProfileSettings();
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(true);
 
   const avatar = avatars.find((item) => item.id === state.selectedAvatarId) ?? avatars[0];
@@ -53,8 +55,8 @@ export default function ConfirmAccountScreen() {
           </View>
 
           <View style={styles.profileCopy}>
-            <Text style={[styles.profileName, { color: colors.text }]}>Jonathan Doe</Text>
-            <Text style={[styles.profileMeta, { color: hexToRgba(colors.text, 0.56) }]}>jonathan@finpal.app</Text>
+            <Text style={[styles.profileName, { color: colors.text }]}>{profile.name}</Text>
+            <Text style={[styles.profileMeta, { color: hexToRgba(colors.text, 0.56) }]}>{profile.email}</Text>
             <View style={styles.pillRow}>
               <SetupPill label={bank.label} icon="account-balance" tone="soft" />
               <SetupPill label={savings.label} icon="savings" tone="soft" />

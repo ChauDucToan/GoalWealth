@@ -10,10 +10,17 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';
+import { useProfileSettings } from '@/context/profileSettingsContext';
+import {
+    buildAvatarInitialFromName,
+    buildLinkedUserDisplayName,
+    registerLinkedUserAccount,
+} from '@/services/auth/user-registry';
 
 export default function SignUp() {
     const router = useRouter();
     const { colors } = useTheme();
+    const { updateProfile } = useProfileSettings();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -24,10 +31,28 @@ export default function SignUp() {
         ? 'Passwords do not match.'
         : '';
 
+    const formatJoinedLabel = () =>
+        `Joined ${new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(new Date())}`;
+
     const handleCreateAccount = () => {
         setSubmitAttempted(true);
 
         if (email.trim() && password.trim().length >= 8 && confirmPassword === password) {
+            const displayName = buildLinkedUserDisplayName(email.trim());
+
+            registerLinkedUserAccount({
+                email: email.trim(),
+                full_name: displayName,
+                auth_mode: 'sign-up-draft',
+                password: password.trim(),
+            });
+
+            updateProfile({
+                name: displayName,
+                email: email.trim().toLowerCase(),
+                avatarInitial: buildAvatarInitialFromName(displayName),
+                memberSince: formatJoinedLabel(),
+            });
             router.push('/(auth)/profile-setup/avatar');
         }
     };

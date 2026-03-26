@@ -91,29 +91,59 @@ async function fetchGoogleUserProfile(accessToken: string) {
 }
 
 export function getGoogleOidcClientIdForPlatform() {
+  const isNativeMobile = Platform.OS === 'ios' || Platform.OS === 'android';
   const platformClientId = Platform.select({
     ios: googleOidcConfig.iosClientId,
     android: googleOidcConfig.androidClientId,
     web: googleOidcConfig.webClientId,
     default: googleOidcConfig.clientId,
   });
+
+  if (isNativeMobile) {
+    return platformClientId?.trim() || '';
+  }
 
   return platformClientId?.trim() || googleOidcConfig.clientId;
 }
 
 export function getGoogleOidcPlatformConfig() {
   const platform = Platform.OS;
+  const isNativeMobile = platform === 'ios' || platform === 'android';
   const platformClientId = Platform.select({
     ios: googleOidcConfig.iosClientId,
     android: googleOidcConfig.androidClientId,
     web: googleOidcConfig.webClientId,
     default: googleOidcConfig.clientId,
   });
+  const hasPlatformSpecificClientId = Boolean(platformClientId?.trim());
+  const hasFallbackClientId = Boolean(googleOidcConfig.clientId);
+  const activeClientId = getGoogleOidcClientIdForPlatform();
+  const reusesSharedClientId =
+    Boolean(activeClientId) &&
+    Boolean(googleOidcConfig.clientId) &&
+    activeClientId === googleOidcConfig.clientId;
+  const matchesOtherNativeClientId =
+    platform === 'ios'
+      ? Boolean(activeClientId) && activeClientId === googleOidcConfig.androidClientId
+      : platform === 'android'
+        ? Boolean(activeClientId) && activeClientId === googleOidcConfig.iosClientId
+        : false;
+  const appearsMisconfigured = isNativeMobile && (reusesSharedClientId || matchesOtherNativeClientId);
 
   return {
     platform,
-    activeClientId: getGoogleOidcClientIdForPlatform(),
-    hasPlatformSpecificClientId: Boolean(platformClientId?.trim()),
+    activeClientId,
+    hasPlatformSpecificClientId,
+    hasFallbackClientId,
+    usesFallbackClientId: !hasPlatformSpecificClientId && hasFallbackClientId,
+    requiresPlatformSpecificClientId: isNativeMobile,
+    reusesSharedClientId,
+    matchesOtherNativeClientId,
+    appearsMisconfigured,
+    hasUsableClientId:
+      isNativeMobile
+        ? hasPlatformSpecificClientId && !appearsMisconfigured
+        : Boolean(activeClientId),
   };
 }
 
@@ -122,13 +152,14 @@ export function isGoogleOidcConfigured() {
 }
 
 export function getGoogleOidcRequestConfig() {
+  const isNativeMobile = Platform.OS === 'ios' || Platform.OS === 'android';
   const fallbackClientId = googleOidcConfig.clientId || undefined;
 
   return {
-    clientId: fallbackClientId,
-    webClientId: googleOidcConfig.webClientId || fallbackClientId,
-    iosClientId: googleOidcConfig.iosClientId || fallbackClientId,
-    androidClientId: googleOidcConfig.androidClientId || fallbackClientId,
+    clientId: isNativeMobile ? undefined : fallbackClientId,
+    webClientId: googleOidcConfig.webClientId || (!isNativeMobile ? fallbackClientId : undefined),
+    iosClientId: googleOidcConfig.iosClientId || undefined,
+    androidClientId: googleOidcConfig.androidClientId || undefined,
     scopes: ['openid', 'profile', 'email'],
     selectAccount: true,
   };

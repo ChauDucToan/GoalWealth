@@ -35,3 +35,6 @@ From the workspace root:
 - `bash goalwealth/scripts/aws/seed_feed_registry.sh <stack-name> <region> [mode]`
 - `bash goalwealth/scripts/aws/run_warm_sync.sh <stack-name> <region>`
 - `bash goalwealth/scripts/aws/test_smart_agent.sh <stack-name> <region> "<query>"`
+
+## Architecture
+- Backend diagram and runtime flow: [BACKEND_ARCHITECTURE.md](/home/lossrunner/Documents/work/GoalWealth/goalwealth/BACKEND_ARCHITECTURE.md)

@@ -9,13 +9,7 @@ import {
 import { Typography } from '@/constants/theme';
 import { useMyUser } from '@/context/myUserContext';
 import { useTheme } from '@/hooks/use-theme-colors';
-import {
-  goalwealthApiConfig,
-  isGoalwealthAdapterConfigured,
-  isGoalwealthLiveAdapterEnabled,
-} from '@/services/api/config';
-import { normalizeGoalwealthError } from '@/services/api/errors';
-import { getGoalwealthReady } from '@/services/api/meta';
+import { goalwealthApiConfig } from '@/services/api/config';
 import { loadLastUsedAdapterBearerToken } from '@/services/auth/direct-bearer';
 import {
   getGoogleOidcPlatformConfig,
@@ -23,13 +17,11 @@ import {
   isGoogleOidcConfigured,
 } from '@/services/auth/google-oidc';
 import {
-  isDevelopmentBridgeSignInAvailable,
-  isLegacyPasswordSignInAvailable,
   signInWithAdapterBearer,
-  signInWithDevelopmentBridge,
   signInWithGoogleOidc,
-  signInWithLegacyPassword,
+  signInWithRegisteredPassword,
 } from '@/services/auth/sign-in';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Google from 'expo-auth-session/providers/google';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
@@ -53,24 +45,12 @@ export default function SignIn() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [adapterReadyState, setAdapterReadyState] = useState<
-    'idle' | 'checking' | 'ready' | 'error'
-  >('idle');
-  const [adapterReadyMessage, setAdapterReadyMessage] = useState('');
 
   const googleConfigured = isGoogleOidcConfigured();
-  const devBridgeAvailable = isDevelopmentBridgeSignInAvailable();
-  const legacyPasswordAvailable = isLegacyPasswordSignInAvailable();
-  const liveAdapterEnabled = isGoalwealthLiveAdapterEnabled();
-  const showLegacyPassword = legacyPasswordAvailable && !googleConfigured;
-  const shouldCheckAdapterReadiness =
-    liveAdapterEnabled && isGoalwealthAdapterConfigured();
-  const showDirectBearer = __DEV__;
-  const showDevBridge = !googleConfigured && devBridgeAvailable;
-  const showDeveloperAccess =
-    showDirectBearer || showDevBridge || showLegacyPassword;
-  const showStatusCard = !googleConfigured || shouldCheckAdapterReadiness;
-  const hasAnySignInPath = googleConfigured || showDeveloperAccess;
+  const showGoogleOption =
+    googleConfigured || Boolean(process.env.EXPO_PUBLIC_GOOGLE_OIDC_CLIENT_ID?.trim());
+  const showRegisteredPassword = true;
+  const showDirectBearer = true;
   const googlePlatformConfig = useMemo(
     () => getGoogleOidcPlatformConfig(),
     []
@@ -79,10 +59,10 @@ export default function SignIn() {
     googleConfigured &&
     (googlePlatformConfig.platform === 'android' || googlePlatformConfig.platform === 'ios') &&
     Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-  const showGoogleNativeHint =
-    googleConfigured &&
+  const showGoogleClientConfigError =
+    showGoogleOption &&
     (googlePlatformConfig.platform === 'android' || googlePlatformConfig.platform === 'ios') &&
-    !googlePlatformConfig.hasPlatformSpecificClientId;
+    !googlePlatformConfig.hasUsableClientId;
 
   const googleRequestConfig = useMemo(() => {
     if (googleConfigured) {
@@ -125,117 +105,10 @@ export default function SignIn() {
     };
   }, [showDirectBearer]);
 
-  useEffect(() => {
-    if (!shouldCheckAdapterReadiness) {
-      setAdapterReadyState('idle');
-      setAdapterReadyMessage('');
-      return;
-    }
-
-    let cancelled = false;
-    setAdapterReadyState('checking');
-    setAdapterReadyMessage('');
-
-    void getGoalwealthReady()
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
-
-        const checks = response.data.checks ?? {};
-        const configLoaded = checks.config_loaded !== false;
-        const oidcConfigured = checks.oidc_config_present !== false;
-        const openclawConfigured = checks.openclaw_config_present !== false;
-        if (!configLoaded) {
-          setAdapterReadyState('error');
-          setAdapterReadyMessage('Adapter config is incomplete. Sign-in can continue, but live features may stay unavailable.');
-          return;
-        }
-
-        const runtimeEnvironment =
-          typeof response.data.runtime?.environment === 'string'
-            ? response.data.runtime.environment
-            : null;
-        const missingChecks = [
-          !oidcConfigured ? 'OIDC' : null,
-          !openclawConfigured ? 'OpenClaw' : null,
-        ].filter(Boolean);
-
-        setAdapterReadyState('ready');
-        setAdapterReadyMessage(
-          missingChecks.length === 0
-            ? runtimeEnvironment
-              ? `Adapter ready • ${response.data.service} • ${runtimeEnvironment}`
-              : `Adapter ready • ${response.data.service}`
-            : `Adapter reachable • Missing ${missingChecks.join(' + ')} config.`
-        );
-      })
-      .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-
-        const normalized = normalizeGoalwealthError(error);
-        setAdapterReadyState('error');
-        setAdapterReadyMessage(
-          normalized.message || 'GoalWealth adapter is unreachable right now. You can still sign in with Google.'
-        );
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldCheckAdapterReadiness]);
-
-  const statusCopy = useMemo(() => {
-    if (googleConfigured) {
-      return {
-        title: 'Google OIDC',
-        subtitle:
-          'Continue with Google to sign in to GoalWealth with the client ID configured for this build.',
-        hint: 'Google is the recommended sign-in path for GoalWealth.',
-        tone: colors.primaryDark,
-      };
-    }
-
-    if (showDevBridge) {
-      return {
-        title: 'Development Access',
-        subtitle:
-          'Google sign-in is not configured on this build yet. Use the temporary development path below.',
-        hint: 'This path is for local testing only and is not the production auth posture.',
-        tone: colors.warning,
-      };
-    }
-
-    if (showLegacyPassword) {
-      return {
-        title: 'Legacy Bridge',
-        subtitle: 'Temporary compatibility mode for local development.',
-        hint: 'Google OIDC should replace this path as soon as platform client IDs are available.',
-        tone: colors.warning,
-      };
-    }
-
-    return {
-      title: 'Sign-in not configured',
-      subtitle: 'Add the Google OIDC client IDs in .env, then restart Expo.',
-      hint: 'You can keep the dev bridge disabled once Google sign-in is ready.',
-      tone: colors.error,
-    };
-  }, [
-    colors.error,
-    colors.primaryDark,
-    colors.warning,
-    googleConfigured,
-    showDevBridge,
-    showLegacyPassword,
-  ]);
-
   const showEmailError =
-    submitAttempted && (showDevBridge || showLegacyPassword) && !email.trim();
+    submitAttempted && showRegisteredPassword && !email.trim();
   const showPasswordError =
-    submitAttempted && showLegacyPassword && password.trim().length < 8;
+    submitAttempted && showRegisteredPassword && password.trim().length < 8;
   const showBearerError = submitAttempted && showDirectBearer && !bearerToken.trim();
 
   const resetInlineErrors = () => {
@@ -273,6 +146,13 @@ export default function SignIn() {
 
   const handleGoogleSignIn = async () => {
     setAuthError('');
+
+    if (showGoogleClientConfigError) {
+      setAuthError(
+        `Google sign-in is not ready on this ${googlePlatformConfig.platform} build yet. Add the platform-specific Google OAuth client ID and restart the app.`
+      );
+      return;
+    }
 
     if (!googleConfigured) {
       setAuthError('Google sign-in is not configured for this build.');
@@ -340,35 +220,12 @@ export default function SignIn() {
     }
   };
 
-  const handleDevBridgeSignIn = async () => {
-    setSubmitAttempted(true);
-    setAuthError('');
-
-    if (!devBridgeAvailable) {
-      setAuthError('The GoalWealth dev bridge is not enabled for this build.');
-      return;
-    }
-
-    if (!email.trim()) {
-      return;
-    }
-
-    if (shouldCheckAdapterReadiness && adapterReadyState !== 'ready') {
-      setAuthError(
-        adapterReadyMessage || 'GoalWealth adapter is not ready yet. Check /ready before signing in.'
-      );
-      return;
-    }
-
-    await completeSignIn(() => signInWithDevelopmentBridge(email.trim()));
-  };
-
   const handleLegacySignIn = async () => {
     setSubmitAttempted(true);
     setAuthError('');
 
-    if (!showLegacyPassword) {
-      setAuthError('Legacy sign-in is not enabled for this build.');
+    if (!showRegisteredPassword) {
+      setAuthError('Email and password sign-in is not available right now.');
       return;
     }
 
@@ -377,7 +234,7 @@ export default function SignIn() {
     }
 
     await completeSignIn(() =>
-      signInWithLegacyPassword({
+      signInWithRegisteredPassword({
         email: email.trim(),
         password: password.trim(),
       })
@@ -408,265 +265,88 @@ export default function SignIn() {
   return (
     <AuthScaffold
       title="Sign In to GoalWealth"
-      subtitle={statusCopy.subtitle}
+      subtitle="Sign in with your account credentials, Google, or an existing bearer token."
       illustration={<RobotIllustration />}
     >
-      {showStatusCard ? (
-        <View
-          style={[
-            styles.statusCard,
-            { backgroundColor: hexToRgba(statusCopy.tone, 0.12) },
-          ]}
-        >
-          {!googleConfigured ? (
-            <>
-              <Text style={[styles.statusTitle, { color: statusCopy.tone }]}>
-                {statusCopy.title}
-              </Text>
-              <Text style={[styles.statusHint, { color: hexToRgba(colors.text, 0.64) }]}>
-                {statusCopy.hint}
-              </Text>
-            </>
-          ) : null}
-          {shouldCheckAdapterReadiness ? (
-            <Text
-              style={[
-                !googleConfigured ? styles.adapterStatusText : styles.adapterStatusInline,
-              {
-                color:
-                  adapterReadyState === 'ready'
-                    ? colors.success
-                    : adapterReadyState === 'error'
-                        ? colors.warning
-                        : hexToRgba(colors.text, 0.62),
-              },
-            ]}
-          >
-            {adapterReadyState === 'checking'
-              ? 'Checking GoalWealth adapter readiness...'
-              : adapterReadyMessage || 'GoalWealth readiness will be checked in the background.'}
-          </Text>
-        ) : null}
-      </View>
-      ) : null}
-
-      {googleConfigured ? (
-        <View style={styles.primarySection}>
-          <AuthPrimaryButton
-            title={
-              isSubmitting
-                ? 'Signing In...'
-                : googleRequest
-                  ? 'Continue with Google'
-                  : 'Preparing Google...'
-            }
-            onPress={handleGoogleSignIn}
-            colorBackground={colors.primaryDark}
-            colorText={colors.textLight}
-            disabled={isSubmitting || !isSessionReady || !googleRequest || requiresNativeGoogleBuild}
+      {showRegisteredPassword ? (
+        <View style={styles.toolBlock}>
+          <InputField
+            label="Email Address"
+            placeholder="Enter your email address..."
+            iconName="email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={(value) => {
+              setEmail(value);
+              resetInlineErrors();
+            }}
+            status={showEmailError ? 'error' : 'default'}
+            helperText={showEmailError ? 'Email address is required.' : undefined}
           />
-          <Text style={[styles.helperText, { color: hexToRgba(colors.text, 0.58) }]}>
-            Uses the Google client ID from your `.env` for this build.
-          </Text>
-          {requiresNativeGoogleBuild ? (
-            <View
+
+          <InputField
+            label="Password"
+            placeholder="Enter your password..."
+            iconName="lock"
+            secureTextEntry
+            isPassword
+            value={password}
+            onChangeText={(value) => {
+              setPassword(value);
+              resetInlineErrors();
+            }}
+            containerStyle={styles.fieldSpacing}
+            status={showPasswordError ? 'error' : 'default'}
+            helperText={showPasswordError ? 'Password must be at least 8 characters.' : undefined}
+          />
+
+          <RememberMe checked={rememberMe} onPress={() => setRememberMe((current) => !current)} />
+
+          {showGoogleOption ? (
+            <View style={styles.googleButtonWrap}>
+              <Pressable
+                onPress={handleGoogleSignIn}
+                disabled={isSubmitting || !isSessionReady || !googleRequest || requiresNativeGoogleBuild}
+                style={({ pressed }) => [
+                  styles.googleButton,
+                  {
+                    backgroundColor: colors.primaryDark,
+                    opacity:
+                      isSubmitting || !isSessionReady || !googleRequest || requiresNativeGoogleBuild
+                        ? 0.56
+                        : pressed
+                          ? 0.9
+                          : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons name="google" size={20} color={colors.textLight} />
+                <Text style={[styles.googleButtonText, { color: colors.textLight }]}>
+                  {isSubmitting
+                    ? 'Signing In...'
+                    : googleRequest
+                      ? 'Continue with Google'
+                      : 'Preparing Google...'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          <View style={styles.buttonStack}>
+            <AuthPrimaryButton
+              title={isSubmitting ? 'Signing In...' : 'Sign In with Email'}
+              onPress={handleLegacySignIn}
+              colorBackground={hexToRgba(colors.primaryDark, 0.08)}
+              colorText={colors.primaryDark}
               style={[
-                styles.googleHintCard,
-                {
-                  backgroundColor: hexToRgba(colors.error, 0.08),
-                  borderColor: hexToRgba(colors.error, 0.16),
-                },
+                styles.outlineButton,
+                { borderColor: hexToRgba(colors.primaryDark, 0.24) },
               ]}
-            >
-              <Text style={[styles.googleHintTitle, { color: colors.error }]}>
-                Development build required
-              </Text>
-              <Text style={[styles.googleHintBody, { color: hexToRgba(colors.text, 0.66) }]}>
-                You are running in Expo Go. For Google sign-in on mobile, use a development build
-                or production build so the native redirect URI matches your app.
-              </Text>
-            </View>
-          ) : null}
-          {showGoogleNativeHint ? (
-            <View
-              style={[
-                styles.googleHintCard,
-                {
-                  backgroundColor: hexToRgba(colors.warning, 0.1),
-                  borderColor: hexToRgba(colors.warning, 0.2),
-                },
-              ]}
-            >
-              <Text style={[styles.googleHintTitle, { color: colors.warning }]}>
-                Native Google client missing
-              </Text>
-              <Text style={[styles.googleHintBody, { color: hexToRgba(colors.text, 0.66) }]}>
-                This {googlePlatformConfig.platform} build is falling back to the shared client ID.
-                If Google returns `400 invalid_request`, set the platform-specific client in `.env`
-                and make sure it matches your app package / bundle ID and signing keys.
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      {showDeveloperAccess ? (
-        <View style={styles.toolsSection}>
-          <Text style={[styles.sectionLabel, { color: colors.text }]}>Developer access</Text>
-          <Text style={[styles.sectionHelper, { color: hexToRgba(colors.text, 0.58) }]}>
-            These fallback paths are for local testing only.
-          </Text>
-
-          {showDevBridge ? (
-            <View style={styles.toolBlock}>
-              <InputField
-                label="Dev bridge email"
-                placeholder="Enter your email address..."
-                iconName="email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={(value) => {
-                  setEmail(value);
-                  resetInlineErrors();
-                }}
-                status={showEmailError ? 'error' : 'default'}
-                helperText={
-                  showEmailError
-                    ? 'Email address is required for the temporary dev bridge.'
-                    : 'GoalWealth adapter must be reachable for this path.'
-                }
-              />
-
-              <View style={styles.buttonStack}>
-                <AuthPrimaryButton
-                  title={isSubmitting ? 'Signing In...' : 'Use Dev Bridge'}
-                  onPress={handleDevBridgeSignIn}
-                  colorBackground={hexToRgba(colors.primaryDark, 0.08)}
-                  colorText={colors.primaryDark}
-                  style={[
-                    styles.outlineButton,
-                    { borderColor: hexToRgba(colors.primaryDark, 0.24) },
-                  ]}
-                  disabled={
-                    isSubmitting ||
-                    !isSessionReady ||
-                    (shouldCheckAdapterReadiness && adapterReadyState !== 'ready')
-                  }
-                />
-              </View>
-            </View>
-          ) : null}
-
-          {showLegacyPassword ? (
-            <View style={styles.toolBlock}>
-              <InputField
-                label="Email Address"
-                placeholder="Enter your email address..."
-                iconName="email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={(value) => {
-                  setEmail(value);
-                  resetInlineErrors();
-                }}
-                status={showEmailError ? 'error' : 'default'}
-                helperText={showEmailError ? 'Email address is required.' : undefined}
-              />
-
-              <InputField
-                label="Password"
-                placeholder="Enter your password..."
-                iconName="lock"
-                secureTextEntry
-                isPassword
-                value={password}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  resetInlineErrors();
-                }}
-                containerStyle={styles.fieldSpacing}
-                status={showPasswordError ? 'error' : 'default'}
-                helperText={
-                  showPasswordError
-                    ? 'Password must be at least 8 characters for the legacy bridge.'
-                    : 'Legacy compatibility path only.'
-                }
-              />
-
-              <RememberMe checked={rememberMe} onPress={() => setRememberMe((current) => !current)} />
-
-              <View style={styles.buttonStack}>
-                <AuthPrimaryButton
-                  title={isSubmitting ? 'Signing In...' : 'Use Legacy Bridge'}
-                  onPress={handleLegacySignIn}
-                  colorBackground={hexToRgba(colors.primaryDark, 0.08)}
-                  colorText={colors.primaryDark}
-                  style={[
-                    styles.outlineButton,
-                    { borderColor: hexToRgba(colors.primaryDark, 0.24) },
-                  ]}
-                  disabled={isSubmitting || !isSessionReady}
-                />
-              </View>
-            </View>
-          ) : null}
-
-          {showDirectBearer ? (
-            <View style={styles.toolBlock}>
-              <InputField
-                label="Existing bearer token"
-                placeholder="Bearer eyJ..."
-                iconName="vpn-key"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={bearerToken}
-                onChangeText={(value) => {
-                  setBearerToken(value);
-                  resetInlineErrors();
-                }}
-                status={showBearerError ? 'error' : 'default'}
-                helperText={
-                  showBearerError
-                    ? 'Bearer token is required.'
-                    : 'Development fallback only. The last token stays on this device.'
-                }
-                containerStyle={styles.fieldSpacing}
-                multiline
-                numberOfLines={3}
-                inputStyle={styles.bearerInput}
-              />
-
-              <View style={styles.buttonStack}>
-                <AuthPrimaryButton
-                  title={isSubmitting ? 'Signing In...' : 'Use Existing Bearer'}
-                  onPress={handleDirectBearerSignIn}
-                  colorBackground={hexToRgba(colors.primaryDark, 0.08)}
-                  colorText={colors.primaryDark}
-                  style={[
-                    styles.outlineButton,
-                    { borderColor: hexToRgba(colors.primaryDark, 0.24) },
-                  ]}
-                  disabled={isSubmitting || !isSessionReady}
-                />
-              </View>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      {!hasAnySignInPath ? (
-        <View
-          style={[
-            styles.emptyCard,
-            { backgroundColor: hexToRgba(colors.error, 0.06), borderColor: hexToRgba(colors.error, 0.18) },
-          ]}
-        >
-          <Text style={[styles.emptyTitle, { color: colors.error }]}>No sign-in path is ready</Text>
-          <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.64) }]}>
-            Add your Google client ID in `.env`, restart Expo, then try again.
-          </Text>
+              disabled={isSubmitting || !isSessionReady}
+            />
+          </View>
         </View>
       ) : null}
 
@@ -706,10 +386,47 @@ export default function SignIn() {
         </View>
       ) : null}
 
-      {showLegacyPassword ? (
+      {showRegisteredPassword ? (
         <Pressable style={styles.linkWrap} onPress={() => router.push('/(auth)/forgetPassword')}>
           <Text style={[styles.link, { color: colors.primaryDark }]}>Forgot Password</Text>
         </Pressable>
+      ) : null}
+
+      {showDirectBearer ? (
+        <View style={styles.toolBlock}>
+          <InputField
+            label="Existing bearer token"
+            placeholder="Bearer eyJ..."
+            iconName="vpn-key"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={bearerToken}
+            onChangeText={(value) => {
+              setBearerToken(value);
+              resetInlineErrors();
+            }}
+            status={showBearerError ? 'error' : 'default'}
+            helperText={showBearerError ? 'Bearer token is required.' : undefined}
+            containerStyle={styles.fieldSpacing}
+            multiline
+            numberOfLines={3}
+            inputStyle={styles.bearerInput}
+          />
+
+          <View style={styles.buttonStack}>
+            <AuthPrimaryButton
+              title={isSubmitting ? 'Signing In...' : 'Sign In with Bearer'}
+              onPress={handleDirectBearerSignIn}
+              colorBackground={hexToRgba(colors.primaryDark, 0.08)}
+              colorText={colors.primaryDark}
+              style={[
+                styles.outlineButton,
+                { borderColor: hexToRgba(colors.primaryDark, 0.24) },
+              ]}
+              disabled={isSubmitting || !isSessionReady}
+            />
+          </View>
+        </View>
       ) : null}
     </AuthScaffold>
   );
@@ -744,6 +461,24 @@ const styles = StyleSheet.create({
   },
   primarySection: {
     width: '100%',
+  },
+  googleButtonWrap: {
+    width: '100%',
+    marginTop: 20,
+  },
+  googleButton: {
+    minHeight: 54,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  googleButtonText: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   toolsSection: {
     width: '100%',

@@ -1,6 +1,7 @@
 import { MotionPressable } from '@/components/MotionPressable';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme, Typography } from '@/constants/theme';
+import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
@@ -193,15 +194,19 @@ export function SetupPrimaryButton({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { handlePress, isCoolingDown } = useDebouncedPress(onPress);
 
   return (
     <MotionPressable
       style={[
         styles.primaryButton,
-        { backgroundColor: disabled ? hexToRgba(colors.primaryDark, 0.24) : colors.primaryDark },
+        {
+          backgroundColor:
+            disabled || isCoolingDown ? hexToRgba(colors.primaryDark, 0.24) : colors.primaryDark,
+        },
       ]}
-      onPress={onPress}
-      disabled={disabled}
+      onPress={handlePress}
+      disabled={disabled || isCoolingDown}
       scaleTo={0.975}
       translateYTo={2}
     >
@@ -219,11 +224,13 @@ export function SetupSecondaryButton({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { handlePress, isCoolingDown } = useDebouncedPress(onPress);
 
   return (
     <MotionPressable
       style={[styles.secondaryButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={onPress}
+      onPress={handlePress}
+      disabled={isCoolingDown}
       scaleTo={0.975}
       translateYTo={2}
     >
