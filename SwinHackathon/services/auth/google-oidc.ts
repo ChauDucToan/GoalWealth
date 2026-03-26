@@ -1,3 +1,5 @@
+import * as AuthSession from 'expo-auth-session';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 import type { UserProfile } from '@/context/user.types';
@@ -12,6 +14,31 @@ export const googleOidcConfig = {
   iosClientId: process.env.EXPO_PUBLIC_GOOGLE_OIDC_IOS_CLIENT_ID?.trim() ?? '',
   androidClientId: process.env.EXPO_PUBLIC_GOOGLE_OIDC_ANDROID_CLIENT_ID?.trim() ?? '',
 };
+
+function getExpoScheme() {
+  const configuredScheme = Constants.expoConfig?.scheme;
+
+  if (Array.isArray(configuredScheme)) {
+    return configuredScheme.find(Boolean)?.trim() ?? '';
+  }
+
+  return configuredScheme?.trim() ?? '';
+}
+
+function getAndroidPackageName() {
+  return Constants.expoConfig?.android?.package?.trim() || 'com.anonymous.SwinHackathon';
+}
+
+function getAndroidGoogleRedirectScheme() {
+  const androidClientId = googleOidcConfig.androidClientId.trim();
+
+  if (!androidClientId) {
+    return getAndroidPackageName();
+  }
+
+  const clientIdPrefix = androidClientId.replace(/\.apps\.googleusercontent\.com$/i, '');
+  return `com.googleusercontent.apps.${clientIdPrefix}`;
+}
 
 function decodeBase64Url(input: string) {
   const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
@@ -154,12 +181,21 @@ export function isGoogleOidcConfigured() {
 export function getGoogleOidcRequestConfig() {
   const isNativeMobile = Platform.OS === 'ios' || Platform.OS === 'android';
   const fallbackClientId = googleOidcConfig.clientId || undefined;
+  const redirectUri = isNativeMobile
+    ? AuthSession.makeRedirectUri({
+        native:
+          Platform.OS === 'android'
+            ? `${getAndroidGoogleRedirectScheme()}:/signIn`
+            : `${getExpoScheme() || 'swinhackathon'}:/signIn`,
+      })
+    : undefined;
 
   return {
     clientId: isNativeMobile ? undefined : fallbackClientId,
     webClientId: googleOidcConfig.webClientId || (!isNativeMobile ? fallbackClientId : undefined),
     iosClientId: googleOidcConfig.iosClientId || undefined,
     androidClientId: googleOidcConfig.androidClientId || undefined,
+    redirectUri,
     scopes: ['openid', 'profile', 'email'],
     selectAccount: true,
   };

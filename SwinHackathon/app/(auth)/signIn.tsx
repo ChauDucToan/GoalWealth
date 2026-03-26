@@ -26,7 +26,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -79,7 +79,8 @@ export default function SignIn() {
     };
   }, [googleConfigured]);
 
-  const [googleRequest, , promptGoogleAsync] = Google.useAuthRequest(googleRequestConfig);
+  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest(googleRequestConfig);
+  const handledGoogleResponseKey = useRef('');
 
   useEffect(() => {
     if (isSessionReady && state.isAuthenticated) {
@@ -105,6 +106,85 @@ export default function SignIn() {
     };
   }, [showDirectBearer]);
 
+  useEffect(() => {
+    if (!googleResponse) {
+      return;
+    }
+
+    const responseKey = JSON.stringify({
+      type: googleResponse.type,
+      params: 'params' in googleResponse ? googleResponse.params : null,
+      hasAuthentication: Boolean(googleResponse.authentication),
+      hasIdToken: Boolean(googleResponse.authentication?.idToken),
+      hasAccessToken: Boolean(googleResponse.authentication?.accessToken),
+    });
+
+    if (handledGoogleResponseKey.current === responseKey) {
+      return;
+    }
+
+    handledGoogleResponseKey.current = responseKey;
+
+    console.log(
+      JSON.stringify(
+        {
+          scope: 'google-sign-in',
+          step: 'auth_response',
+          type: googleResponse.type,
+          hasIdToken:
+            Boolean(googleResponse.authentication?.idToken) ||
+            ('params' in googleResponse && typeof googleResponse.params?.id_token === 'string'),
+          hasAccessToken:
+            Boolean(googleResponse.authentication?.accessToken) ||
+            ('params' in googleResponse &&
+              typeof googleResponse.params?.access_token === 'string'),
+          hasCode:
+            'params' in googleResponse && typeof googleResponse.params?.code === 'string',
+        },
+        null,
+        2
+      )
+    );
+
+    if (googleResponse.type === 'error') {
+      const params = 'params' in googleResponse ? googleResponse.params : undefined;
+      const errorDescription =
+        typeof params?.error_description === 'string'
+          ? params.error_description
+          : 'Google sign-in could not be completed.';
+      setAuthError(errorDescription);
+      setIsSubmitting(false);
+      dispatch(actions.setLoading(false));
+      return;
+    }
+
+    if (googleResponse.type !== 'success') {
+      setIsSubmitting(false);
+      dispatch(actions.setLoading(false));
+      return;
+    }
+
+    const idToken =
+      googleResponse.authentication?.idToken ??
+      ('params' in googleResponse && typeof googleResponse.params?.id_token === 'string'
+        ? googleResponse.params.id_token
+        : '');
+    const accessToken =
+      googleResponse.authentication?.accessToken ??
+      ('params' in googleResponse && typeof googleResponse.params?.access_token === 'string'
+        ? googleResponse.params.access_token
+        : undefined);
+
+    if (!idToken) {
+      setAuthError('Google sign-in succeeded, but no ID token was returned.');
+      setIsSubmitting(false);
+      dispatch(actions.setLoading(false));
+      return;
+    }
+
+    void completeSignIn(() => signInWithGoogleOidc({ idToken, accessToken }));
+  }, [actions, completeSignIn, dispatch, googleResponse]);
+
   const showEmailError =
     submitAttempted && showRegisteredPassword && !email.trim();
   const showPasswordError =
@@ -120,7 +200,7 @@ export default function SignIn() {
     }
   };
 
-  const completeSignIn = async (
+  const completeSignIn = useCallback(async (
     runner: () => Promise<{
       accessToken: string;
       profile: Parameters<typeof actions.signInSuccess>[0];
@@ -142,10 +222,24 @@ export default function SignIn() {
       setIsSubmitting(false);
       dispatch(actions.setLoading(false));
     }
-  };
+  }, [actions, dispatch, router]);
 
   const handleGoogleSignIn = async () => {
     setAuthError('');
+
+    console.log(
+      JSON.stringify(
+        {
+          scope: 'google-sign-in',
+          step: 'request_config',
+          platform: googlePlatformConfig.platform,
+          activeClientId: googlePlatformConfig.activeClientId,
+          redirectUri: googleRequest?.redirectUri ?? googleRequestConfig.redirectUri ?? null,
+        },
+        null,
+        2
+      )
+    );
 
     if (showGoogleClientConfigError) {
       setAuthError(
@@ -177,44 +271,27 @@ export default function SignIn() {
     try {
       const response = await promptGoogleAsync();
 
+      if (response.type === 'error') {
+        const params =
+          'params' in response && response.params ? response.params : undefined;
+        const errorDescription =
+          typeof params?.error_description === 'string'
+            ? params.error_description
+            : 'Google sign-in could not be completed.';
+        setAuthError(errorDescription);
+        setIsSubmitting(false);
+        dispatch(actions.setLoading(false));
+        return;
+      }
+
       if (response.type !== 'success') {
-        if (response.type === 'error') {
-          const params =
-            'params' in response && response.params ? response.params : undefined;
-          const errorDescription =
-            typeof params?.error_description === 'string'
-              ? params.error_description
-              : 'Google sign-in could not be completed.';
-          setAuthError(errorDescription);
-        }
-
-        return;
+        setIsSubmitting(false);
+        dispatch(actions.setLoading(false));
       }
-
-      const idToken =
-        response.authentication?.idToken ??
-        ('params' in response && typeof response.params?.id_token === 'string'
-          ? response.params.id_token
-          : '');
-      const accessToken =
-        response.authentication?.accessToken ??
-        ('params' in response && typeof response.params?.access_token === 'string'
-          ? response.params.access_token
-          : undefined);
-
-      if (!idToken) {
-        setAuthError('Google sign-in succeeded, but no ID token was returned.');
-        return;
-      }
-
-      const result = await signInWithGoogleOidc({ idToken, accessToken });
-      dispatch(actions.signInSuccess(result.profile, result.accessToken, result.authMode));
-      router.replace('/(tabs)/home');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Google sign-in failed.';
       setAuthError(message);
       dispatch(actions.setError(message));
-    } finally {
       setIsSubmitting(false);
       dispatch(actions.setLoading(false));
     }
