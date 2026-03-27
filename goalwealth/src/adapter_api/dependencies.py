@@ -10,6 +10,7 @@ from .constants import REQUEST_ID_CONTEXT_KEY, USER_CONTEXT_KEY
 from .schemas.auth import UserClaims
 from .services.auth_service import AuthService
 from .services.chat_flow_service import ChatFlowService
+from .services.goal_service import GoalService
 from .services.me_service import MeService
 from .services.memory_gateway import MemoryGateway
 from .services.ocr_flow_service import OcrFlowService
@@ -30,6 +31,7 @@ class ServiceContainer:
     chat_flow_service: ChatFlowService
     ocr_flow_service: OcrFlowService
     me_service: MeService
+    goal_service: GoalService
     risk_profile_service: RiskProfileService
     persistence_service: GoalWealthPersistenceService | None = None
 
@@ -54,6 +56,7 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         persistence_service=persistence_service,
     )
     me_service = MeService(persistence_service=persistence_service)
+    goal_service = GoalService(persistence_service=persistence_service)
     risk_profile_service = RiskProfileService(persistence_service=persistence_service)
     return ServiceContainer(
         config=config,
@@ -65,6 +68,7 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         chat_flow_service=chat_flow_service,
         ocr_flow_service=ocr_flow_service,
         me_service=me_service,
+        goal_service=goal_service,
         risk_profile_service=risk_profile_service,
         persistence_service=persistence_service,
     )
