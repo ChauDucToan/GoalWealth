@@ -37,12 +37,13 @@ def error_response(
     details: dict[str, Any] | None = None,
     warnings: list[str] | None = None,
     meta: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    status: int | None = None,
+) -> Any:
     response_meta = {
         "request_id": _request_id_from_request(request),
         **(meta or {}),
     }
-    return {
+    envelope = {
         "ok": False,
         "data": None,
         "error": {
@@ -53,3 +54,13 @@ def error_response(
         "meta": response_meta,
         "warnings": list(warnings or []),
     }
+
+    if status is None:
+        return envelope
+
+    try:
+        from fastapi.responses import JSONResponse
+    except ImportError:  # pragma: no cover - optional dependency path
+        return envelope
+
+    return JSONResponse(status_code=status, content=envelope)

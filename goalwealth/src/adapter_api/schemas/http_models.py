@@ -57,3 +57,14 @@ if PYDANTIC_AVAILABLE:
         max_loss: float | None = None
         min_return: float | None = None
         notes: str | None = None
+
+
+    class GoalCreateRequestModel(BaseModel):
+        title: str = Field(..., min_length=1)
+        goal_type: str = Field(..., min_length=1)
+        status: str = "active"
+        priority: int = Field(default=5, ge=1, le=10)
+        target_amount: float | None = Field(default=None, ge=0)
+        current_progress: float = Field(default=0, ge=0)
+        target_date: str | None = None
+        description: str | None = None

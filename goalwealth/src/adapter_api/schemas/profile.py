@@ -36,3 +36,24 @@ ALLOWED_RISK_TOLERANCE = {"conservative", "moderate", "balanced", "growth", "agg
 ALLOWED_INVESTMENT_HORIZON = {"short_term", "medium_term", "long_term"}
 ALLOWED_KNOWLEDGE_LEVEL = {"beginner", "intermediate", "advanced", "expert"}
 ALLOWED_LIQUIDITY_NEEDS = {"high", "medium", "low"}
+ALLOWED_GOAL_TYPES = {
+    "savings_goal",
+    "debt_payoff_goal",
+    "investment_goal",
+    "retirement_goal",
+    "emergency_fund_goal",
+    "wealth_building_goal",
+}
+ALLOWED_GOAL_STATUSES = {"active", "completed", "paused", "archived"}
+
+
+@dataclass(slots=True)
+class GoalCreateRequest:
+    title: str
+    goal_type: str
+    status: str = "active"
+    priority: int = 5
+    target_amount: float | None = None
+    current_progress: float = 0
+    target_date: str | None = None
+    description: str | None = None
