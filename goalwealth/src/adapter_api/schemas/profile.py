@@ -57,3 +57,15 @@ class GoalCreateRequest:
     current_progress: float = 0
     target_date: str | None = None
     description: str | None = None
+
+
+@dataclass(slots=True)
+class GoalUpdateRequest:
+    title: str | None = None
+    goal_type: str | None = None
+    status: str | None = None
+    priority: int | None = None
+    target_amount: float | None = None
+    current_progress: float | None = None
+    target_date: str | None = None
+    description: str | None = None

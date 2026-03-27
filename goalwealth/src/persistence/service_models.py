@@ -50,6 +50,18 @@ class GoalCreateInput:
 
 
 @dataclass(slots=True)
+class GoalUpdateInput:
+    title: str | None = None
+    goal_type: str | None = None
+    status: str | None = None
+    priority: int | None = None
+    target_amount: Decimal | float | None = None
+    current_progress: Decimal | float | None = None
+    target_date: date | None = None
+    description: str | None = None
+
+
+@dataclass(slots=True)
 class ConversationSummaryUpsertInput:
     last_turn_date: datetime | None = None
     total_turns: int | None = None

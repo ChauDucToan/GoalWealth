@@ -5,7 +5,7 @@ from typing import Any
 from .config import AdapterApiConfig
 from .dependencies import build_services
 from .middleware import auth, error_handler, request_id
-from .routers import chat, goals, health, internal, me, ocr, risk
+from .routers import chat, goals, health, internal, me, ocr, ocr_hub, recommendations, risk, summary
 from .utils.logging import configure_logging
 
 
@@ -59,7 +59,7 @@ def create_app() -> Any:
     error_handler.install(application)
     auth.install(application)
 
-    for module in (health, me, risk, goals, chat, ocr, internal):
+    for module in (health, me, risk, goals, summary, recommendations, chat, ocr, ocr_hub, internal):
         module.register(application)
 
     return application

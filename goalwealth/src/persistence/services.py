@@ -16,6 +16,7 @@ from .repositories import (
 from .service_models import (
     ConversationSummaryUpsertInput,
     GoalCreateInput,
+    GoalUpdateInput,
     IdentityUpsertInput,
     OcrRecordCreateInput,
     OcrRecordUpdateInput,
@@ -147,6 +148,19 @@ class GoalWealthPersistenceService:
     def list_goals_for_user(self, user_id, *, statuses=None):
         with self.session_factory() as session:
             return self.goals.list_for_user(session, user_id=_coerce_user_id(user_id), statuses=statuses)
+
+    def get_goal_for_user(self, user_id, goal_id):
+        with self.session_factory() as session:
+            return self.goals.get_for_user(session, user_id=_coerce_user_id(user_id), goal_id=_coerce_user_id(goal_id))
+
+    def update_goal_for_user(self, user_id, goal_id, payload: GoalUpdateInput):
+        with self.session_factory.begin() as session:
+            return self.goals.update_for_user(
+                session,
+                user_id=_coerce_user_id(user_id),
+                goal_id=_coerce_user_id(goal_id),
+                payload=payload,
+            )
 
     def get_conversation_summary(self, user_id):
         with self.session_factory() as session:
