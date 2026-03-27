@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
+from persistence import GoalWealthPersistenceService
+
 from .auth import ensure_internal_auth
 from .config import InternalBackendApiConfig
 from .errors import ApiHttpError
 from .services.memory_stub_service import build_memory_service_view
 from .services.ocr_stub_service import build_openclaw_view
+from .services.persistence_views import build_memory_service_view_from_persistence, build_openclaw_view_from_persistence
 from .services.smart_agent_stub_service import build_smart_agent_response
 
 
@@ -15,6 +18,13 @@ def _state_config(request: Any | None) -> InternalBackendApiConfig:
     state = getattr(getattr(request, "app", None), "state", None)
     config = getattr(state, "config", None)
     return config if isinstance(config, InternalBackendApiConfig) else InternalBackendApiConfig.from_env()
+
+
+
+def _state_persistence(request: Any | None) -> GoalWealthPersistenceService | None:
+    state = getattr(getattr(request, "app", None), "state", None)
+    persistence_service = getattr(state, "persistence_service", None)
+    return persistence_service if isinstance(persistence_service, GoalWealthPersistenceService) else None
 
 
 
@@ -54,6 +64,7 @@ def health(request: Any = None) -> dict[str, Any]:
 
 def ready(request: Any = None) -> dict[str, Any]:
     config = _state_config(request)
+    persistence_service = _state_persistence(request)
     return {
         "status": "ready",
         "service": config.service_name,
@@ -61,6 +72,7 @@ def ready(request: Any = None) -> dict[str, Any]:
             "config_loaded": True,
             "smart_agent_mode_known": bool(config.smart_agent_mode),
             "internal_auth_mode_known": True,
+            "persistence_configured": persistence_service is not None,
         },
         "runtime": config.public_runtime_summary(),
     }
@@ -75,9 +87,20 @@ def get_memory_user_view(
 ) -> dict[str, Any]:
     config = _state_config(request)
     ensure_internal_auth(request, config)
+    persistence_service = _state_persistence(request)
+    selected_sections = _parse_sections(includeSections)
+    if persistence_service is not None:
+        persisted_view = build_memory_service_view_from_persistence(
+            persistence_service,
+            userId,
+            include_sections=selected_sections,
+            ocr_summary_limit=ocrSummaryLimit,
+        )
+        if persisted_view is not None:
+            return persisted_view
     return build_memory_service_view(
         userId,
-        include_sections=_parse_sections(includeSections),
+        include_sections=selected_sections,
         ocr_summary_limit=ocrSummaryLimit,
     )
 
@@ -92,7 +115,17 @@ def get_ocr_openclaw_view(
     ensure_internal_auth(request, config)
     if not userId or not str(userId).strip():
         raise ApiHttpError(400, "INVALID_REQUEST", "userId query parameter is required")
-    return build_openclaw_view(ocrRecordId, user_id=str(userId).strip())
+    cleaned_user_id = str(userId).strip()
+    persistence_service = _state_persistence(request)
+    if persistence_service is not None:
+        persisted_view = build_openclaw_view_from_persistence(
+            persistence_service,
+            ocrRecordId,
+            user_reference=cleaned_user_id,
+        )
+        if persisted_view is not None:
+            return persisted_view
+    return build_openclaw_view(ocrRecordId, user_id=cleaned_user_id)
 
 
 

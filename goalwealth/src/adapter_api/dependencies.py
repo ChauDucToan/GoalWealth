@@ -3,11 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from persistence import GoalWealthPersistenceService, build_optional_persistence_bundle
+
 from .config import AdapterApiConfig
 from .constants import REQUEST_ID_CONTEXT_KEY, USER_CONTEXT_KEY
 from .schemas.auth import UserClaims
 from .services.auth_service import AuthService
 from .services.chat_flow_service import ChatFlowService
+from .services.me_service import MeService
 from .services.memory_gateway import MemoryGateway
 from .services.ocr_flow_service import OcrFlowService
 from .services.ocr_gateway import OcrGateway
@@ -25,6 +28,8 @@ class ServiceContainer:
     smart_agent_gateway: SmartAgentGateway
     chat_flow_service: ChatFlowService
     ocr_flow_service: OcrFlowService
+    me_service: MeService
+    persistence_service: GoalWealthPersistenceService | None = None
 
 
 
@@ -40,9 +45,13 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         memory_gateway=memory_gateway,
         smart_agent_gateway=smart_agent_gateway,
     )
+    persistence_bundle = build_optional_persistence_bundle()
+    persistence_service = persistence_bundle[3] if persistence_bundle is not None else None
     ocr_flow_service = OcrFlowService(
         ocr_gateway=ocr_gateway,
+        persistence_service=persistence_service,
     )
+    me_service = MeService(persistence_service=persistence_service)
     return ServiceContainer(
         config=config,
         auth_service=auth_service,
@@ -52,6 +61,8 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         smart_agent_gateway=smart_agent_gateway,
         chat_flow_service=chat_flow_service,
         ocr_flow_service=ocr_flow_service,
+        me_service=me_service,
+        persistence_service=persistence_service,
     )
 
 

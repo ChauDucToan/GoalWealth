@@ -4,6 +4,7 @@ from typing import Any
 
 from ..constants import AUTHORIZATION_HEADER, USER_CONTEXT_KEY
 from ..dependencies import build_services
+from ..services.persistence_bridge import sync_authenticated_user
 from ..utils.responses import error_response
 
 
@@ -24,7 +25,7 @@ def install(app: Any) -> None:
     except ImportError:
         return
 
-    services = build_services(getattr(app.state, "config", None))
+    services = getattr(app.state, "services", None) or build_services(getattr(app.state, "config", None))
 
     @app.middleware("http")
     async def auth_context_middleware(request: Any, call_next: Any) -> Any:
@@ -40,6 +41,19 @@ def install(app: Any) -> None:
                     request=request,
                 ),
             )
+
+        if user_claims is not None and services.persistence_service is not None:
+            try:
+                sync_authenticated_user(services.persistence_service, user_claims)
+            except Exception as exc:
+                return JSONResponse(
+                    status_code=500,
+                    content=error_response(
+                        "PERSISTENCE_AUTH_SYNC_FAILED",
+                        f"Authenticated user could not be synchronized into persistence: {exc}",
+                        request=request,
+                    ),
+                )
 
         setattr(request.state, USER_CONTEXT_KEY, user_claims)
         if user_claims is None and not services.config.auth_optional:
