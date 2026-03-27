@@ -15,6 +15,7 @@ from .services.memory_gateway import MemoryGateway
 from .services.ocr_flow_service import OcrFlowService
 from .services.ocr_gateway import OcrGateway
 from .services.orchestrator_gateway import OrchestratorGateway
+from .services.risk_profile_service import RiskProfileService
 from .services.smart_agent_gateway import SmartAgentGateway
 
 
@@ -29,6 +30,7 @@ class ServiceContainer:
     chat_flow_service: ChatFlowService
     ocr_flow_service: OcrFlowService
     me_service: MeService
+    risk_profile_service: RiskProfileService
     persistence_service: GoalWealthPersistenceService | None = None
 
 
@@ -52,6 +54,7 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         persistence_service=persistence_service,
     )
     me_service = MeService(persistence_service=persistence_service)
+    risk_profile_service = RiskProfileService(persistence_service=persistence_service)
     return ServiceContainer(
         config=config,
         auth_service=auth_service,
@@ -62,6 +65,7 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         chat_flow_service=chat_flow_service,
         ocr_flow_service=ocr_flow_service,
         me_service=me_service,
+        risk_profile_service=risk_profile_service,
         persistence_service=persistence_service,
     )
 
