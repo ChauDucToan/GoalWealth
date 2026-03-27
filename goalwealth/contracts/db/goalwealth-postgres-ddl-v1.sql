@@ -270,15 +270,16 @@ CREATE INDEX idx_ocr_records_normalized_data_gin
 
 -- =========================================================
 -- recommendation_states
--- User-controlled state for recommendation cards (phase 1: dismiss only).
+-- User-controlled state for recommendation cards.
 -- =========================================================
 CREATE TABLE recommendation_states (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     recommendation_id TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'dismissed'
-        CHECK (status IN ('dismissed')),
-    dismissed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CHECK (status IN ('dismissed', 'completed')),
+    dismissed_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_recommendation_states_user_recommendation UNIQUE (user_id, recommendation_id)

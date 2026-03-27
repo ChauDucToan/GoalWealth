@@ -277,7 +277,7 @@ class OcrRecord(Base):
 class RecommendationState(Base):
     __tablename__ = "recommendation_states"
     __table_args__ = (
-        CheckConstraint("status IN ('dismissed')", name="recommendation_state_status_allowed"),
+        CheckConstraint("status IN ('dismissed', 'completed')", name="recommendation_state_status_allowed"),
         Index("idx_recommendation_states_user_id", "user_id"),
         Index("idx_recommendation_states_user_status", "user_id", "status"),
         Index("uq_recommendation_states_user_recommendation", "user_id", "recommendation_id", unique=True),
@@ -287,7 +287,8 @@ class RecommendationState(Base):
     user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     recommendation_id: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False, server_default=text("'dismissed'"))
-    dismissed_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    dismissed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 

@@ -269,13 +269,19 @@ class ConversationSummaryRepository:
 
 
 class RecommendationStateRepository:
-    def list_dismissed_ids_for_user(self, session: Session, *, user_id: UUID) -> set[str]:
+    def list_ids_for_user_by_status(self, session: Session, *, user_id: UUID, status: str) -> set[str]:
         stmt = (
             select(RecommendationState.recommendation_id)
             .where(RecommendationState.user_id == user_id)
-            .where(RecommendationState.status == "dismissed")
+            .where(RecommendationState.status == status)
         )
         return {str(value) for value in session.scalars(stmt).all()}
+
+    def list_dismissed_ids_for_user(self, session: Session, *, user_id: UUID) -> set[str]:
+        return self.list_ids_for_user_by_status(session, user_id=user_id, status="dismissed")
+
+    def list_completed_ids_for_user(self, session: Session, *, user_id: UUID) -> set[str]:
+        return self.list_ids_for_user_by_status(session, user_id=user_id, status="completed")
 
     def get_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> RecommendationState | None:
         stmt = (
@@ -289,18 +295,42 @@ class RecommendationStateRepository:
     def dismiss_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> RecommendationState:
         record = self.get_for_user(session, user_id=user_id, recommendation_id=recommendation_id)
         if record is None:
-            record = RecommendationState(user_id=user_id, recommendation_id=recommendation_id, status="dismissed")
+            record = RecommendationState(
+                user_id=user_id,
+                recommendation_id=recommendation_id,
+                status="dismissed",
+                dismissed_at=datetime.utcnow(),
+            )
             session.add(record)
         else:
             record.status = "dismissed"
             record.dismissed_at = datetime.utcnow()
+            record.completed_at = None
+
+        session.flush()
+        return record
+
+    def complete_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> RecommendationState:
+        record = self.get_for_user(session, user_id=user_id, recommendation_id=recommendation_id)
+        if record is None:
+            record = RecommendationState(
+                user_id=user_id,
+                recommendation_id=recommendation_id,
+                status="completed",
+                completed_at=datetime.utcnow(),
+            )
+            session.add(record)
+        else:
+            record.status = "completed"
+            record.completed_at = datetime.utcnow()
+            record.dismissed_at = None
 
         session.flush()
         return record
 
     def undismiss_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> bool:
         record = self.get_for_user(session, user_id=user_id, recommendation_id=recommendation_id)
-        if record is None:
+        if record is None or record.status != "dismissed":
             return False
         session.delete(record)
         session.flush()

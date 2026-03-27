@@ -22,8 +22,23 @@ def list_recommendations(request: Any = None) -> dict[str, Any]:
     if current_user is None:
         return error_response("AUTH_REQUIRED", "Bearer token is required", request=request)
 
+    query_params = getattr(request, "query_params", None)
+    scope = query_params.get("scope") if query_params is not None else None
+    limit_raw = query_params.get("limit") if query_params is not None else None
+    status_filter = query_params.get("status") if query_params is not None else "open"
+
     try:
-        payload, warnings = services.recommendation_service.list_recommendations(current_user)
+        limit = int(limit_raw) if limit_raw is not None else None
+    except ValueError:
+        return error_response("BAD_REQUEST", "limit must be an integer", request=request, status=400, meta={"route": "recommendations.list"})
+
+    if scope not in {None, "goals"}:
+        return error_response("BAD_REQUEST", "scope is invalid", request=request, status=400, meta={"route": "recommendations.list"})
+    if status_filter not in {"open", "dismissed", "completed", "all"}:
+        return error_response("BAD_REQUEST", "status is invalid", request=request, status=400, meta={"route": "recommendations.list"})
+
+    try:
+        payload, warnings = services.recommendation_service.list_recommendations(current_user, scope=scope, limit=limit, status_filter=status_filter)
     except ValueError as exc:
         return error_response("BAD_REQUEST", str(exc), request=request, status=400, meta={"route": "recommendations.list"})
 
@@ -58,6 +73,8 @@ def dismiss_recommendation(recommendation_id: str, request: Any = None) -> dict[
         payload, warnings = services.recommendation_service.dismiss_recommendation(current_user, recommendation_id)
     except LookupError as exc:
         return error_response("NOT_FOUND", str(exc), request=request, status=404, meta={"route": "recommendations.dismiss"})
+    except RuntimeError as exc:
+        return error_response("CONFLICT", str(exc), request=request, status=409, meta={"route": "recommendations.dismiss"})
     except ValueError as exc:
         return error_response("BAD_REQUEST", str(exc), request=request, status=400, meta={"route": "recommendations.dismiss"})
 
@@ -75,10 +92,29 @@ def undismiss_recommendation(recommendation_id: str, request: Any = None) -> dic
         payload, warnings = services.recommendation_service.undismiss_recommendation(current_user, recommendation_id)
     except LookupError as exc:
         return error_response("NOT_FOUND", str(exc), request=request, status=404, meta={"route": "recommendations.undismiss"})
+    except RuntimeError as exc:
+        return error_response("CONFLICT", str(exc), request=request, status=409, meta={"route": "recommendations.undismiss"})
     except ValueError as exc:
         return error_response("BAD_REQUEST", str(exc), request=request, status=400, meta={"route": "recommendations.undismiss"})
 
     return success_response(payload, request=request, warnings=warnings, meta={"route": "recommendations.undismiss"})
+
+
+def complete_recommendation(recommendation_id: str, request: Any = None) -> dict[str, Any]:
+    services = get_services(request)
+    current_user = get_current_user(request)
+
+    if current_user is None:
+        return error_response("AUTH_REQUIRED", "Bearer token is required", request=request)
+
+    try:
+        payload, warnings = services.recommendation_service.complete_recommendation(current_user, recommendation_id)
+    except LookupError as exc:
+        return error_response("NOT_FOUND", str(exc), request=request, status=404, meta={"route": "recommendations.complete"})
+    except ValueError as exc:
+        return error_response("BAD_REQUEST", str(exc), request=request, status=400, meta={"route": "recommendations.complete"})
+
+    return success_response(payload, request=request, warnings=warnings, meta={"route": "recommendations.complete"})
 
 
 if PYDANTIC_AVAILABLE:
@@ -93,6 +129,9 @@ if PYDANTIC_AVAILABLE:
 
     async def undismiss_recommendation_fastapi(recommendation_id: str, request: Request) -> dict[str, Any]:
         return undismiss_recommendation(recommendation_id=recommendation_id, request=request)
+
+    async def complete_recommendation_fastapi(recommendation_id: str, request: Request) -> dict[str, Any]:
+        return complete_recommendation(recommendation_id=recommendation_id, request=request)
 
 
 def register(app: Any) -> None:
@@ -128,9 +167,17 @@ def register(app: Any) -> None:
             tags=["recommendations"],
             response_model=ApiEnvelopeModel,
         )
+        app.add_api_route(
+            "/v1/recommendations/{recommendation_id}/complete",
+            complete_recommendation_fastapi,
+            methods=["POST"],
+            tags=["recommendations"],
+            response_model=ApiEnvelopeModel,
+        )
         return
 
     app.add_api_route("/v1/recommendations", list_recommendations, methods=["GET"], tags=["recommendations"])
     app.add_api_route("/v1/recommendations/{recommendation_id}", get_recommendation_detail, methods=["GET"], tags=["recommendations"])
     app.add_api_route("/v1/recommendations/{recommendation_id}/dismiss", dismiss_recommendation, methods=["POST"], tags=["recommendations"])
     app.add_api_route("/v1/recommendations/{recommendation_id}/undismiss", undismiss_recommendation, methods=["POST"], tags=["recommendations"])
+    app.add_api_route("/v1/recommendations/{recommendation_id}/complete", complete_recommendation, methods=["POST"], tags=["recommendations"])

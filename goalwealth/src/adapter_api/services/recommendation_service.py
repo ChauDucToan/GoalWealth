@@ -122,26 +122,189 @@ class RecommendationService:
             },
         }, warnings
 
-    def _build_recommendation_state(
-        self,
-        current_user: UserClaims | None,
-        *,
-        include_dismissed: bool = False,
-    ) -> tuple[list[dict[str, Any]], dict[str, Any], list[str]]:
-        if current_user is None:
-            raise ValueError("Authentication is required")
+    def _known_recommendation_ids(self) -> set[str]:
+        return {
+            "complete-profile-basics",
+            "goal-emergency-fund-starter",
+            "goal-debt-payoff-starter",
+            "goal-retirement-starter",
+            "goal-investment-starter",
+        }
 
-        if self.persistence_service is None:
-            fallback_payload, warnings = self._build_fallback_payload()
-            return fallback_payload["items"], fallback_payload["meta"], warnings
+    def _goal_recommendation_ids(self) -> set[str]:
+        return {
+            "goal-emergency-fund-starter",
+            "goal-debt-payoff-starter",
+            "goal-retirement-starter",
+            "goal-investment-starter",
+        }
 
-        warnings: list[str] = []
+    def _goal_prefill_for_recommendation(self, recommendation_id: str) -> dict[str, Any]:
+        mapping: dict[str, dict[str, Any]] = {
+            "goal-emergency-fund-starter": {
+                "title": "Emergency Fund",
+                "goal_type": "emergency_fund_goal",
+                "status": "active",
+                "priority": 8,
+                "target_amount": None,
+                "current_progress": 0,
+                "target_date": None,
+                "description": "Build an emergency fund to cover unexpected expenses.",
+            },
+            "goal-debt-payoff-starter": {
+                "title": "Debt Payoff Plan",
+                "goal_type": "debt_payoff_goal",
+                "status": "active",
+                "priority": 9,
+                "target_amount": None,
+                "current_progress": 0,
+                "target_date": None,
+                "description": "Reduce outstanding debt with a structured payoff goal.",
+            },
+            "goal-retirement-starter": {
+                "title": "Retirement Starter Goal",
+                "goal_type": "retirement_goal",
+                "status": "active",
+                "priority": 7,
+                "target_amount": None,
+                "current_progress": 0,
+                "target_date": None,
+                "description": "Start a long-term retirement goal aligned with your planning horizon.",
+            },
+            "goal-investment-starter": {
+                "title": "Investment Starter Goal",
+                "goal_type": "investment_goal",
+                "status": "active",
+                "priority": 7,
+                "target_amount": None,
+                "current_progress": 0,
+                "target_date": None,
+                "description": "Build an investment goal aligned with your medium- to long-term growth objectives.",
+            },
+        }
+        prefill = mapping.get(recommendation_id)
+        if prefill is None:
+            raise LookupError("Recommendation complete payload is not available")
+        return prefill
+
+    def _build_goal_candidates(self, current_user: UserClaims, snapshot: Any, risk_profile: Any, recent_ocr: list[Any]) -> list[dict[str, Any]]:
+        if snapshot.total_goals > 0:
+            return []
+
+        debt_signal = any(getattr(record, "document_type", None) == "bank_statement" for record in recent_ocr)
+        candidates: list[dict[str, Any]] = []
+
+        if debt_signal:
+            candidates.append(
+                self._build_item(
+                    rec_id="goal-debt-payoff-starter",
+                    rec_type="next_action",
+                    category="goals",
+                    priority="high",
+                    title="Start with a debt payoff goal",
+                    message="Your current context suggests debt reduction may be the best first goal to focus on.",
+                    preview="Suggested first goal: structured debt payoff.",
+                    action={"type": "complete", "target": "/v1/recommendations/goal-debt-payoff-starter/complete"},
+                    score=0.98,
+                    why=["no goals exist yet", "bank_statement OCR signal suggests debt-related planning may matter"],
+                    context={"goal_flow": True, "debt_signal": True},
+                )
+            )
+
+        candidates.append(
+            self._build_item(
+                rec_id="goal-emergency-fund-starter",
+                rec_type="next_action",
+                category="goals",
+                priority="high",
+                title="Start with an emergency fund goal",
+                message="Based on your current setup, an emergency fund is the safest and most useful first goal.",
+                preview="Suggested first goal: emergency fund starter.",
+                action={"type": "complete", "target": "/v1/recommendations/goal-emergency-fund-starter/complete"},
+                score=0.95 if not debt_signal else 0.88,
+                why=["no goals exist yet", "emergency fund is the safest default starting point"],
+                context={"goal_flow": True, "total_goals": snapshot.total_goals},
+            )
+        )
+
+        if getattr(risk_profile, "investment_horizon", None) == "long_term":
+            candidates.append(
+                self._build_item(
+                    rec_id="goal-retirement-starter",
+                    rec_type="next_action",
+                    category="goals",
+                    priority="medium",
+                    title="Start with a retirement goal",
+                    message="Your planning horizon looks long-term, so a retirement starter goal could fit well.",
+                    preview="Suggested first goal: retirement starter.",
+                    action={"type": "complete", "target": "/v1/recommendations/goal-retirement-starter/complete"},
+                    score=0.83,
+                    why=["no goals exist yet", "investment_horizon is long_term"],
+                    context={"goal_flow": True, "investment_horizon": getattr(risk_profile, "investment_horizon", None)},
+                )
+            )
+
+        if (
+            getattr(risk_profile, "risk_tolerance", None) in {"balanced", "growth", "aggressive"}
+            and getattr(risk_profile, "investment_horizon", None) in {"medium_term", "long_term"}
+        ):
+            candidates.append(
+                self._build_item(
+                    rec_id="goal-investment-starter",
+                    rec_type="next_action",
+                    category="goals",
+                    priority="medium",
+                    title="Start with an investment goal",
+                    message="Your current risk and horizon profile suggest you may be ready for a first investment goal.",
+                    preview="Suggested first goal: investment starter.",
+                    action={"type": "complete", "target": "/v1/recommendations/goal-investment-starter/complete"},
+                    score=0.8,
+                    why=[
+                        "no goals exist yet",
+                        f"risk_tolerance is {getattr(risk_profile, 'risk_tolerance', None)}",
+                        f"investment_horizon is {getattr(risk_profile, 'investment_horizon', None)}",
+                    ],
+                    context={
+                        "goal_flow": True,
+                        "risk_tolerance": getattr(risk_profile, "risk_tolerance", None),
+                        "investment_horizon": getattr(risk_profile, "investment_horizon", None),
+                    },
+                )
+            )
+
+        return candidates
+
+    def _build_goal_state_only_item(self, recommendation_id: str, *, status: str) -> dict[str, Any]:
+        prefill = self._goal_prefill_for_recommendation(recommendation_id)
+        title_map = {
+            "goal-emergency-fund-starter": "Start with an emergency fund goal",
+            "goal-debt-payoff-starter": "Start with a debt payoff goal",
+            "goal-retirement-starter": "Start with a retirement goal",
+            "goal-investment-starter": "Start with an investment goal",
+        }
+        message_map = {
+            "goal-emergency-fund-starter": "This recommendation was previously accepted or dismissed in the goals flow.",
+            "goal-debt-payoff-starter": "This recommendation was previously accepted or dismissed in the goals flow.",
+            "goal-retirement-starter": "This recommendation was previously accepted or dismissed in the goals flow.",
+            "goal-investment-starter": "This recommendation was previously accepted or dismissed in the goals flow.",
+        }
+        return self._build_item(
+            rec_id=recommendation_id,
+            rec_type="next_action",
+            category="goals",
+            priority="medium",
+            title=title_map[recommendation_id],
+            message=message_map[recommendation_id],
+            preview=f"Stored recommendation state: {status}.",
+            action={"type": "navigate", "target": "/goals/create"} if status == "completed" else {"type": "navigate", "target": "/goals"},
+            score=0.5,
+            why=[f"recommendation state is {status}"],
+            context={"goal_flow": True, "goal_prefill": prefill},
+            status=status,
+        )
+
+    def _build_general_candidates(self, current_user: UserClaims, snapshot: Any, risk_profile: Any, recent_ocr: list[Any]) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
-
-        snapshot = self.persistence_service.build_user_bootstrap_snapshot(current_user.user_id)
-        risk_profile = self.persistence_service.get_risk_profile(current_user.user_id)
-        goals = self.persistence_service.list_goals_for_user(current_user.user_id)
-        recent_ocr = self.persistence_service.list_recent_ocr_for_user(current_user.user_id, limit=10)
 
         missing_risk_fields: list[str] = []
         if getattr(risk_profile, "risk_tolerance", None) is None:
@@ -154,12 +317,12 @@ class RecommendationService:
         if missing_risk_fields:
             items.append(
                 self._build_item(
-                    rec_id="complete-risk-profile",
+                    rec_id="complete-profile-basics",
                     rec_type="next_action",
-                    category="risk",
+                    category="onboarding",
                     priority="high",
-                    title="Complete your risk profile",
-                    message="Personalized planning is still limited because your risk profile is incomplete.",
+                    title="Complete your profile basics",
+                    message="Add profile and risk information to unlock more personalized planning recommendations.",
                     preview=f"Missing: {', '.join(missing_risk_fields)}",
                     action={"type": "navigate", "target": "/risk-profile"},
                     score=0.96,
@@ -168,135 +331,99 @@ class RecommendationService:
                 )
             )
 
-        if snapshot.total_goals == 0:
-            items.append(
-                self._build_item(
-                    rec_id="create-first-goal",
-                    rec_type="next_action",
-                    category="goals",
-                    priority="high",
-                    title="Create your first financial goal",
-                    message="Goals make planning concrete and help GoalWealth personalize future recommendations.",
-                    preview="No goals have been created yet.",
-                    action={"type": "navigate", "target": "/goals"},
-                    score=0.94,
-                    why=["total_goals is 0"],
-                    context={"total_goals": snapshot.total_goals},
-                )
-            )
-        elif snapshot.total_active_goals == 0:
-            paused_or_archived_ids = [str(getattr(goal, "id", "")) for goal in goals]
-            items.append(
-                self._build_item(
-                    rec_id="activate-a-goal",
-                    rec_type="next_action",
-                    category="goals",
-                    priority="medium",
-                    title="Activate at least one goal",
-                    message="You have goals saved, but none are currently active for planning and progress tracking.",
-                    preview="Existing goals are paused, completed, or archived.",
-                    action={"type": "navigate", "target": "/goals"},
-                    score=0.83,
-                    why=["total_goals is greater than 0", "total_active_goals is 0"],
-                    context={"total_goals": snapshot.total_goals, "total_active_goals": snapshot.total_active_goals},
-                    source_refs={"goal_ids": paused_or_archived_ids},
-                )
-            )
+        return items
 
-        review_records = [
-            record
-            for record in recent_ocr
-            if getattr(record, "manual_review_required", False)
-            or getattr(record, "parse_status", None) in {"needs_review", "validation_failed"}
-        ]
-        if review_records:
-            review_ids = [
-                getattr(record, "ocr_record_id", None)
-                for record in review_records
-                if getattr(record, "ocr_record_id", None)
-            ]
-            items.append(
-                self._build_item(
-                    rec_id="review-ocr-records",
-                    rec_type="warning",
-                    category="documents",
-                    priority="high" if len(review_records) >= 2 else "medium",
-                    title="Review OCR documents that need attention",
-                    message="Some uploaded documents still need review before they can fully support planning or automation.",
-                    preview=f"{len(review_records)} OCR record(s) need review.",
-                    action={"type": "navigate", "target": "/ocr/records?parse_status=needs_review"},
-                    score=0.9 if len(review_records) >= 2 else 0.78,
-                    why=["manual_review_required is true or parse_status indicates review needed"],
-                    context={"needs_review_count": len(review_records)},
-                    source_refs={"ocr_record_ids": review_ids},
-                )
-            )
+    def _build_recommendation_state(
+        self,
+        current_user: UserClaims | None,
+        *,
+        include_dismissed: bool = False,
+        scope: str | None = None,
+        limit: int | None = None,
+        status_filter: str = "open",
+    ) -> tuple[list[dict[str, Any]], dict[str, Any], list[str]]:
+        if current_user is None:
+            raise ValueError("Authentication is required")
 
-        if snapshot.recent_document_count == 0:
-            items.append(
-                self._build_item(
-                    rec_id="upload-financial-document",
-                    rec_type="opportunity",
-                    category="documents",
-                    priority="medium",
-                    title="Upload a financial document",
-                    message="Receipts, salary slips, or statements can provide more grounded context for future planning.",
-                    preview="No OCR-backed financial documents have been captured yet.",
-                    action={"type": "navigate", "target": "/ocr"},
-                    score=0.7,
-                    why=["recent_document_count is 0"],
-                    context={"recent_document_count": snapshot.recent_document_count},
-                )
-            )
+        if self.persistence_service is None:
+            fallback_payload, warnings = self._build_fallback_payload()
+            items = fallback_payload["items"]
+            if limit is not None:
+                items = items[: max(1, limit)]
+            meta = dict(fallback_payload["meta"])
+            if scope is not None:
+                meta["scope"] = scope
+            return items, meta, warnings
 
-        if (
-            snapshot.total_active_goals > 0
-            and getattr(risk_profile, "risk_tolerance", None) is not None
-            and getattr(risk_profile, "investment_horizon", None) is not None
-        ):
-            items.append(
-                self._build_item(
-                    rec_id="start-planning-chat",
-                    rec_type="opportunity",
-                    category="planning",
-                    priority="medium",
-                    title="Start a planning chat",
-                    message="You already have enough core context for GoalWealth to generate more tailored planning guidance.",
-                    preview="Profile, risk, and goals are ready for a first planning pass.",
-                    action={"type": "navigate", "target": "/chat"},
-                    score=0.82,
-                    why=[
-                        "at least one active goal exists",
-                        "risk_tolerance is present",
-                        "investment_horizon is present",
-                    ],
-                    context={
-                        "total_active_goals": snapshot.total_active_goals,
-                        "recent_document_count": snapshot.recent_document_count,
-                    },
-                )
-            )
+        warnings: list[str] = []
+        snapshot = self.persistence_service.build_user_bootstrap_snapshot(current_user.user_id)
+        risk_profile = self.persistence_service.get_risk_profile(current_user.user_id)
+        recent_ocr = self.persistence_service.list_recent_ocr_for_user(current_user.user_id, limit=10)
+
+        if scope == "goals":
+            items = self._build_goal_candidates(current_user, snapshot, risk_profile, recent_ocr)
+        else:
+            items = self._build_general_candidates(current_user, snapshot, risk_profile, recent_ocr)
 
         dismissed_ids = self.persistence_service.list_dismissed_recommendation_ids_for_user(current_user.user_id)
-        enriched_items = [
-            {
-                **item,
-                "status": "dismissed" if item["id"] in dismissed_ids else item.get("status", "open"),
-            }
-            for item in items
-        ]
-        response_items = enriched_items if include_dismissed else [item for item in enriched_items if item["id"] not in dismissed_ids]
+        completed_ids = self.persistence_service.list_completed_recommendation_ids_for_user(current_user.user_id)
+        enriched_items = []
+        for item in items:
+            if item["id"] in completed_ids:
+                status = "completed"
+            elif item["id"] in dismissed_ids:
+                status = "dismissed"
+            else:
+                status = item.get("status", "open")
+            enriched_items.append({**item, "status": status})
 
-        return self._sorted_items(response_items), {
+        if scope == "goals" and status_filter in {"dismissed", "completed", "all"}:
+            present_ids = {item["id"] for item in enriched_items}
+            for recommendation_id in self._goal_recommendation_ids():
+                if recommendation_id in present_ids:
+                    continue
+                if recommendation_id in completed_ids:
+                    enriched_items.append(self._build_goal_state_only_item(recommendation_id, status="completed"))
+                elif recommendation_id in dismissed_ids:
+                    enriched_items.append(self._build_goal_state_only_item(recommendation_id, status="dismissed"))
+
+        if status_filter == "open":
+            response_items = [item for item in enriched_items if item["status"] == "open"]
+        elif status_filter == "dismissed":
+            response_items = [item for item in enriched_items if item["status"] == "dismissed"]
+        elif status_filter == "completed":
+            response_items = [item for item in enriched_items if item["status"] == "completed"]
+        else:
+            response_items = enriched_items if include_dismissed or status_filter == "all" else [
+                item for item in enriched_items if item["status"] == "open"
+            ]
+
+        sorted_items = self._sorted_items(response_items)
+        if limit is not None:
+            sorted_items = sorted_items[: max(1, limit)]
+
+        meta = {
             "market_included": False,
             "generated_at": self._now_iso(),
             "freshness": "realtime",
             "sources_used": ["profile", "risk_profile", "goals", "ocr_records", "summary_snapshot", "recommendation_state"],
             "dismissed_count": len(dismissed_ids),
-        }, warnings
+            "completed_count": len(completed_ids),
+        }
+        if scope is not None:
+            meta["scope"] = scope
 
-    def list_recommendations(self, current_user: UserClaims | None) -> tuple[dict[str, Any], list[str]]:
-        items, meta, warnings = self._build_recommendation_state(current_user)
+        return sorted_items, meta, warnings
+
+    def list_recommendations(
+        self,
+        current_user: UserClaims | None,
+        *,
+        scope: str | None = None,
+        limit: int | None = None,
+        status_filter: str = "open",
+    ) -> tuple[dict[str, Any], list[str]]:
+        items, meta, warnings = self._build_recommendation_state(current_user, scope=scope, limit=limit, status_filter=status_filter)
         return {
             "items": items,
             "summary": {
@@ -308,27 +435,20 @@ class RecommendationService:
             "meta": meta,
         }, warnings
 
-    def _known_recommendation_ids(self) -> set[str]:
-        return {
-            "complete-profile-basics",
-            "complete-risk-profile",
-            "create-first-goal",
-            "activate-a-goal",
-            "review-ocr-records",
-            "upload-financial-document",
-            "start-planning-chat",
-        }
-
     def dismiss_recommendation(self, current_user: UserClaims | None, recommendation_id: str) -> tuple[dict[str, Any], list[str]]:
         if current_user is None:
             raise ValueError("Authentication is required")
         if self.persistence_service is None:
             raise ValueError("Persistence is not configured")
 
-        all_items, _meta, warnings = self._build_recommendation_state(current_user)
+        all_items, _meta, warnings = self._build_recommendation_state(current_user, include_dismissed=True)
         visible_ids = {item["id"] for item in all_items}
         if recommendation_id not in self._known_recommendation_ids() and recommendation_id not in visible_ids:
             raise LookupError("Recommendation not found")
+
+        current_state = self.persistence_service.get_recommendation_state_for_user(current_user.user_id, recommendation_id)
+        if current_state is not None and getattr(current_state, "status", None) == "completed":
+            raise RuntimeError("Completed recommendation cannot be dismissed.")
 
         record = self.persistence_service.dismiss_recommendation_for_user(current_user.user_id, recommendation_id)
         return {
@@ -345,6 +465,10 @@ class RecommendationService:
         if recommendation_id not in self._known_recommendation_ids():
             raise LookupError("Recommendation not found")
 
+        current_state = self.persistence_service.get_recommendation_state_for_user(current_user.user_id, recommendation_id)
+        if current_state is not None and getattr(current_state, "status", None) == "completed":
+            raise RuntimeError("Completed recommendation cannot be undismissed.")
+
         undismissed = self.persistence_service.undismiss_recommendation_for_user(current_user.user_id, recommendation_id)
         if not undismissed:
             raise LookupError("Recommendation is not dismissed")
@@ -353,6 +477,26 @@ class RecommendationService:
             "recommendation_id": recommendation_id,
             "status": "open",
             "undismissed_at": self._now_iso(),
+        }, []
+
+    def complete_recommendation(self, current_user: UserClaims | None, recommendation_id: str) -> tuple[dict[str, Any], list[str]]:
+        if current_user is None:
+            raise ValueError("Authentication is required")
+        if recommendation_id not in self._known_recommendation_ids():
+            raise LookupError("Recommendation not found")
+        if self.persistence_service is None:
+            raise ValueError("Persistence is not configured")
+
+        self.persistence_service.complete_recommendation_for_user(current_user.user_id, recommendation_id)
+        goal_prefill = self._goal_prefill_for_recommendation(recommendation_id)
+        return {
+            "recommendation_id": recommendation_id,
+            "status": "completed",
+            "goal_prefill": goal_prefill,
+            "next_action": {
+                "type": "navigate",
+                "target": "/goals/create",
+            },
         }, []
 
     def get_recommendation_detail(self, current_user: UserClaims | None, recommendation_id: str) -> tuple[dict[str, Any], list[str]]:
@@ -364,7 +508,7 @@ class RecommendationService:
         detail_map: dict[str, dict[str, Any]] = {
             "complete-profile-basics": self._build_detail(
                 selected,
-                full_reasoning="Profile persistence is currently unavailable, so GoalWealth cannot yet ground recommendations in durable profile, risk, goal, and document state.",
+                full_reasoning="Profile persistence is currently unavailable or incomplete, so GoalWealth cannot yet ground recommendations in durable profile, risk, goal, and document state.",
                 impact=["onboarding", "personalization"],
                 confidence="high",
                 supporting_data=selected.get("context", {}),
@@ -373,67 +517,65 @@ class RecommendationService:
                     {"type": "navigate", "target": "/risk-profile"},
                 ],
             ),
-            "complete-risk-profile": self._build_detail(
+            "goal-emergency-fund-starter": self._build_detail(
                 selected,
-                full_reasoning="Your recommendation set is limited because key risk fields are missing. Completing risk tolerance, investment horizon, and knowledge level helps GoalWealth align goals, planning prompts, and future market-aware insights.",
-                impact=["risk_alignment", "planning_quality"],
+                full_reasoning="Because you do not have any goals yet, an emergency fund is the safest first objective. It improves resilience and gives GoalWealth a concrete baseline planning target.",
+                impact=["goal_setting", "financial_resilience"],
                 confidence="high",
                 supporting_data=selected.get("context", {}),
-                actions=[
-                    selected["action"],
-                    {"type": "navigate", "target": "/summary"},
-                ],
+                actions=(
+                    [{"type": "navigate", "target": "/goals/create"}]
+                    if selected.get("status") == "completed"
+                    else [
+                        {"type": "dismiss", "target": "/v1/recommendations/goal-emergency-fund-starter/dismiss"},
+                        {"type": "complete", "target": "/v1/recommendations/goal-emergency-fund-starter/complete"},
+                    ]
+                ),
             ),
-            "create-first-goal": self._build_detail(
+            "goal-debt-payoff-starter": self._build_detail(
                 selected,
-                full_reasoning="Without at least one goal, GoalWealth has no explicit target to optimize around. Creating a first goal improves prioritization, recommendation relevance, and future plan generation.",
-                impact=["goal_setting", "planning_readiness"],
-                confidence="high",
-                supporting_data=selected.get("context", {}),
-                actions=[
-                    selected["action"],
-                    {"type": "navigate", "target": "/chat"},
-                ],
-            ),
-            "activate-a-goal": self._build_detail(
-                selected,
-                full_reasoning="You already have stored goals, but none are active. That means current planning sessions may not have a live objective to track against. Activating one goal restores a clear short-term planning focus.",
-                impact=["goal_tracking", "planning_focus"],
-                confidence="medium",
-                related_entities={"goal_ids": selected.get("source_refs", {}).get("goal_ids", [])},
-                supporting_data=selected.get("context", {}),
-                actions=[selected["action"]],
-            ),
-            "review-ocr-records": self._build_detail(
-                selected,
-                full_reasoning="One or more OCR documents are flagged for review because parsing confidence or validation state suggests they should be checked before being relied on for planning or automation. Reviewing them improves trust in downstream recommendations.",
-                impact=["document_quality", "automation_safety"],
-                confidence="high" if selected.get("priority") == "high" else "medium",
-                related_entities={"ocr_record_ids": selected.get("source_refs", {}).get("ocr_record_ids", [])},
-                supporting_data=selected.get("context", {}),
-                actions=[
-                    selected["action"],
-                    {"type": "navigate", "target": "/ocr/records"},
-                ],
-            ),
-            "upload-financial-document": self._build_detail(
-                selected,
-                full_reasoning="You do not have any OCR-backed financial documents yet. Uploading receipts, salary slips, or bank statements can add real-world grounding to budget, affordability, and planning recommendations.",
-                impact=["document_coverage", "planning_grounding"],
+                full_reasoning="Your available context suggests debt reduction may deserve priority before other goal types. This recommendation is intended to turn that signal into a concrete debt payoff plan starter.",
+                impact=["debt_management", "cashflow_relief"],
                 confidence="medium",
                 supporting_data=selected.get("context", {}),
-                actions=[selected["action"]],
+                actions=(
+                    [{"type": "navigate", "target": "/goals/create"}]
+                    if selected.get("status") == "completed"
+                    else [
+                        {"type": "dismiss", "target": "/v1/recommendations/goal-debt-payoff-starter/dismiss"},
+                        {"type": "complete", "target": "/v1/recommendations/goal-debt-payoff-starter/complete"},
+                    ]
+                ),
             ),
-            "start-planning-chat": self._build_detail(
+            "goal-retirement-starter": self._build_detail(
                 selected,
-                full_reasoning="You already have enough core context for an initial planning session: at least one active goal plus a minimally complete risk profile. That means GoalWealth can move from setup guidance into more personalized planning dialogue.",
-                impact=["planning_readiness", "engagement"],
+                full_reasoning="Your planning horizon looks long-term, so a retirement-oriented starter goal is a plausible first structured objective. This helps GoalWealth anchor later planning in a long-range outcome.",
+                impact=["retirement_planning", "long_term_goals"],
                 confidence="medium",
                 supporting_data=selected.get("context", {}),
-                actions=[
-                    selected["action"],
-                    {"type": "navigate", "target": "/recommendations"},
-                ],
+                actions=(
+                    [{"type": "navigate", "target": "/goals/create"}]
+                    if selected.get("status") == "completed"
+                    else [
+                        {"type": "dismiss", "target": "/v1/recommendations/goal-retirement-starter/dismiss"},
+                        {"type": "complete", "target": "/v1/recommendations/goal-retirement-starter/complete"},
+                    ]
+                ),
+            ),
+            "goal-investment-starter": self._build_detail(
+                selected,
+                full_reasoning="Your current risk tolerance and investment horizon suggest that a first investment-focused goal may be suitable. This recommendation helps translate that profile into a concrete goal setup starting point.",
+                impact=["investment_planning", "growth_objectives"],
+                confidence="medium",
+                supporting_data=selected.get("context", {}),
+                actions=(
+                    [{"type": "navigate", "target": "/goals/create"}]
+                    if selected.get("status") == "completed"
+                    else [
+                        {"type": "dismiss", "target": "/v1/recommendations/goal-investment-starter/dismiss"},
+                        {"type": "complete", "target": "/v1/recommendations/goal-investment-starter/complete"},
+                    ]
+                ),
             ),
         }
 

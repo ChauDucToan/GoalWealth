@@ -29,13 +29,26 @@ CREATE TABLE IF NOT EXISTS recommendation_states (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     recommendation_id TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'dismissed'
-        CHECK (status IN ('dismissed')),
-    dismissed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status TEXT NOT NULL DEFAULT 'dismissed',
+    dismissed_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_recommendation_states_user_recommendation UNIQUE (user_id, recommendation_id)
 );
+
+ALTER TABLE recommendation_states DROP CONSTRAINT IF EXISTS recommendation_state_status_allowed;
+ALTER TABLE recommendation_states DROP CONSTRAINT IF EXISTS recommendation_states_status_check;
+
+ALTER TABLE recommendation_states
+    ADD CONSTRAINT recommendation_state_status_allowed
+    CHECK (status IN ('dismissed', 'completed'));
+
+ALTER TABLE recommendation_states
+    ALTER COLUMN dismissed_at DROP NOT NULL;
+
+ALTER TABLE recommendation_states
+    ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_recommendation_states_user_id
     ON recommendation_states(user_id);

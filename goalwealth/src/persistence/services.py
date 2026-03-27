@@ -209,6 +209,30 @@ class GoalWealthPersistenceService:
                 return set()
             raise
 
+    def list_completed_recommendation_ids_for_user(self, user_id) -> set[str]:
+        try:
+            with self.session_factory() as session:
+                return self.recommendation_states.list_completed_ids_for_user(session, user_id=_coerce_user_id(user_id))
+        except ProgrammingError as exc:
+            error_text = str(exc).lower()
+            if "recommendation_states" in error_text and "does not exist" in error_text:
+                return set()
+            raise
+
+    def get_recommendation_state_for_user(self, user_id, recommendation_id: str):
+        try:
+            with self.session_factory() as session:
+                return self.recommendation_states.get_for_user(
+                    session,
+                    user_id=_coerce_user_id(user_id),
+                    recommendation_id=recommendation_id,
+                )
+        except ProgrammingError as exc:
+            error_text = str(exc).lower()
+            if "recommendation_states" in error_text and "does not exist" in error_text:
+                return None
+            raise
+
     def dismiss_recommendation_for_user(self, user_id, recommendation_id: str):
         try:
             with self.session_factory.begin() as session:
@@ -222,6 +246,22 @@ class GoalWealthPersistenceService:
             if "recommendation_states" in error_text and "does not exist" in error_text:
                 raise ValueError(
                     "Recommendation dismiss state is not ready; apply the recommendation_states DB patch first."
+                ) from exc
+            raise
+
+    def complete_recommendation_for_user(self, user_id, recommendation_id: str):
+        try:
+            with self.session_factory.begin() as session:
+                return self.recommendation_states.complete_for_user(
+                    session,
+                    user_id=_coerce_user_id(user_id),
+                    recommendation_id=recommendation_id,
+                )
+        except ProgrammingError as exc:
+            error_text = str(exc).lower()
+            if "recommendation_states" in error_text and "does not exist" in error_text:
+                raise ValueError(
+                    "Recommendation state is not ready; apply the recommendation_states DB patch first."
                 ) from exc
             raise
 
