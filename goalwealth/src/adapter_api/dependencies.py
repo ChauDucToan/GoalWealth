@@ -17,6 +17,7 @@ from .services.ocr_flow_service import OcrFlowService
 from .services.ocr_gateway import OcrGateway
 from .services.ocr_hub_service import OcrHubService
 from .services.orchestrator_gateway import OrchestratorGateway
+from .services.recommendation_service import RecommendationService
 from .services.risk_profile_service import RiskProfileService
 from .services.smart_agent_gateway import SmartAgentGateway
 from .services.summary_service import SummaryService
@@ -37,6 +38,7 @@ class ServiceContainer:
     goal_service: GoalService
     risk_profile_service: RiskProfileService
     summary_service: SummaryService
+    recommendation_service: RecommendationService
     persistence_service: GoalWealthPersistenceService | None = None
 
 
@@ -64,6 +66,7 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
     goal_service = GoalService(persistence_service=persistence_service)
     risk_profile_service = RiskProfileService(persistence_service=persistence_service)
     summary_service = SummaryService(persistence_service=persistence_service)
+    recommendation_service = RecommendationService(persistence_service=persistence_service)
     return ServiceContainer(
         config=config,
         auth_service=auth_service,
@@ -78,6 +81,7 @@ def build_services(config: AdapterApiConfig | None = None) -> ServiceContainer:
         goal_service=goal_service,
         risk_profile_service=risk_profile_service,
         summary_service=summary_service,
+        recommendation_service=recommendation_service,
         persistence_service=persistence_service,
     )
 
