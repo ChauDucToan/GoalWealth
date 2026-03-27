@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .models import ConversationSummary, Goal, OcrRecord, RiskProfile, User, UserIdentity, UserProfile
+from .models import ConversationSummary, Goal, OcrRecord, RecommendationState, RiskProfile, User, UserIdentity, UserProfile
 from .service_models import (
     ConversationSummaryUpsertInput,
     GoalCreateInput,
@@ -266,6 +266,45 @@ class ConversationSummaryRepository:
 
         session.flush()
         return record
+
+
+class RecommendationStateRepository:
+    def list_dismissed_ids_for_user(self, session: Session, *, user_id: UUID) -> set[str]:
+        stmt = (
+            select(RecommendationState.recommendation_id)
+            .where(RecommendationState.user_id == user_id)
+            .where(RecommendationState.status == "dismissed")
+        )
+        return {str(value) for value in session.scalars(stmt).all()}
+
+    def get_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> RecommendationState | None:
+        stmt = (
+            select(RecommendationState)
+            .where(RecommendationState.user_id == user_id)
+            .where(RecommendationState.recommendation_id == recommendation_id)
+            .limit(1)
+        )
+        return session.scalar(stmt)
+
+    def dismiss_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> RecommendationState:
+        record = self.get_for_user(session, user_id=user_id, recommendation_id=recommendation_id)
+        if record is None:
+            record = RecommendationState(user_id=user_id, recommendation_id=recommendation_id, status="dismissed")
+            session.add(record)
+        else:
+            record.status = "dismissed"
+            record.dismissed_at = datetime.utcnow()
+
+        session.flush()
+        return record
+
+    def undismiss_for_user(self, session: Session, *, user_id: UUID, recommendation_id: str) -> bool:
+        record = self.get_for_user(session, user_id=user_id, recommendation_id=recommendation_id)
+        if record is None:
+            return False
+        session.delete(record)
+        session.flush()
+        return True
 
 
 class OcrRecordRepository:

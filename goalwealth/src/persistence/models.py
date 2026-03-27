@@ -46,6 +46,10 @@ class User(Base):
         uselist=False,
     )
     ocr_records: Mapped[list["OcrRecord"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    recommendation_states: Mapped[list["RecommendationState"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class UserIdentity(Base):
@@ -268,3 +272,23 @@ class OcrRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     user: Mapped[User] = relationship(back_populates="ocr_records")
+
+
+class RecommendationState(Base):
+    __tablename__ = "recommendation_states"
+    __table_args__ = (
+        CheckConstraint("status IN ('dismissed')", name="recommendation_state_status_allowed"),
+        Index("idx_recommendation_states_user_id", "user_id"),
+        Index("idx_recommendation_states_user_status", "user_id", "status"),
+        Index("uq_recommendation_states_user_recommendation", "user_id", "recommendation_id", unique=True),
+    )
+
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    recommendation_id: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, server_default=text("'dismissed'"))
+    dismissed_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+
+    user: Mapped[User] = relationship(back_populates="recommendation_states")

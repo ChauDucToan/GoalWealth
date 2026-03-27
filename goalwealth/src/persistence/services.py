@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import sessionmaker
 
 from .repositories import (
     ConversationSummaryRepository,
     GoalRepository,
     OcrRecordRepository,
+    RecommendationStateRepository,
     RiskProfileRepository,
     UserIdentityRepository,
     UserProfileRepository,
@@ -55,6 +57,7 @@ class GoalWealthPersistenceService:
         goals: GoalRepository | None = None,
         conversation_summaries: ConversationSummaryRepository | None = None,
         ocr_records: OcrRecordRepository | None = None,
+        recommendation_states: RecommendationStateRepository | None = None,
     ):
         self.session_factory = session_factory
         self.users = users or UserRepository()
@@ -64,6 +67,7 @@ class GoalWealthPersistenceService:
         self.goals = goals or GoalRepository()
         self.conversation_summaries = conversation_summaries or ConversationSummaryRepository()
         self.ocr_records = ocr_records or OcrRecordRepository()
+        self.recommendation_states = recommendation_states or RecommendationStateRepository()
 
     def resolve_or_create_user(
         self,
@@ -194,6 +198,48 @@ class GoalWealthPersistenceService:
     def count_ocr_by_document_type_for_user(self, user_id) -> dict[str, int]:
         with self.session_factory() as session:
             return self.ocr_records.count_grouped_by_document_type(session, user_id=_coerce_user_id(user_id))
+
+    def list_dismissed_recommendation_ids_for_user(self, user_id) -> set[str]:
+        try:
+            with self.session_factory() as session:
+                return self.recommendation_states.list_dismissed_ids_for_user(session, user_id=_coerce_user_id(user_id))
+        except ProgrammingError as exc:
+            error_text = str(exc).lower()
+            if "recommendation_states" in error_text and "does not exist" in error_text:
+                return set()
+            raise
+
+    def dismiss_recommendation_for_user(self, user_id, recommendation_id: str):
+        try:
+            with self.session_factory.begin() as session:
+                return self.recommendation_states.dismiss_for_user(
+                    session,
+                    user_id=_coerce_user_id(user_id),
+                    recommendation_id=recommendation_id,
+                )
+        except ProgrammingError as exc:
+            error_text = str(exc).lower()
+            if "recommendation_states" in error_text and "does not exist" in error_text:
+                raise ValueError(
+                    "Recommendation dismiss state is not ready; apply the recommendation_states DB patch first."
+                ) from exc
+            raise
+
+    def undismiss_recommendation_for_user(self, user_id, recommendation_id: str) -> bool:
+        try:
+            with self.session_factory.begin() as session:
+                return self.recommendation_states.undismiss_for_user(
+                    session,
+                    user_id=_coerce_user_id(user_id),
+                    recommendation_id=recommendation_id,
+                )
+        except ProgrammingError as exc:
+            error_text = str(exc).lower()
+            if "recommendation_states" in error_text and "does not exist" in error_text:
+                raise ValueError(
+                    "Recommendation dismiss state is not ready; apply the recommendation_states DB patch first."
+                ) from exc
+            raise
 
     def build_user_bootstrap_snapshot(self, user_id) -> UserBootstrapSnapshot:
         normalized_user_id = _coerce_user_id(user_id)

@@ -122,7 +122,12 @@ class RecommendationService:
             },
         }, warnings
 
-    def _build_recommendation_state(self, current_user: UserClaims | None) -> tuple[list[dict[str, Any]], dict[str, Any], list[str]]:
+    def _build_recommendation_state(
+        self,
+        current_user: UserClaims | None,
+        *,
+        include_dismissed: bool = False,
+    ) -> tuple[list[dict[str, Any]], dict[str, Any], list[str]]:
         if current_user is None:
             raise ValueError("Authentication is required")
 
@@ -272,11 +277,22 @@ class RecommendationService:
                 )
             )
 
-        return self._sorted_items(items), {
+        dismissed_ids = self.persistence_service.list_dismissed_recommendation_ids_for_user(current_user.user_id)
+        enriched_items = [
+            {
+                **item,
+                "status": "dismissed" if item["id"] in dismissed_ids else item.get("status", "open"),
+            }
+            for item in items
+        ]
+        response_items = enriched_items if include_dismissed else [item for item in enriched_items if item["id"] not in dismissed_ids]
+
+        return self._sorted_items(response_items), {
             "market_included": False,
             "generated_at": self._now_iso(),
             "freshness": "realtime",
-            "sources_used": ["profile", "risk_profile", "goals", "ocr_records", "summary_snapshot"],
+            "sources_used": ["profile", "risk_profile", "goals", "ocr_records", "summary_snapshot", "recommendation_state"],
+            "dismissed_count": len(dismissed_ids),
         }, warnings
 
     def list_recommendations(self, current_user: UserClaims | None) -> tuple[dict[str, Any], list[str]]:
@@ -292,8 +308,55 @@ class RecommendationService:
             "meta": meta,
         }, warnings
 
+    def _known_recommendation_ids(self) -> set[str]:
+        return {
+            "complete-profile-basics",
+            "complete-risk-profile",
+            "create-first-goal",
+            "activate-a-goal",
+            "review-ocr-records",
+            "upload-financial-document",
+            "start-planning-chat",
+        }
+
+    def dismiss_recommendation(self, current_user: UserClaims | None, recommendation_id: str) -> tuple[dict[str, Any], list[str]]:
+        if current_user is None:
+            raise ValueError("Authentication is required")
+        if self.persistence_service is None:
+            raise ValueError("Persistence is not configured")
+
+        all_items, _meta, warnings = self._build_recommendation_state(current_user)
+        visible_ids = {item["id"] for item in all_items}
+        if recommendation_id not in self._known_recommendation_ids() and recommendation_id not in visible_ids:
+            raise LookupError("Recommendation not found")
+
+        record = self.persistence_service.dismiss_recommendation_for_user(current_user.user_id, recommendation_id)
+        return {
+            "recommendation_id": recommendation_id,
+            "status": "dismissed",
+            "dismissed_at": getattr(record, "dismissed_at", None).isoformat() if getattr(record, "dismissed_at", None) is not None else self._now_iso(),
+        }, warnings
+
+    def undismiss_recommendation(self, current_user: UserClaims | None, recommendation_id: str) -> tuple[dict[str, Any], list[str]]:
+        if current_user is None:
+            raise ValueError("Authentication is required")
+        if self.persistence_service is None:
+            raise ValueError("Persistence is not configured")
+        if recommendation_id not in self._known_recommendation_ids():
+            raise LookupError("Recommendation not found")
+
+        undismissed = self.persistence_service.undismiss_recommendation_for_user(current_user.user_id, recommendation_id)
+        if not undismissed:
+            raise LookupError("Recommendation is not dismissed")
+
+        return {
+            "recommendation_id": recommendation_id,
+            "status": "open",
+            "undismissed_at": self._now_iso(),
+        }, []
+
     def get_recommendation_detail(self, current_user: UserClaims | None, recommendation_id: str) -> tuple[dict[str, Any], list[str]]:
-        items, meta, warnings = self._build_recommendation_state(current_user)
+        items, meta, warnings = self._build_recommendation_state(current_user, include_dismissed=True)
         selected = next((item for item in items if item["id"] == recommendation_id), None)
         if selected is None:
             raise LookupError("Recommendation not found")

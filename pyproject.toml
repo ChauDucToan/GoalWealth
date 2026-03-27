@@ -11,6 +11,7 @@ dependencies = [
     "feedparser>=6.0.12",
     "opensearch-py>=3.1.0",
     "pip>=26.0.1",
+    "psycopg[binary]>=3.3.3",
     "requests>=2.32.5",
     "uvicorn>=0.42.0",
 ]
