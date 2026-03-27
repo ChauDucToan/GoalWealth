@@ -10,6 +10,18 @@ export type ReceiptOcrResult = {
   status: 'success' | 'empty' | 'unavailable' | 'error';
 };
 
+function logReceiptRawText(rawText: string) {
+  console.log(
+    JSON.stringify(
+      {
+        raw_text: rawText,
+      },
+      null,
+      2
+    )
+  );
+}
+
 function isExpoGoRuntime() {
   return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 }
@@ -53,6 +65,7 @@ export async function recognizeReceiptText(
   const availability = getReceiptOcrAvailability(kind);
 
   if (!availability.available) {
+    logReceiptRawText('');
     return {
       text: '',
       error: availability.reason,
@@ -62,6 +75,7 @@ export async function recognizeReceiptText(
   }
 
   if (!uri) {
+    logReceiptRawText('');
     return {
       text: '',
       error: 'No image was provided for OCR.',
@@ -74,6 +88,7 @@ export async function recognizeReceiptText(
     const { recognizeText } = await loadMlKitModule();
     const result = await recognizeText(uri);
     const text = result.text?.trim() ?? '';
+    logReceiptRawText(text);
 
     if (!text) {
       return {
@@ -95,6 +110,7 @@ export async function recognizeReceiptText(
       error instanceof Error && error.message
         ? error.message
         : 'OCR could not run in this build. Review the draft manually before saving.';
+    logReceiptRawText('');
 
     return {
       text: '',

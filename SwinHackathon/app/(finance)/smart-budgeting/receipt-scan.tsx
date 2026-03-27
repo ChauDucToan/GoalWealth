@@ -13,7 +13,7 @@ import { getGoalwealthOcrRecord, ingestGoalwealthOcr } from '@/services/api/ocr'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSetupNavigationDebounce } from './setup/use-setup-navigation-debounce';
 
@@ -33,6 +33,83 @@ function prettifyReceiptName(name?: string) {
   }
 
   return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeMerchantCandidate(value: string) {
+  const cleaned = value
+    .replace(/[|*_~`]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '')
+    .trim();
+
+  if (!cleaned) {
+    return '';
+  }
+
+  const letterCount = cleaned.replace(/[^A-Za-z]/g, '').length;
+  const upperCount = cleaned.replace(/[^A-Z]/g, '').length;
+
+  if (letterCount > 0 && upperCount / letterCount > 0.8) {
+    return cleaned.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  return cleaned;
+}
+
+function isMerchantNoise(line: string) {
+  return /^(receipt|invoice|tax invoice|date|time|subtotal|sub total|total|amount|balance|change|cash|payment|approved|declined|terminal|transaction|merchant id|reference|ref|auth|card|visa|mastercard|debit|credit|vat|tax|qty|item|description|thank you|welcome|store #|store no|phone|tel|address)$/i.test(
+    line
+  );
+}
+
+function extractMerchantFromRawText(rawText: string, fallbackName: string) {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map(normalizeMerchantCandidate)
+    .filter(Boolean);
+
+  const topCandidates = lines.slice(0, 8).filter((line) => {
+    if (line.length < 3 || line.length > 42) {
+      return false;
+    }
+
+    if (isMerchantNoise(line)) {
+      return false;
+    }
+
+    const letterCount = (line.match(/[A-Za-z]/g) ?? []).length;
+    const digitCount = (line.match(/\d/g) ?? []).length;
+
+    if (letterCount < 3) {
+      return false;
+    }
+
+    if (digitCount > Math.max(3, Math.floor(line.length / 3))) {
+      return false;
+    }
+
+    if (/\b(total|subtotal|amount|tax|change)\b/i.test(line)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (!topCandidates.length) {
+    return fallbackName;
+  }
+
+  return (
+    topCandidates
+      .map((line, index) => ({
+        value: line,
+        score:
+          (index === 0 ? 4 : index === 1 ? 3 : 1) +
+          ((line.match(/[A-Za-z]/g) ?? []).length >= 6 ? 2 : 0) -
+          ((line.match(/\d/g) ?? []).length > 0 ? 1 : 0),
+      }))
+      .sort((left, right) => right.score - left.score)[0]?.value || fallbackName
+  );
 }
 
 function guessCategoryName(name: string, availableCategories: string[]) {
@@ -140,7 +217,7 @@ export default function SmartBudgetingReceiptScanScreen() {
   const { categories, updateTransactionDraft } = useFinance();
   const { isNavigating, runNavigation } = useSetupNavigationDebounce();
   const liveAdapterEnabled = isGoalwealthLiveAdapterEnabled();
-  const importedName = prettifyReceiptName(receiptImportDraft?.name);
+  const fallbackImportedName = prettifyReceiptName(receiptImportDraft?.name);
   const sourceLabel =
     receiptImportDraft?.source === 'camera'
       ? 'Camera capture'
@@ -150,6 +227,7 @@ export default function SmartBudgetingReceiptScanScreen() {
           ? 'Files import'
           : 'Imported file';
   const rawOcrText = receiptImportDraft?.ocrRawText?.trim() ?? '';
+  const importedName = extractMerchantFromRawText(rawOcrText, fallbackImportedName);
   const detectedAmount = extractAmountFromRawText(rawOcrText);
   const ocrAvailability = useMemo(
     () => getReceiptOcrAvailability(receiptImportDraft?.kind ?? 'mock'),
@@ -165,6 +243,15 @@ export default function SmartBudgetingReceiptScanScreen() {
     returnTo === 'budget-setup'
       ? '/(finance)/smart-budgeting/setup/receipt-gallery'
       : '/(finance)/smart-budgeting/add-spending';
+  const ocrRequestIdRef = useRef(0);
+  const backendSyncRequestIdRef = useRef(0);
+
+  const mergeReceiptImportDraft = useCallback(
+    (patch: Partial<NonNullable<typeof receiptImportDraft>>) => {
+      setReceiptImportDraft((current) => (current ? { ...current, ...patch } : current));
+    },
+    [setReceiptImportDraft]
+  );
 
   useEffect(() => {
     if (
@@ -175,41 +262,26 @@ export default function SmartBudgetingReceiptScanScreen() {
       return;
     }
 
-    let cancelled = false;
+    const requestId = ++ocrRequestIdRef.current;
 
-    setReceiptImportDraft({
-      ...receiptImportDraft,
+    mergeReceiptImportDraft({
       ocrStatus: 'running',
       ocrError: null,
     });
 
     void recognizeReceiptText(receiptImportDraft.uri, receiptImportDraft.kind).then((result) => {
-      if (cancelled) {
+      if (ocrRequestIdRef.current !== requestId) {
         return;
       }
 
-      console.log(`raw_text:${JSON.stringify(result.text)}`);
-
-      logOcrFlow('mlkit_result', {
-        provider: result.provider,
-        status: result.status,
-        raw_text: result.text ?? '',
-        error: result.error,
-      });
-
-      setReceiptImportDraft({
-        ...receiptImportDraft,
+      mergeReceiptImportDraft({
         ocrRawText: result.text,
         ocrStatus: result.status === 'success' || result.status === 'empty' ? 'success' : 'error',
         ocrError: result.error,
         ocrProvider: result.provider,
       });
     });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [receiptImportDraft, setReceiptImportDraft]);
+  }, [mergeReceiptImportDraft, receiptImportDraft]);
 
   useEffect(() => {
     if (!receiptImportDraft) {
@@ -234,8 +306,7 @@ export default function SmartBudgetingReceiptScanScreen() {
     }
 
     if (!userState.accessToken?.trim()) {
-      setReceiptImportDraft({
-        ...receiptImportDraft,
+      mergeReceiptImportDraft({
         backendOcrStatus: 'error',
         backendOcrError: 'Sign in again to sync OCR with GoalWealth.',
         backendOcrWarnings: [],
@@ -245,10 +316,9 @@ export default function SmartBudgetingReceiptScanScreen() {
       return;
     }
 
-    let cancelled = false;
+    const requestId = ++backendSyncRequestIdRef.current;
 
-    setReceiptImportDraft({
-      ...receiptImportDraft,
+    mergeReceiptImportDraft({
       backendOcrStatus: 'submitting',
       backendOcrError: null,
       backendOcrWarnings: [],
@@ -263,21 +333,18 @@ export default function SmartBudgetingReceiptScanScreen() {
 
     void ingestGoalwealthOcr({ raw_text: trimmedRawText }, userState.accessToken)
       .then(async (response) => {
-        if (cancelled) {
+        if (backendSyncRequestIdRef.current !== requestId) {
           return;
         }
 
-        const acceptedDraft = {
-          ...receiptImportDraft,
+        mergeReceiptImportDraft({
           backendOcrRecordId: response.data.ocr_record_id,
           backendOcrStatus: response.data.status,
           backendOcrError: null,
           backendOcrWarnings: response.warnings,
           backendOcrRequestId: response.requestId,
           backendOcrMessage: response.data.message,
-        };
-        console.log('acceptedDraft', acceptedDraft);
-        setReceiptImportDraft(acceptedDraft);
+        });
 
         try {
           const record = await getGoalwealthOcrRecord(
@@ -285,12 +352,11 @@ export default function SmartBudgetingReceiptScanScreen() {
             userState.accessToken
           );
 
-          if (cancelled) {
+          if (backendSyncRequestIdRef.current !== requestId) {
             return;
           }
 
-          setReceiptImportDraft({
-            ...acceptedDraft,
+          mergeReceiptImportDraft({
             backendOcrStatus: record.data.status,
             backendOcrWarnings: [
               ...new Set([
@@ -302,14 +368,13 @@ export default function SmartBudgetingReceiptScanScreen() {
             backendOcrRequestId: record.requestId ?? response.requestId,
           });
         } catch (error) {
-          if (cancelled) {
+          if (backendSyncRequestIdRef.current !== requestId) {
             return;
           }
 
           const normalizedError = normalizeGoalwealthError(error);
 
-          setReceiptImportDraft({
-            ...acceptedDraft,
+          mergeReceiptImportDraft({
             backendOcrStatus: 'error',
             backendOcrError: normalizedError.message,
             backendOcrWarnings: normalizedError.warnings,
@@ -318,14 +383,13 @@ export default function SmartBudgetingReceiptScanScreen() {
         }
       })
       .catch((error) => {
-        if (cancelled) {
+        if (backendSyncRequestIdRef.current !== requestId) {
           return;
         }
 
         const normalizedError = normalizeGoalwealthError(error);
 
-        setReceiptImportDraft({
-          ...receiptImportDraft,
+        mergeReceiptImportDraft({
           backendOcrStatus: 'error',
           backendOcrError: normalizedError.message,
           backendOcrWarnings: normalizedError.warnings,
@@ -333,11 +397,7 @@ export default function SmartBudgetingReceiptScanScreen() {
           backendOcrMessage: null,
         });
       });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [liveAdapterEnabled, receiptImportDraft, setReceiptImportDraft, userState.accessToken]);
+  }, [liveAdapterEnabled, mergeReceiptImportDraft, receiptImportDraft, userState.accessToken]);
 
   const extractedFields = useMemo(
     () => [

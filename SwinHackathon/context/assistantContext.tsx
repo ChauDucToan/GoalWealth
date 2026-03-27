@@ -70,6 +70,11 @@ export type ReceiptImportDraft = {
   backendOcrMessage?: string | null;
 };
 
+type ReceiptImportDraftUpdater =
+  | ReceiptImportDraft
+  | null
+  | ((current: ReceiptImportDraft | null) => ReceiptImportDraft | null);
+
 type AssistantContextValue = {
   activeScenarioId: string;
   conversation: AssistantMessage[];
@@ -79,7 +84,7 @@ type AssistantContextValue = {
   receiptImportDraft: ReceiptImportDraft | null;
   selectAssistantScenario: (id: string) => void;
   openCustomAssistantThread: (thread: AssistantCustomThread) => void;
-  setReceiptImportDraft: (draft: ReceiptImportDraft | null) => void;
+  setReceiptImportDraft: (draft: ReceiptImportDraftUpdater) => void;
   sendAssistantMessage: (text: string) => Promise<void>;
   setAssistantSettings: (patch: Partial<AssistantSettings>) => void;
   resetAssistantMemory: () => void;
@@ -226,8 +231,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }));
     };
 
-    const setReceiptImportDraft = (draft: ReceiptImportDraft | null) => {
-      setReceiptImportDraftState(draft);
+    const setReceiptImportDraft = (draft: ReceiptImportDraftUpdater) => {
+      setReceiptImportDraftState((current) =>
+        typeof draft === 'function' ? draft(current) : draft
+      );
     };
 
     const sendAssistantMessage = async (text: string) => {
