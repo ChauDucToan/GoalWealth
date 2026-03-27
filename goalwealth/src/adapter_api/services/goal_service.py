@@ -102,10 +102,13 @@ class GoalService:
                 description=payload.description,
             ),
         )
-        return {
+        response = {
             "user_id": current_user.user_id,
             "goal": self._serialize_goal(created),
-        }, []
+        }
+        if payload.recommendation_id is not None:
+            response["created_from_recommendation_id"] = payload.recommendation_id
+        return response, []
 
     def get_goal(self, current_user: UserClaims | None, goal_id: str) -> tuple[dict[str, Any], list[str]]:
         if current_user is None:

@@ -57,6 +57,7 @@ class GoalCreateRequest:
     current_progress: float = 0
     target_date: str | None = None
     description: str | None = None
+    recommendation_id: str | None = None
 
 
 @dataclass(slots=True)

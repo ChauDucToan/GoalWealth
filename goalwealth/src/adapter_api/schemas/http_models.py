@@ -68,6 +68,7 @@ if PYDANTIC_AVAILABLE:
         current_progress: float = Field(default=0, ge=0)
         target_date: str | None = None
         description: str | None = None
+        recommendation_id: str | None = None
 
 
     class GoalUpdateRequestModel(BaseModel):
