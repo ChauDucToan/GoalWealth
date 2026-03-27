@@ -3,7 +3,7 @@ import { ProfilePrimaryActions, ProfileSettingsCard, ProfileSettingsSectionTitle
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 

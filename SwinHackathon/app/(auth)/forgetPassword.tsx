@@ -6,7 +6,7 @@ import {
     ShieldIllustration,
 } from "@/components/auth/AuthKit";
 import { useTheme } from "@/hooks/use-theme-colors";
-import { useRouter } from "expo-router";
+import { useRouter } from "@/lib/expo-router";
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 

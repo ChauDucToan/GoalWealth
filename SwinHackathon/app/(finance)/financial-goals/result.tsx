@@ -1,12 +1,12 @@
+import { getResultBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { getFinancialGoalById } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
-import { getResultBackHref } from '@/app/(finance)/financial-goals/navigation';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -41,21 +41,18 @@ const resultMap = {
 export default function FinancialGoalResultScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { getGoalById } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     mode?: keyof typeof resultMap;
   }>();
-  const goal = getFinancialGoalById(params.goalId);
+  const goal = getGoalById(params.goalId);
   const mode = resultMap[params.mode ?? 'created'] ? (params.mode ?? 'created') : 'created';
   const result = resultMap[mode];
   const backHref = getResultBackHref({
     goalId: params.goalId,
     mode,
   });
-
-  const handlePrimary = () => {
-    router.replace(backHref);
-  };
 
   return (
     <FinanceScreen
@@ -74,16 +71,16 @@ export default function FinancialGoalResultScreen() {
             },
           ]}
         >
-          <View style={[styles.iconBadge, { backgroundColor: colors.card }]}>
+          <View style={[styles.iconBadge, { backgroundColor: colors.card }]}> 
             <MaterialIcons name={result.icon} size={28} color={colors.success} />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>{result.title}</Text>
-          <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
+          <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
             {result.body}
           </Text>
         </FinanceCard>
 
-        {mode !== 'deleted' ? (
+        {mode !== 'deleted' && goal ? (
           <FinanceCard>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{goal.title}</Text>
             <View style={styles.metaStack}>
@@ -97,7 +94,7 @@ export default function FinancialGoalResultScreen() {
               </View>
               <View style={styles.metaRow}>
                 <Text style={[styles.metaLabel, { color: hexToRgba(colors.text, 0.56) }]}>Monthly pace</Text>
-                <Text style={[styles.metaValue, { color: colors.text }]}>
+                <Text style={[styles.metaValue, { color: colors.text }]}> 
                   {formatCurrency(goal.monthlyContribution)}
                 </Text>
               </View>
@@ -109,7 +106,7 @@ export default function FinancialGoalResultScreen() {
           <View style={styles.actionButtonWrap}>
             <ThemeButton
               title={mode === 'deleted' ? 'Back to Goals' : 'Open Goal'}
-              onPress={handlePrimary}
+              onPress={() => router.replace(backHref)}
               colorBackground={colors.primaryDark}
               colorText={colors.card}
               style={styles.actionButton}

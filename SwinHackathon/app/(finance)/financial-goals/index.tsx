@@ -2,7 +2,6 @@ import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import {
-  financialGoalInsights,
   financialGoalIntroHighlights,
   getGoalsByPriority,
   getGoalTransferSummary,
@@ -18,10 +17,11 @@ import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold
 import { formatCurrency } from '@/components/finance/finance-utils';
 import { Typography } from '@/constants/theme';
 import { useIntroPreferences } from '@/context/introPreferencesContext';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -29,15 +29,52 @@ export default function FinancialGoalsScreen() {
   const { colors } = useTheme();
   const { isSmallPhone } = useResponsive();
   const router = useRouter();
+  const { goals, isUsingLiveGoals, isLoading, error } = useFinancialGoals();
   const {
     hasSeenFinancialGoalsIntro,
     isIntroPreferencesReady,
     markFinancialGoalsIntroSeen,
   } = useIntroPreferences();
-  const summary = getGoalTransferSummary();
-  const orderedGoals = getGoalsByPriority();
-  const overallProgress = summary.totalSaved / summary.totalTarget;
-  const leadGoal = orderedGoals[0];
+  const summary = getGoalTransferSummary(goals);
+  const orderedGoals = getGoalsByPriority(goals);
+  const overallProgress =
+    summary.totalTarget > 0 ? summary.totalSaved / summary.totalTarget : 0;
+  const leadGoal = orderedGoals[0] ?? null;
+  const prioritySummary =
+    summary.highPriorityGoals > 0
+      ? `${summary.highPriorityGoals} high-priority ${
+          summary.highPriorityGoals === 1 ? 'goal is' : 'goals are'
+        } being funded first before the rest.`
+      : 'All current goals are funded without a separate high-priority tier.';
+  const insightCards = [
+    {
+      id: 'goal-live-pace',
+      title: 'Monthly funding pace',
+      body: isUsingLiveGoals
+        ? 'This card is derived from GoalWealth goal targets and remaining timeline.'
+        : 'Preview mode keeps the existing mock funding cadence for the goals dashboard.',
+      value: formatCurrency(summary.monthlyContribution),
+      tone: 'primaryDark' as const,
+    },
+    {
+      id: 'goal-live-count',
+      title: isUsingLiveGoals ? 'Live goals synced' : 'Tracked goals',
+      body: leadGoal
+        ? `${leadGoal.title} is currently the lead funding target.`
+        : 'Create a goal to start building a live funding order.',
+      value: `${summary.activeGoals}`,
+      tone: 'success' as const,
+    },
+    {
+      id: 'goal-live-readiness',
+      title: 'Needs attention',
+      body: leadGoal
+        ? `${leadGoal.title} still has ${formatCurrency(leadGoal.fundingGap)} left to fund.`
+        : 'No active goals yet. Create one to unlock planning signals.',
+      value: leadGoal ? leadGoal.dueLabel : 'No goals',
+      tone: 'warning' as const,
+    },
+  ];
 
   if (!isIntroPreferencesReady) {
     return (
@@ -69,18 +106,20 @@ export default function FinancialGoalsScreen() {
             <View style={styles.introTop}>
               <View style={styles.introCopy}>
                 <Text style={[styles.introEyebrow, { color: colors.success }]}>Goal center</Text>
-              <Text style={[styles.introTitle, { color: colors.text }]}>
+                <Text style={[styles.introTitle, { color: colors.text }]}>
                   Keep every goal visible, prioritized and easier to fund.
-              </Text>
-              <Text style={[styles.introBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                </Text>
+                <Text style={[styles.introBody, { color: hexToRgba(colors.text, 0.58) }]}> 
                   This flow now combines creation, priority planning, savings account selection,
                   trade-off review, history and delete states into fewer, clearer screens.
-              </Text>
+                </Text>
               </View>
 
-              <View style={[styles.introBadge, { backgroundColor: colors.card }]}>
+              <View style={[styles.introBadge, { backgroundColor: colors.card }]}> 
                 <MaterialIcons name="flag-circle" size={20} color={colors.success} />
-                <Text style={[styles.introBadgeText, { color: colors.text }]}>3 active goals</Text>
+                <Text style={[styles.introBadgeText, { color: colors.text }]}> 
+                  {summary.activeGoals} active goals
+                </Text>
               </View>
             </View>
 
@@ -164,6 +203,25 @@ export default function FinancialGoalsScreen() {
       }
     >
       <View style={styles.stack}>
+        {isUsingLiveGoals && error ? (
+          <FinanceCard
+            style={[
+              styles.noticeCard,
+              {
+                backgroundColor: hexToRgba(colors.warning, 0.08),
+                borderColor: hexToRgba(colors.warning, 0.2),
+              },
+            ]}
+          >
+            <Text style={[styles.noticeTitle, { color: colors.text }]}> 
+              GoalWealth goals are unavailable right now
+            </Text>
+            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              {error}
+            </Text>
+          </FinanceCard>
+        ) : null}
+
         <FinanceCard
           style={[
             styles.heroCard,
@@ -175,25 +233,39 @@ export default function FinancialGoalsScreen() {
         >
           <View style={[styles.heroHeader, isSmallPhone && styles.heroHeaderCompact]}>
             <View style={styles.heroCopy}>
-              <Text style={[styles.heroEyebrow, { color: colors.success }]}>Goal overview</Text>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>
-                {formatCurrency(summary.totalSaved)}
+              <Text style={[styles.heroEyebrow, { color: colors.success }]}> 
+                {isUsingLiveGoals ? 'Goal overview · live' : 'Goal overview'}
               </Text>
-              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
-                saved across {summary.activeGoals} active goals with {formatCurrency(summary.monthlyContribution)}
-                {' '}allocated monthly. High-priority goals are funded first before the remaining goals
-                receive residual cash.
+              <Text style={[styles.heroTitle, { color: colors.text }]}> 
+                {leadGoal ? formatCurrency(summary.totalSaved) : 'No goals yet'}
+              </Text>
+              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
+                {leadGoal
+                  ? `Saved across ${summary.activeGoals} active goals with ${formatCurrency(summary.monthlyContribution)} allocated monthly. ${prioritySummary}`
+                  : 'Create your first goal to start syncing live goal progress, funding pace and priority order from GoalWealth.'}
               </Text>
             </View>
 
-            <GoalProgressRing
-              accent={colors.success}
-              progress={overallProgress}
-              centerValue={`${Math.round(overallProgress * 100)}%`}
-              caption="Portfolio funded"
-              size={isSmallPhone ? 158 : 182}
-              strokeWidth={isSmallPhone ? 14 : 16}
-            />
+            {leadGoal ? (
+              <GoalProgressRing
+                accent={colors.success}
+                progress={overallProgress}
+                centerValue={`${Math.round(overallProgress * 100)}%`}
+                caption="Portfolio funded"
+                size={isSmallPhone ? 158 : 182}
+                strokeWidth={isSmallPhone ? 14 : 16}
+              />
+            ) : (
+              <View style={[styles.emptyHeroBadge, { backgroundColor: colors.card }]}> 
+                <MaterialIcons name="flag-circle" size={22} color={colors.success} />
+                <Text style={[styles.emptyHeroBadgeValue, { color: colors.text }]}> 
+                  {summary.activeGoals}
+                </Text>
+                <Text style={[styles.emptyHeroBadgeLabel, { color: hexToRgba(colors.text, 0.52) }]}> 
+                  live goals
+                </Text>
+              </View>
+            )}
           </View>
 
           <ResponsiveGrid
@@ -203,28 +275,28 @@ export default function FinancialGoalsScreen() {
             maxColumns={isSmallPhone ? 2 : 3}
             style={styles.heroMetricGrid}
           >
-            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroMetricValue, { color: colors.primaryDark }]}>
+            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.heroMetricValue, { color: colors.primaryDark }]}> 
                 {formatCurrency(summary.totalLeft)}
               </Text>
-              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 left to fund
               </Text>
             </View>
-            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroMetricValue, { color: colors.success }]}>
-                {leadGoal.targetMonth}
+            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.heroMetricValue, { color: colors.success }]}> 
+                {leadGoal?.targetMonth ?? 'Flex'}
               </Text>
-              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 next target month
               </Text>
             </View>
-            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroMetricValue, { color: colors.warning }]}>
-                {summary.highPriorityGoals}
+            <View style={[styles.heroMetricCard, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.heroMetricValue, { color: colors.warning }]}> 
+                {summary.activeGoals}
               </Text>
-              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}>
-                high-priority goals
+              <Text style={[styles.heroMetricLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
+                active goals
               </Text>
             </View>
           </ResponsiveGrid>
@@ -245,18 +317,30 @@ export default function FinancialGoalsScreen() {
                 onPress={() => router.push('/(finance)/financial-goals/history')}
                 colorBackground={colors.card}
                 colorText={colors.text}
+                disabled={!orderedGoals.length}
                 style={[styles.heroActionButton, { borderWidth: 1, borderColor: colors.border }]}
               />
             </View>
           </View>
         </FinanceCard>
 
-        <GoalHistoryCard
-          title="Balance History"
-          points={leadGoal.history}
-          accent={leadGoal.accent}
-          footer={`${leadGoal.title} has the strongest visible momentum right now.`}
-        />
+        {isUsingLiveGoals && isLoading && !orderedGoals.length ? (
+          <FinanceCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Loading live goals</Text>
+            <Text style={[styles.loadingBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              GoalWealth is syncing the latest goals for this user.
+            </Text>
+          </FinanceCard>
+        ) : null}
+
+        {leadGoal ? (
+          <GoalHistoryCard
+            title="Balance History"
+            points={leadGoal.history}
+            accent={leadGoal.accent}
+            footer={`${leadGoal.title} has the strongest visible momentum right now.`}
+          />
+        ) : null}
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
@@ -266,7 +350,13 @@ export default function FinancialGoalsScreen() {
             </Pressable>
           </View>
 
-          <GoalPriorityStack goals={orderedGoals} />
+          {orderedGoals.length ? (
+            <GoalPriorityStack goals={orderedGoals} />
+          ) : (
+            <Text style={[styles.emptySectionBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              No goals are available yet. Create one to see the funding order here.
+            </Text>
+          )}
         </FinanceCard>
 
         <FinanceCard>
@@ -327,28 +417,43 @@ export default function FinancialGoalsScreen() {
                   </View>
 
                   <View style={styles.goalFooter}>
-                    <Text style={[styles.goalValue, { color: colors.text }]}>
+                    <Text style={[styles.goalValue, { color: colors.text }]}> 
                       {formatCurrency(goal.saved)} of {formatCurrency(goal.target)}
                     </Text>
-                    <Text style={[styles.goalContribution, { color: hexToRgba(colors.text, 0.52) }]}>
+                    <Text style={[styles.goalContribution, { color: hexToRgba(colors.text, 0.52) }]}> 
                       gap {formatCurrency(goal.fundingGap)}
                     </Text>
                   </View>
                 </Pressable>
               );
             })}
+
+            {!orderedGoals.length ? (
+              <View
+                style={[
+                  styles.goalCard,
+                  styles.emptyGoalCard,
+                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.goalTitle, { color: colors.text }]}>No goals yet</Text>
+                <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}> 
+                  Create your first goal to populate this workspace from GoalWealth.
+                </Text>
+              </View>
+            ) : null}
           </View>
         </FinanceCard>
 
-        <GoalRecommendationSummary goal={leadGoal} />
-        <GoalConflictNotice conflicts={leadGoal.conflictWithOtherGoals} />
+        {leadGoal ? <GoalRecommendationSummary goal={leadGoal} /> : null}
+        {leadGoal ? <GoalConflictNotice conflicts={leadGoal.conflictWithOtherGoals} /> : null}
 
         <ResponsiveGrid minItemWidth={190} horizontalPadding={18} gap={12} maxColumns={2}>
-          {financialGoalInsights.map((item) => (
+          {insightCards.map((item) => (
             <FinanceCard key={item.id}>
               <Text style={[styles.insightValue, { color: colors[item.tone] }]}>{item.value}</Text>
               <Text style={[styles.insightTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.insightBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              <Text style={[styles.insightBody, { color: hexToRgba(colors.text, 0.56) }]}> 
                 {item.body}
               </Text>
             </FinanceCard>
@@ -377,6 +482,18 @@ const styles = StyleSheet.create({
   },
   introCard: {
     borderWidth: 1,
+  },
+  noticeCard: {
+    borderWidth: 1,
+  },
+  noticeTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  noticeBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   introTop: {
     flexDirection: 'row',
@@ -493,6 +610,23 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     lineHeight: 20,
   },
+  emptyHeroBadge: {
+    minWidth: 104,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  emptyHeroBadgeValue: {
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  emptyHeroBadgeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   heroMetricGrid: {
     marginTop: 18,
   },
@@ -535,6 +669,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
+  loadingBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  emptySectionBody: {
+    marginTop: 12,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
   goalStack: {
     marginTop: 16,
     gap: 12,
@@ -543,6 +687,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     padding: 14,
+  },
+  emptyGoalCard: {
+    minHeight: 110,
+    justifyContent: 'center',
   },
   goalHeader: {
     flexDirection: 'row',

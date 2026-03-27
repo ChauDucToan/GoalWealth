@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Redirect } from '@/lib/expo-router';
 import React from 'react';
 
 export default function CommunityGuidelinesRedirect() {

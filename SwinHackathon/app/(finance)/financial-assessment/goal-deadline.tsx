@@ -2,7 +2,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { useFinancialAssessment } from '@/hooks/use-financial-assessment';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { goalDeadlineOptions } from '@/components/financial-assessment/data';

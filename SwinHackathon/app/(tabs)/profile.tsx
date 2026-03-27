@@ -14,7 +14,7 @@ import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
   Alert,

@@ -3,7 +3,7 @@ import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold
 import { recurringOptions } from '@/components/home/mock-data';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { Typography } from '@/constants/theme';

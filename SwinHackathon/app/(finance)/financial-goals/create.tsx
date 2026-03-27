@@ -1,8 +1,8 @@
+import { getCreateBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   contributionPresets,
-  getFinancialGoalById,
   getGoalAccountById,
   goalDeadlineOptions,
   goalFrequencyOptions,
@@ -13,54 +13,183 @@ import {
 } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
-import { getCreateBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { Typography } from '@/constants/theme';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { normalizeGoalwealthError } from '@/services/api/errors';
+import type {
+  GoalwealthGoalCreateRequest,
+  GoalwealthMemoryGoalType,
+} from '@/services/api/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
+import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+const createDefaults = {
+  title: 'Vacation',
+  target: targetPresets[1],
+  contribution: contributionPresets[1],
+  priority: 'Medium' as const,
+  allowedRisk: 'Low to moderate',
+};
+
+function mapTemplateIdToGoalType(templateId: string): GoalwealthMemoryGoalType {
+  switch (templateId) {
+    case 'safety':
+      return 'emergency_fund_goal';
+    case 'debt':
+      return 'debt_payoff_goal';
+    case 'home':
+      return 'wealth_building_goal';
+    default:
+      return 'savings_goal';
+  }
+}
+
+function mapPriorityLabelToValue(priority: string) {
+  switch (priority) {
+    case 'High':
+      return 8;
+    case 'Low':
+      return 3;
+    default:
+      return 5;
+  }
+}
+
+function buildTargetDate(deadlineLabel: string) {
+  const monthCount = Number.parseInt(deadlineLabel, 10);
+  const fallbackMonthCount = Number.isFinite(monthCount) ? monthCount : 6;
+  const targetDate = new Date();
+  targetDate.setMonth(targetDate.getMonth() + fallbackMonthCount);
+  return targetDate.toISOString().slice(0, 10);
+}
 
 export default function CreateFinancialGoalScreen() {
   const { colors } = useTheme();
   const { isSmallPhone } = useResponsive();
   const router = useRouter();
+  const { getGoalById, createGoal, isUsingLiveGoals, capabilities } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     accountId?: string;
     mode?: 'create' | 'edit';
   }>();
-  const goal = getFinancialGoalById(params.goalId);
+  const goal = getGoalById(params.goalId);
   const isEditMode = params.mode === 'edit' || Boolean(params.goalId);
-  const activeAccount = getGoalAccountById(params.accountId ?? goal.accountId);
+  const activeAccount = getGoalAccountById(params.accountId ?? goal?.accountId ?? 'goal-wallet');
 
   const templateFallback =
-    goalTemplates.find((item) => item.label.toLowerCase().includes(goal.title.toLowerCase().split(' ')[0])) ??
-    goalTemplates[0];
+    (goal
+      ? goalTemplates.find((item) =>
+          item.label.toLowerCase().includes(goal.title.toLowerCase().split(' ')[0])
+        )
+      : null) ?? goalTemplates[0];
 
   const [selectedTemplate, setSelectedTemplate] = useState(templateFallback.id);
-  const [selectedTarget, setSelectedTarget] = useState<number>(goal.target);
-  const [selectedContribution, setSelectedContribution] = useState<number>(goal.monthlyContribution);
+  const [selectedTarget, setSelectedTarget] = useState<number>(goal?.target ?? createDefaults.target);
+  const [selectedContribution, setSelectedContribution] = useState<number>(
+    goal?.monthlyContribution ?? createDefaults.contribution
+  );
   const [selectedFrequency, setSelectedFrequency] = useState<typeof goalFrequencyOptions[number]>(
     goalFrequencyOptions[2]
   );
-  const [selectedPriority, setSelectedPriority] = useState(goal.priority);
-  const [selectedRisk, setSelectedRisk] = useState(goal.allowedRisk);
+  const [selectedPriority, setSelectedPriority] = useState(
+    goal?.priority ?? createDefaults.priority
+  );
+  const [selectedRisk, setSelectedRisk] = useState(
+    goal?.allowedRisk ?? createDefaults.allowedRisk
+  );
   const [selectedDeadline, setSelectedDeadline] = useState<typeof goalDeadlineOptions[number]>(
     goalDeadlineOptions[1]
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const selectedTemplateMeta =
     goalTemplates.find((item) => item.id === selectedTemplate) ?? goalTemplates[0];
   const projectedMonths = Math.max(1, Math.ceil(selectedTarget / Math.max(selectedContribution, 1)));
-  const estimatedFundingGap = Math.max(selectedTarget - goal.saved, 0);
-  const previewTitle = isEditMode ? goal.title : selectedTemplateMeta.label;
+  const estimatedFundingGap = Math.max(selectedTarget - (goal?.saved ?? 0), 0);
+  const previewTitle = isEditMode ? goal?.title ?? createDefaults.title : selectedTemplateMeta.label;
   const backHref = getCreateBackHref({
     goalId: params.goalId,
     accountId: params.accountId,
     mode: params.mode,
   });
+  const isLiveEditLocked = isUsingLiveGoals && isEditMode && !capabilities.canEdit;
+
+  const submitPayload = useMemo<GoalwealthGoalCreateRequest>(
+    () => ({
+      title: previewTitle,
+      goal_type: mapTemplateIdToGoalType(selectedTemplate),
+      status: 'active',
+      priority: mapPriorityLabelToValue(selectedPriority),
+      target_amount: selectedTarget,
+      current_progress: goal?.saved ?? 0,
+      target_date: buildTargetDate(selectedDeadline),
+      description: [
+        selectedTemplateMeta.helper,
+        `Allowed risk: ${selectedRisk}.`,
+        `Transfer rhythm: ${selectedFrequency}.`,
+        `Funding source: ${activeAccount.label}.`,
+      ].join(' '),
+    }),
+    [
+      activeAccount.label,
+      goal?.saved,
+      previewTitle,
+      selectedDeadline,
+      selectedFrequency,
+      selectedPriority,
+      selectedRisk,
+      selectedTarget,
+      selectedTemplate,
+      selectedTemplateMeta.helper,
+    ]
+  );
+
+  const handleSaveGoal = async () => {
+    if (isSaving || isLiveEditLocked) {
+      return;
+    }
+
+    setSaveError(null);
+
+    if (isEditMode && !isUsingLiveGoals) {
+      router.replace({
+        pathname: '/(finance)/financial-goals/result',
+        params: {
+          mode: 'updated',
+          goalId: goal?.id,
+          accountId: activeAccount.id,
+        },
+      });
+      return;
+    }
+
+    if (isEditMode) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const createdGoal = await createGoal(submitPayload);
+      router.replace({
+        pathname: '/(finance)/financial-goals/result',
+        params: {
+          mode: 'created',
+          goalId: createdGoal.id,
+          accountId: activeAccount.id,
+        },
+      });
+    } catch (incomingError) {
+      setSaveError(normalizeGoalwealthError(incomingError).message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <FinanceScreen
@@ -70,6 +199,43 @@ export default function CreateFinancialGoalScreen() {
       onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
+        {isLiveEditLocked ? (
+          <FinanceCard
+            style={[
+              styles.noticeCard,
+              {
+                backgroundColor: hexToRgba(colors.warning, 0.08),
+                borderColor: hexToRgba(colors.warning, 0.18),
+              },
+            ]}
+          >
+            <Text style={[styles.noticeTitle, { color: colors.text }]}> 
+              Live goal updates are not enabled yet
+            </Text>
+            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              GoalWealth currently supports listing and creating goals. Editing stays locked until
+              the backend exposes an update endpoint.
+            </Text>
+          </FinanceCard>
+        ) : null}
+
+        {saveError ? (
+          <FinanceCard
+            style={[
+              styles.noticeCard,
+              {
+                backgroundColor: hexToRgba(colors.error, 0.08),
+                borderColor: hexToRgba(colors.error, 0.18),
+              },
+            ]}
+          >
+            <Text style={[styles.noticeTitle, { color: colors.text }]}>Unable to save goal</Text>
+            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              {saveError}
+            </Text>
+          </FinanceCard>
+        ) : null}
+
         <FinanceCard
           style={[
             styles.headerCard,
@@ -81,23 +247,21 @@ export default function CreateFinancialGoalScreen() {
         >
           <View style={[styles.headerTop, isSmallPhone && styles.headerTopCompact]}>
             <View style={styles.headerCopy}>
-              <Text style={[styles.headerEyebrow, { color: colors.primaryDark }]}>
+              <Text style={[styles.headerEyebrow, { color: colors.primaryDark }]}> 
                 {isEditMode ? 'Update savings plan' : 'Build a new savings plan'}
               </Text>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>
-                {previewTitle}
-              </Text>
-              <Text style={[styles.headerBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>{previewTitle}</Text>
+              <Text style={[styles.headerBody, { color: hexToRgba(colors.text, 0.56) }]}> 
                 This screen keeps the full planning context together: amount, cadence, priority,
                 allowed risk, account selection and planner preview before saving.
               </Text>
             </View>
 
-            <View style={[styles.headerBadge, { backgroundColor: colors.card }]}>
-              <Text style={[styles.headerBadgeValue, { color: colors.text }]}>
+            <View style={[styles.headerBadge, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.headerBadgeValue, { color: colors.text }]}> 
                 {formatCurrency(selectedContribution)}
               </Text>
-              <Text style={[styles.headerBadgeLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.headerBadgeLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 monthly
               </Text>
             </View>
@@ -126,7 +290,7 @@ export default function CreateFinancialGoalScreen() {
                     <MaterialIcons name={item.icon} size={20} color={item.accent} />
                   </View>
                   <Text style={[styles.templateTitle, { color: colors.text }]}>{item.label}</Text>
-                  <Text style={[styles.templateBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                  <Text style={[styles.templateBody, { color: hexToRgba(colors.text, 0.54) }]}> 
                     {item.helper}
                   </Text>
                 </Pressable>
@@ -153,7 +317,7 @@ export default function CreateFinancialGoalScreen() {
                   ]}
                   onPress={() => setSelectedTarget(item)}
                 >
-                  <Text style={[styles.valueChipText, { color: active ? colors.card : colors.text }]}>
+                  <Text style={[styles.valueChipText, { color: active ? colors.card : colors.text }]}> 
                     {formatCurrency(item)}
                   </Text>
                 </Pressable>
@@ -161,7 +325,7 @@ export default function CreateFinancialGoalScreen() {
             })}
           </View>
 
-          <Text style={[styles.sectionTitle, styles.sectionTop, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, styles.sectionTop, { color: colors.text }]}> 
             Monthly contribution
           </Text>
           <View style={styles.chipRow}>
@@ -180,7 +344,7 @@ export default function CreateFinancialGoalScreen() {
                   ]}
                   onPress={() => setSelectedContribution(item)}
                 >
-                  <Text style={[styles.valueChipText, { color: active ? colors.card : colors.text }]}>
+                  <Text style={[styles.valueChipText, { color: active ? colors.card : colors.text }]}> 
                     {formatCurrency(item)}
                   </Text>
                 </Pressable>
@@ -192,7 +356,7 @@ export default function CreateFinancialGoalScreen() {
         <FinanceCard>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Transfer setup</Text>
 
-          <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.56) }]}>
+          <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.56) }]}> 
             Recurring rhythm
           </Text>
           <View style={styles.chipRow}>
@@ -211,7 +375,7 @@ export default function CreateFinancialGoalScreen() {
                   ]}
                   onPress={() => setSelectedFrequency(item)}
                 >
-                  <Text style={[styles.inlineChipText, { color: active ? colors.success : colors.text }]}>
+                  <Text style={[styles.inlineChipText, { color: active ? colors.success : colors.text }]}> 
                     {item}
                   </Text>
                 </Pressable>
@@ -219,7 +383,7 @@ export default function CreateFinancialGoalScreen() {
             })}
           </View>
 
-          <Text style={[styles.fieldLabel, styles.sectionTop, { color: hexToRgba(colors.text, 0.56) }]}>
+          <Text style={[styles.fieldLabel, styles.sectionTop, { color: hexToRgba(colors.text, 0.56) }]}> 
             Target window
           </Text>
           <View style={styles.chipRow}>
@@ -238,7 +402,7 @@ export default function CreateFinancialGoalScreen() {
                   ]}
                   onPress={() => setSelectedDeadline(item)}
                 >
-                  <Text style={[styles.inlineChipText, { color: active ? colors.primaryDark : colors.text }]}>
+                  <Text style={[styles.inlineChipText, { color: active ? colors.primaryDark : colors.text }]}> 
                     {item}
                   </Text>
                 </Pressable>
@@ -265,10 +429,10 @@ export default function CreateFinancialGoalScreen() {
                   ]}
                   onPress={() => setSelectedPriority(item.id)}
                 >
-                  <Text style={[styles.priorityLabel, { color: active ? colors.primaryDark : colors.text }]}>
+                  <Text style={[styles.priorityLabel, { color: active ? colors.primaryDark : colors.text }]}> 
                     {item.label}
                   </Text>
-                  <Text style={[styles.priorityBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                  <Text style={[styles.priorityBody, { color: hexToRgba(colors.text, 0.54) }]}> 
                     {item.body}
                   </Text>
                 </Pressable>
@@ -276,7 +440,7 @@ export default function CreateFinancialGoalScreen() {
             })}
           </View>
 
-          <Text style={[styles.fieldLabel, styles.sectionTop, { color: hexToRgba(colors.text, 0.56) }]}>
+          <Text style={[styles.fieldLabel, styles.sectionTop, { color: hexToRgba(colors.text, 0.56) }]}> 
             Allowed risk for this goal
           </Text>
           <View style={styles.chipRow}>
@@ -295,7 +459,7 @@ export default function CreateFinancialGoalScreen() {
                   ]}
                   onPress={() => setSelectedRisk(item.id)}
                 >
-                  <Text style={[styles.inlineChipText, { color: active ? colors.success : colors.text }]}>
+                  <Text style={[styles.inlineChipText, { color: active ? colors.success : colors.text }]}> 
                     {item.label}
                   </Text>
                 </Pressable>
@@ -314,7 +478,7 @@ export default function CreateFinancialGoalScreen() {
                   params: {
                     origin: 'create',
                     accountId: activeAccount.id,
-                    goalId: goal.id,
+                    goalId: goal?.id,
                     mode: isEditMode ? 'edit' : 'create',
                   },
                 })
@@ -333,11 +497,11 @@ export default function CreateFinancialGoalScreen() {
             <View style={[styles.accountAccent, { backgroundColor: activeAccount.accent }]} />
             <View style={styles.accountCopy}>
               <Text style={[styles.accountLabel, { color: colors.text }]}>{activeAccount.label}</Text>
-              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}> 
                 {activeAccount.subtitle} • {activeAccount.mask}
               </Text>
             </View>
-            <Text style={[styles.accountValue, { color: colors.text }]}>
+            <Text style={[styles.accountValue, { color: colors.text }]}> 
               {formatCurrency(activeAccount.balance)}
             </Text>
           </View>
@@ -354,28 +518,28 @@ export default function CreateFinancialGoalScreen() {
         >
           <Text style={[styles.previewEyebrow, { color: colors.primaryDark }]}>Goal preview</Text>
           <Text style={[styles.previewTitle, { color: colors.text }]}>{previewTitle}</Text>
-          <Text style={[styles.previewValue, { color: colors.text }]}>
+          <Text style={[styles.previewValue, { color: colors.text }]}> 
             {formatCurrency(selectedTarget)}
           </Text>
-          <Text style={[styles.previewBody, { color: hexToRgba(colors.text, 0.56) }]}>
+          <Text style={[styles.previewBody, { color: hexToRgba(colors.text, 0.56) }]}> 
             Saving {formatCurrency(selectedContribution)} on a {selectedFrequency.toLowerCase()} cadence
             will give this goal a visible funding rhythm in about {projectedMonths} months.
           </Text>
 
           <View style={styles.previewMetaGrid}>
-            <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}>
-              <Text style={[styles.previewMetaValue, { color: colors.success }]}>
+            <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}> 
+              <Text style={[styles.previewMetaValue, { color: colors.success }]}> 
                 {selectedPriority}
               </Text>
-              <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 priority level
               </Text>
             </View>
-            <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}>
-              <Text style={[styles.previewMetaValue, { color: colors.primaryDark }]}>
+            <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}> 
+              <Text style={[styles.previewMetaValue, { color: colors.primaryDark }]}> 
                 {selectedRisk}
               </Text>
-              <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 allowed risk
               </Text>
             </View>
@@ -390,10 +554,10 @@ export default function CreateFinancialGoalScreen() {
               },
             ]}
           >
-            <Text style={[styles.previewExplainTitle, { color: colors.text }]}>
+            <Text style={[styles.previewExplainTitle, { color: colors.text }]}> 
               Planner interpretation
             </Text>
-            <Text style={[styles.previewExplainBody, { color: hexToRgba(colors.text, 0.56) }]}>
+            <Text style={[styles.previewExplainBody, { color: hexToRgba(colors.text, 0.56) }]}> 
               A {selectedPriority.toLowerCase()} priority goal with {selectedRisk.toLowerCase()} risk will
               compete for about {formatCurrency(selectedContribution)}/month. Estimated funding gap after
               current savings: {formatCurrency(estimatedFundingGap)}.
@@ -413,19 +577,21 @@ export default function CreateFinancialGoalScreen() {
           </View>
           <View style={styles.actionButtonWrap}>
             <ThemeButton
-              title={isEditMode ? 'Update Goal' : 'Save Goal'}
-              onPress={() =>
-                router.replace({
-                  pathname: '/(finance)/financial-goals/result',
-                  params: {
-                    mode: isEditMode ? 'updated' : 'created',
-                    goalId: goal.id,
-                    accountId: activeAccount.id,
-                  },
-                })
+              title={
+                isSaving
+                  ? 'Saving...'
+                  : isLiveEditLocked
+                    ? 'Update coming soon'
+                    : isEditMode
+                      ? 'Update Goal'
+                      : 'Save Goal'
               }
+              onPress={() => {
+                void handleSaveGoal();
+              }}
               colorBackground={colors.primaryDark}
               colorText={colors.card}
+              disabled={isSaving || isLiveEditLocked}
               style={styles.actionButton}
             />
           </View>
@@ -442,6 +608,18 @@ const styles = StyleSheet.create({
   stack: {
     marginTop: 18,
     gap: 16,
+  },
+  noticeCard: {
+    borderWidth: 1,
+  },
+  noticeTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  noticeBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   headerCard: {
     borderWidth: 1,
@@ -679,13 +857,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   previewExplainTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
   },
   previewExplainBody: {
     marginTop: 6,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   actionRow: {
     flexDirection: 'row',

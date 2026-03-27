@@ -4,7 +4,7 @@ import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { goSmartBudgetBack } from '@/app/(finance)/smart-budgeting/_navigation';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

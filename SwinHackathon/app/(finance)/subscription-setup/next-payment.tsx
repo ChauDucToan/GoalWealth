@@ -2,7 +2,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { ColorTheme } from '@/constants/theme';
 import { useSubscriptionSetup } from '@/hooks/use-subscription-setup';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SubscriptionSetupPrimaryButton, SubscriptionSetupShell } from './_shared';

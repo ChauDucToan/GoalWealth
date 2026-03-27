@@ -6,7 +6,7 @@ import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { overviewStats, walletAccounts } from '@/components/home/mock-data';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';

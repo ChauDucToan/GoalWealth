@@ -3,7 +3,7 @@ import { ColorTheme, Typography } from '@/constants/theme';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

@@ -17,7 +17,7 @@ import { useTheme } from '@/hooks/use-theme-colors';
 import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
 import { normalizeGoalwealthError } from '@/services/api/errors';
 import { mapGoalwealthMeToUserProfile, patchGoalwealthMe } from '@/services/api/me';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 

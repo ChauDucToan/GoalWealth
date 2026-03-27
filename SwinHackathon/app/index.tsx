@@ -2,7 +2,7 @@ import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useMyUser } from '@/context/myUserContext';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Typography } from '@/constants/theme';
 import {

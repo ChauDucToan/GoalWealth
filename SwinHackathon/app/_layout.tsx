@@ -5,7 +5,7 @@ import { MyUserProvider } from "@/context/myUserContext";
 import { ProfileSettingsProvider } from "@/context/profileSettingsContext";
 import { SmartBudgetingProvider } from "@/context/smartBudgetingContext";
 import { ThemeProvider } from "@/hooks/use-theme-colors";
-import { Stack } from "expo-router";
+import { Stack } from "@/lib/expo-router";
 import React from "react";
 
 export default function RootLayout() {

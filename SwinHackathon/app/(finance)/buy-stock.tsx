@@ -9,7 +9,7 @@ import {
 } from '@/components/finance/finance-utils';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Typography } from '@/constants/theme';

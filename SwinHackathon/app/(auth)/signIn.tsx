@@ -26,7 +26,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import type { AuthSessionResult } from 'expo-auth-session';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 

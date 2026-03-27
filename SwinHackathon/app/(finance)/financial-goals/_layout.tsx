@@ -1,6 +1,11 @@
-import { Stack } from 'expo-router';
+import { FinancialGoalsProvider } from '@/context/financialGoalsContext';
+import { Stack } from '@/lib/expo-router';
 import React from 'react';
 
 export default function FinancialGoalsLayout() {
-  return <Stack screenOptions={{ headerShown: false, presentation: 'card' }} />;
+  return (
+    <FinancialGoalsProvider>
+      <Stack screenOptions={{ headerShown: false, presentation: 'card' }} />
+    </FinancialGoalsProvider>
+  );
 }

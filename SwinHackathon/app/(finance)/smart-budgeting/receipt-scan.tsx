@@ -12,7 +12,7 @@ import { normalizeGoalwealthError } from '@/services/api/errors';
 import { getGoalwealthOcrRecord, ingestGoalwealthOcr } from '@/services/api/ocr';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image as ExpoImage } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSetupNavigationDebounce } from './setup/use-setup-navigation-debounce';

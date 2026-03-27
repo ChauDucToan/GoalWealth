@@ -1,30 +1,33 @@
-import {
-  financialGoals,
-  getFinancialGoalById,
-} from '@/components/financial-goals/data';
-import {
-  GoalHistoryCard,
-  GoalTransferList,
-} from '@/components/financial-goals/ui';
-import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { getHistoryBackHref } from '@/app/(finance)/financial-goals/navigation';
-import { useTheme } from '@/hooks/use-theme-colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { findFinancialGoalById } from '@/components/financial-goals/data';
+import { GoalHistoryCard, GoalTransferList } from '@/components/financial-goals/ui';
+import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
+import { Typography } from '@/constants/theme';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
+import { useTheme } from '@/hooks/use-theme-colors';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function FinancialGoalHistoryScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { goals } = useFinancialGoals();
   const { goalId } = useLocalSearchParams<{ goalId?: string }>();
-  const initialGoal = getFinancialGoalById(goalId);
+  const initialGoal = findFinancialGoalById(goalId, goals) ?? goals[0] ?? null;
   const backHref = getHistoryBackHref({ goalId });
-  const [selectedGoalId, setSelectedGoalId] = useState(initialGoal.id);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(initialGoal?.id ?? null);
   const selectedGoal = useMemo(
-    () => financialGoals.find((goal) => goal.id === selectedGoalId) ?? initialGoal,
-    [initialGoal, selectedGoalId]
+    () => goals.find((goal) => goal.id === selectedGoalId) ?? initialGoal,
+    [goals, initialGoal, selectedGoalId]
   );
+
+  useEffect(() => {
+    if (!selectedGoalId && goals[0]?.id) {
+      setSelectedGoalId(goals[0].id);
+    }
+  }, [goals, selectedGoalId]);
 
   return (
     <FinanceScreen
@@ -34,57 +37,72 @@ export default function FinancialGoalHistoryScreen() {
       onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
-        <View style={styles.filterRow}>
-          {financialGoals.map((goal) => {
-            const active = goal.id === selectedGoalId;
+        {!goals.length || !selectedGoal ? (
+          <FinanceCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>No goal history yet</Text>
+            <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              Create a goal first, then its planner-derived balance history will appear here.
+            </Text>
+          </FinanceCard>
+        ) : null}
 
-            return (
-              <Pressable
-                key={goal.id}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: active ? goal.accent : colors.card,
-                    borderColor: active ? goal.accent : colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedGoalId(goal.id)}
-              >
-                <Text style={[styles.filterText, { color: active ? colors.card : colors.text }]}>
-                  {goal.title}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {goals.length ? (
+          <View style={styles.filterRow}>
+            {goals.map((goal) => {
+              const active = goal.id === selectedGoalId;
 
-        <GoalHistoryCard
-          title={selectedGoal.title}
-          points={selectedGoal.history}
-          accent={selectedGoal.accent}
-          footer={`${selectedGoal.category} goal • ${selectedGoal.dueLabel}`}
-        />
+              return (
+                <Pressable
+                  key={goal.id}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: active ? goal.accent : colors.card,
+                      borderColor: active ? goal.accent : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedGoalId(goal.id)}
+                >
+                  <Text style={[styles.filterText, { color: active ? colors.card : colors.text }]}> 
+                    {goal.title}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
 
-        <FinanceCard>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Funding activity</Text>
-          <GoalTransferList rows={selectedGoal.transfers} />
-        </FinanceCard>
+        {selectedGoal ? (
+          <>
+            <GoalHistoryCard
+              title={selectedGoal.title}
+              points={selectedGoal.history}
+              accent={selectedGoal.accent}
+              footer={`${selectedGoal.category} goal • ${selectedGoal.dueLabel}`}
+            />
 
-        <FinanceCard
-          style={[
-            styles.noteCard,
-            {
-              backgroundColor: hexToRgba(selectedGoal.accent, 0.08),
-              borderColor: hexToRgba(selectedGoal.accent, 0.16),
-            },
-          ]}
-        >
-          <Text style={[styles.noteTitle, { color: colors.text }]}>What this history says</Text>
-          <Text style={[styles.noteBody, { color: hexToRgba(colors.text, 0.58) }]}>
-            {selectedGoal.title} is growing through a healthy mix of recurring transfers and occasional top ups.
-            Keeping that balance makes the goal easier to maintain without feeling rigid.
-          </Text>
-        </FinanceCard>
+            <FinanceCard>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Funding activity</Text>
+              <GoalTransferList rows={selectedGoal.transfers} />
+            </FinanceCard>
+
+            <FinanceCard
+              style={[
+                styles.noteCard,
+                {
+                  backgroundColor: hexToRgba(selectedGoal.accent, 0.08),
+                  borderColor: hexToRgba(selectedGoal.accent, 0.16),
+                },
+              ]}
+            >
+              <Text style={[styles.noteTitle, { color: colors.text }]}>What this history says</Text>
+              <Text style={[styles.noteBody, { color: hexToRgba(colors.text, 0.58) }]}> 
+                {selectedGoal.title} is growing through a healthy mix of recurring transfers and occasional top ups.
+                Keeping that balance makes the goal easier to maintain without feeling rigid.
+              </Text>
+            </FinanceCard>
+          </>
+        ) : null}
       </View>
     </FinanceScreen>
   );
@@ -118,6 +136,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
+  },
+  emptyBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   noteCard: {
     borderWidth: 1,

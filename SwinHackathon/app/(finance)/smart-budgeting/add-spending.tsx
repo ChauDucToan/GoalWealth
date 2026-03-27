@@ -13,7 +13,7 @@ import { useFinance } from '@/hooks/use-finance';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSetupNavigationDebounce } from './setup/use-setup-navigation-debounce';

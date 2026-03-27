@@ -5,7 +5,7 @@ import { assistantScenarios } from '@/components/assistant/mock-data';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Typography } from '@/constants/theme';
 import {

@@ -5,7 +5,7 @@ import { subscriptionItems } from '@/components/finance/subscription-data';
 import { Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 

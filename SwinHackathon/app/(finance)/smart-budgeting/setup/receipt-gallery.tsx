@@ -10,7 +10,7 @@ import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { goSmartBudgetBack, resolveSmartBudgetReturnRoute } from '@/app/(finance)/smart-budgeting/_navigation';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

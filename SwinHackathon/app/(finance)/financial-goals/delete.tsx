@@ -5,7 +5,7 @@ import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold
 import { formatCurrency } from '@/components/finance/finance-utils';
 import { getDeleteBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 

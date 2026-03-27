@@ -15,6 +15,8 @@ type MotionPressableProps = Omit<PressableProps, 'style' | 'children'> & {
   scaleTo?: number;
   translateYTo?: number;
   activeOpacity?: number;
+  debounceMs?: number;
+  disableDebounce?: boolean;
 };
 
 export function MotionPressable({
@@ -25,13 +27,17 @@ export function MotionPressable({
   scaleTo = 0.975,
   translateYTo = 2,
   activeOpacity = 0.96,
+  debounceMs = 650,
+  disableDebounce = false,
   onPressIn,
   onPressOut,
   disabled,
+  onPress,
   ...rest
 }: MotionPressableProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
+  const cooldownUntilRef = useRef(0);
 
   const animateTo = (nextScale: number, nextTranslateY: number) => {
     Animated.parallel([
@@ -54,6 +60,30 @@ export function MotionPressable({
     <Pressable
       {...rest}
       disabled={disabled}
+      onPress={(event) => {
+        if (!onPress) {
+          return;
+        }
+
+        if (disableDebounce) {
+          onPress(event);
+          return;
+        }
+
+        const now = Date.now();
+        if (now < cooldownUntilRef.current) {
+          return;
+        }
+
+        cooldownUntilRef.current = now + debounceMs;
+
+        try {
+          onPress(event);
+        } catch (error) {
+          cooldownUntilRef.current = 0;
+          throw error;
+        }
+      }}
       onPressIn={(event) => {
         animateTo(scaleTo, translateYTo);
         onPressIn?.(event);

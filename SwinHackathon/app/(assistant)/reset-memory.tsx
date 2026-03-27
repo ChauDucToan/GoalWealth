@@ -4,7 +4,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { useAssistant } from '@/hooks/use-assistant';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';

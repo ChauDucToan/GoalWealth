@@ -5,7 +5,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 

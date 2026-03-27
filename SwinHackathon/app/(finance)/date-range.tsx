@@ -2,7 +2,7 @@ import { ThemeButton } from '@/components/ThemeButton';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Typography } from '@/constants/theme';

@@ -120,6 +120,42 @@ export type GoalwealthMePatchRequest = {
   timezone?: string;
 };
 
+export type GoalwealthGoalRecord = {
+  goal_id: string;
+  title: string | null;
+  goal_type: GoalwealthMemoryGoalType;
+  status: GoalwealthMemoryGoalStatus;
+  priority: number | null;
+  target_amount: number | null;
+  current_progress: number | null;
+  target_date: string | null;
+  description: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type GoalwealthGoalsListData = {
+  user_id: string;
+  goals: GoalwealthGoalRecord[];
+  count: number;
+};
+
+export type GoalwealthGoalCreateRequest = {
+  title: string;
+  goal_type: GoalwealthMemoryGoalType;
+  status?: GoalwealthMemoryGoalStatus;
+  priority?: number;
+  target_amount?: number | null;
+  current_progress?: number;
+  target_date?: string | null;
+  description?: string | null;
+};
+
+export type GoalwealthGoalCreateData = {
+  user_id: string;
+  goal: GoalwealthGoalRecord;
+};
+
 export type GoalwealthChatRequest = {
   message: string;
   session_id?: string;

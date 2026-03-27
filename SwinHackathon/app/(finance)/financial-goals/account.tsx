@@ -1,29 +1,30 @@
+import { getAccountBackHref } from '@/app/(finance)/financial-goals/navigation';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   financialGoalAccounts,
-  getFinancialGoalById,
   getGoalAccountById,
 } from '@/components/financial-goals/data';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
-import { getAccountBackHref } from '@/app/(finance)/financial-goals/navigation';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function FinancialGoalAccountScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { getGoalById } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     accountId?: string;
     origin?: 'create' | 'transfer' | 'detail';
     mode?: 'create' | 'edit' | 'topup' | 'recurring';
   }>();
-  const goal = getFinancialGoalById(params.goalId);
-  const initialAccount = getGoalAccountById(params.accountId ?? goal.accountId);
+  const goal = getGoalById(params.goalId);
+  const initialAccount = getGoalAccountById(params.accountId ?? goal?.accountId ?? 'goal-wallet');
   const [selectedAccountId, setSelectedAccountId] = useState(initialAccount.id);
   const selectedAccount = useMemo(
     () => financialGoalAccounts.find((item) => item.id === selectedAccountId) ?? initialAccount,
@@ -37,7 +38,7 @@ export default function FinancialGoalAccountScreen() {
   });
 
   const handleContinue = () => {
-    if (params.origin === 'transfer') {
+    if (params.origin === 'transfer' && goal) {
       router.replace({
         pathname: '/(finance)/financial-goals/transfer',
         params: {
@@ -52,7 +53,7 @@ export default function FinancialGoalAccountScreen() {
     router.replace({
       pathname: '/(finance)/financial-goals/create',
       params: {
-        goalId: goal.id,
+        goalId: goal?.id,
         accountId: selectedAccount.id,
         mode: params.origin === 'detail' ? 'edit' : params.mode ?? 'create',
       },
@@ -77,8 +78,8 @@ export default function FinancialGoalAccountScreen() {
           ]}
         >
           <Text style={[styles.heroEyebrow, { color: colors.success }]}>Linked funding source</Text>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>{goal.title}</Text>
-          <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56) }]}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{goal?.title ?? 'New Goal'}</Text>
+          <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56) }]}> 
             Pick one savings source. You can still change cadence and amount later from the same create/edit flow.
           </Text>
         </FinanceCard>
@@ -103,13 +104,13 @@ export default function FinancialGoalAccountScreen() {
                   <View style={[styles.accountAccent, { backgroundColor: account.accent }]} />
                   <View style={styles.accountCopy}>
                     <Text style={[styles.accountLabel, { color: colors.text }]}>{account.label}</Text>
-                    <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                    <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}> 
                       {account.subtitle} • {account.mask}
                     </Text>
                   </View>
 
                   <View style={styles.accountRight}>
-                    <Text style={[styles.accountBalance, { color: colors.text }]}>
+                    <Text style={[styles.accountBalance, { color: colors.text }]}> 
                       {formatCurrency(account.balance)}
                     </Text>
                     <Text

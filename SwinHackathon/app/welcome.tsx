@@ -5,7 +5,7 @@ import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Animated,

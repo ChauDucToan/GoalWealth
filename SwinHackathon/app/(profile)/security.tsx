@@ -13,7 +13,7 @@ import { FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { Typography } from '@/constants/theme';
 import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useTheme } from '@/hooks/use-theme-colors';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 

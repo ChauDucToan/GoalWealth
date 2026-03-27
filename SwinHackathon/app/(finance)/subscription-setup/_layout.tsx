@@ -1,5 +1,5 @@
 import { SubscriptionSetupProvider } from '@/context/subscriptionSetupContext';
-import { Stack } from 'expo-router';
+import { Stack } from '@/lib/expo-router';
 import React from 'react';
 
 export default function SubscriptionSetupLayout() {

@@ -427,13 +427,32 @@ export const financialGoalIntroHighlights: GoalIntroHighlight[] = [
   },
 ];
 
-export function getFinancialGoalById(goalId?: string | string[] | null) {
-  const normalized = Array.isArray(goalId) ? goalId[0] : goalId;
+function normalizeGoalId(goalId?: string | string[] | null) {
+  return Array.isArray(goalId) ? goalId[0] ?? null : goalId ?? null;
+}
+
+export function findFinancialGoalById(
+  goalId?: string | string[] | null,
+  goals: FinancialGoalItem[] = financialGoals
+) {
+  const normalized = normalizeGoalId(goalId);
   if (!normalized) {
-    return financialGoals[0];
+    return null;
   }
 
-  return financialGoals.find((goal) => goal.id === normalized) ?? financialGoals[0];
+  return goals.find((goal) => goal.id === normalized) ?? null;
+}
+
+export function getFinancialGoalById(
+  goalId?: string | string[] | null,
+  goals: FinancialGoalItem[] = financialGoals
+) {
+  const matchedGoal = findFinancialGoalById(goalId, goals);
+  if (matchedGoal) {
+    return matchedGoal;
+  }
+
+  return goals[0];
 }
 
 export function getGoalAccountById(accountId?: string | string[] | null) {
@@ -445,8 +464,25 @@ export function getGoalAccountById(accountId?: string | string[] | null) {
   return financialGoalAccounts.find((account) => account.id === normalized) ?? financialGoalAccounts[0];
 }
 
-export function getGoalTransferSummary() {
-  const orderedGoals = getGoalsByPriority();
+export function sortFinancialGoalsByPriority(goals: FinancialGoalItem[] = financialGoals) {
+  return [...goals].sort((left, right) => left.priorityOrder - right.priorityOrder);
+}
+
+export function getGoalTransferSummary(goals: FinancialGoalItem[] = financialGoals) {
+  const orderedGoals = sortFinancialGoalsByPriority(goals);
+  if (!orderedGoals.length) {
+    return {
+      totalSaved: 0,
+      totalTarget: 0,
+      monthlyContribution: 0,
+      totalLeft: 0,
+      activeGoals: 0,
+      highPriorityGoals: 0,
+      nextPriorityGoal: null,
+      averageFeasibility: 0,
+    };
+  }
+
   const totalSaved = orderedGoals.reduce((sum, goal) => sum + goal.saved, 0);
   const totalTarget = orderedGoals.reduce((sum, goal) => sum + goal.target, 0);
   const monthlyContribution = orderedGoals.reduce(
@@ -470,16 +506,32 @@ export function getGoalTransferSummary() {
   };
 }
 
-export function getGoalTimelineRows(goalId?: string | string[] | null) {
-  return getFinancialGoalById(goalId).transfers;
+export function getGoalTimelineRows(
+  goalId?: string | string[] | null,
+  goals: FinancialGoalItem[] = financialGoals
+) {
+  return findFinancialGoalById(goalId, goals)?.transfers ?? [];
 }
 
-export function getGoalsByPriority() {
-  return [...financialGoals].sort((left, right) => left.priorityOrder - right.priorityOrder);
+export function getGoalsByPriority(goals: FinancialGoalItem[] = financialGoals) {
+  return sortFinancialGoalsByPriority(goals);
 }
 
-export function getGoalPrioritySummary(goalId?: string | string[] | null) {
-  const goal = getFinancialGoalById(goalId);
+export function getGoalPrioritySummary(
+  goalId?: string | string[] | null,
+  goals: FinancialGoalItem[] = financialGoals
+) {
+  const goal = findFinancialGoalById(goalId, goals) ?? goals[0];
+  if (!goal) {
+    return {
+      goal: null,
+      blockers: 'No goal selected',
+      conflicts: 'No direct goal conflict right now',
+      feasibilityLabel: 'No live goal yet',
+      fundingGapLabel: '$0 still needs funding',
+    };
+  }
+
   const blockers = goal.constraintFlags.join(' • ');
   const conflicts =
     goal.conflictWithOtherGoals.length > 0

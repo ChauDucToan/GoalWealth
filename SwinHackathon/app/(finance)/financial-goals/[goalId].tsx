@@ -1,10 +1,7 @@
+import { getFinancialGoalsDashboardHref } from '@/app/(finance)/financial-goals/navigation';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
-import {
-  getFinancialGoalById,
-  getGoalAccountById,
-  getGoalPrioritySummary,
-} from '@/components/financial-goals/data';
+import { getGoalAccountById, getGoalPrioritySummary } from '@/components/financial-goals/data';
 import {
   FeasibilityMeter,
   FundingGapSummary,
@@ -16,12 +13,12 @@ import {
 } from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
-import { getFinancialGoalsDashboardHref } from '@/app/(finance)/financial-goals/navigation';
 import { Typography } from '@/constants/theme';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -30,10 +27,33 @@ export default function FinancialGoalDetailScreen() {
   const { isSmallPhone } = useResponsive();
   const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const router = useRouter();
-  const goal = getFinancialGoalById(goalId);
-  const prioritySummary = getGoalPrioritySummary(goalId);
+  const { getGoalById, goals, isUsingLiveGoals, capabilities } = useFinancialGoals();
+  const goal = getGoalById(goalId);
+  const prioritySummary = getGoalPrioritySummary(goalId, goals);
+
+  if (!goal) {
+    return (
+      <FinanceScreen
+        title="Goal not found"
+        subtitle="The selected goal is unavailable in the current GoalWealth workspace."
+        contentStyle={styles.contentStyle}
+        onBackPress={() => router.replace(getFinancialGoalsDashboardHref())}
+      >
+        <View style={styles.stack}>
+          <FinanceCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Goal unavailable</Text>
+            <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              Refresh the goals dashboard or create a new goal to continue.
+            </Text>
+          </FinanceCard>
+        </View>
+      </FinanceScreen>
+    );
+  }
+
   const account = getGoalAccountById(goal.accountId);
   const progress = goal.saved / goal.target;
+
   return (
     <FinanceScreen
       title={goal.title}
@@ -41,23 +61,43 @@ export default function FinancialGoalDetailScreen() {
       contentStyle={styles.contentStyle}
       onBackPress={() => router.replace(getFinancialGoalsDashboardHref())}
       rightAccessory={
-        <Pressable
-          style={[
-            styles.headerAction,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-          onPress={() =>
-            router.push({
-              pathname: '/(finance)/financial-goals/create',
-              params: { goalId: goal.id, mode: 'edit' },
-            })
-          }
-        >
-          <MaterialIcons name="edit" size={18} color={colors.text} />
-        </Pressable>
+        capabilities.canEdit ? (
+          <Pressable
+            style={[
+              styles.headerAction,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: '/(finance)/financial-goals/create',
+                params: { goalId: goal.id, mode: 'edit' },
+              })
+            }
+          >
+            <MaterialIcons name="edit" size={18} color={colors.text} />
+          </Pressable>
+        ) : null
       }
     >
       <View style={styles.stack}>
+        {isUsingLiveGoals ? (
+          <FinanceCard
+            style={[
+              styles.noticeCard,
+              {
+                backgroundColor: hexToRgba(colors.warning, 0.08),
+                borderColor: hexToRgba(colors.warning, 0.18),
+              },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Live goal sync is active</Text>
+            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+              GoalWealth currently supports live goal list and create. Edit, delete and transfer
+              actions stay preview-only until the backend adds those endpoints.
+            </Text>
+          </FinanceCard>
+        ) : null}
+
         <FinanceCard
           style={[
             styles.heroCard,
@@ -70,10 +110,8 @@ export default function FinancialGoalDetailScreen() {
           <View style={[styles.heroTop, isSmallPhone && styles.heroTopCompact]}>
             <View style={styles.heroCopy}>
               <Text style={[styles.heroEyebrow, { color: goal.accent }]}>Goal health</Text>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>
-                {formatCurrency(goal.saved)}
-              </Text>
-              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
+              <Text style={[styles.heroTitle, { color: colors.text }]}>{formatCurrency(goal.saved)}</Text>
+              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
                 {goal.note}
               </Text>
             </View>
@@ -89,27 +127,27 @@ export default function FinancialGoalDetailScreen() {
           </View>
 
           <View style={styles.heroStats}>
-            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroStatValue, { color: goal.accent }]}>
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.heroStatValue, { color: goal.accent }]}> 
                 {formatCurrency(goal.fundingGap)}
               </Text>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 funding gap
               </Text>
             </View>
-            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroStatValue, { color: colors.success }]}>
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.heroStatValue, { color: colors.success }]}> 
                 {formatCurrency(goal.recommendedMonthlyAllocation)}
               </Text>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 recommended / month
               </Text>
             </View>
-            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.heroStatValue, { color: colors.primaryDark, fontSize: 13 }]}>
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}> 
+              <Text style={[styles.heroStatValue, { color: colors.primaryDark, fontSize: 13 }]}> 
                 {prioritySummary.feasibilityLabel}
               </Text>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
                 feasibility
               </Text>
             </View>
@@ -119,7 +157,7 @@ export default function FinancialGoalDetailScreen() {
         <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Planner rationale</Text>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}> 
               sequence {goal.recommendedSequence}
             </Text>
           </View>
@@ -133,36 +171,38 @@ export default function FinancialGoalDetailScreen() {
           <GoalConflictNotice conflicts={goal.conflictWithOtherGoals} />
         </FinanceCard>
 
-        <View style={styles.actionRow}>
-          <View style={styles.actionButtonWrap}>
-            <ThemeButton
-              title="Add Money"
-              onPress={() =>
-                router.push({
-                  pathname: '/(finance)/financial-goals/transfer',
-                  params: { goalId: goal.id, mode: 'topup', accountId: account.id },
-                })
-              }
-              colorBackground={colors.primaryDark}
-              colorText={colors.card}
-              style={styles.actionButton}
-            />
+        {!isUsingLiveGoals ? (
+          <View style={styles.actionRow}>
+            <View style={styles.actionButtonWrap}>
+              <ThemeButton
+                title="Add Money"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(finance)/financial-goals/transfer',
+                    params: { goalId: goal.id, mode: 'topup', accountId: account.id },
+                  })
+                }
+                colorBackground={colors.primaryDark}
+                colorText={colors.card}
+                style={styles.actionButton}
+              />
+            </View>
+            <View style={styles.actionButtonWrap}>
+              <ThemeButton
+                title="Recurring"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(finance)/financial-goals/transfer',
+                    params: { goalId: goal.id, mode: 'recurring', accountId: account.id },
+                  })
+                }
+                colorBackground={colors.card}
+                colorText={colors.text}
+                style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}
+              />
+            </View>
           </View>
-          <View style={styles.actionButtonWrap}>
-            <ThemeButton
-              title="Recurring"
-              onPress={() =>
-                router.push({
-                  pathname: '/(finance)/financial-goals/transfer',
-                  params: { goalId: goal.id, mode: 'recurring', accountId: account.id },
-                })
-              }
-              colorBackground={colors.card}
-              colorText={colors.text}
-              style={[styles.actionButton, { borderWidth: 1, borderColor: colors.border }]}
-            />
-          </View>
-        </View>
+        ) : null}
 
         <GoalHistoryCard
           title="Balance History"
@@ -174,7 +214,7 @@ export default function FinancialGoalDetailScreen() {
         <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Constraint flags</Text>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}> 
               {prioritySummary.fundingGapLabel}
             </Text>
           </View>
@@ -191,7 +231,7 @@ export default function FinancialGoalDetailScreen() {
               </View>
             ))}
           </View>
-          <Text style={[styles.constraintBody, { color: hexToRgba(colors.text, 0.54) }]}>
+          <Text style={[styles.constraintBody, { color: hexToRgba(colors.text, 0.54) }]}> 
             {prioritySummary.conflicts}
           </Text>
         </FinanceCard>
@@ -199,20 +239,22 @@ export default function FinancialGoalDetailScreen() {
         <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Savings account</Text>
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/(finance)/financial-goals/account',
-                  params: {
-                    origin: 'detail',
-                    goalId: goal.id,
-                    accountId: account.id,
-                  },
-                })
-              }
-            >
-              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Switch</Text>
-            </Pressable>
+            {!isUsingLiveGoals ? (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: '/(finance)/financial-goals/account',
+                    params: {
+                      origin: 'detail',
+                      goalId: goal.id,
+                      accountId: account.id,
+                    },
+                  })
+                }
+              >
+                <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Switch</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <View
@@ -224,14 +266,12 @@ export default function FinancialGoalDetailScreen() {
             <View style={[styles.accountAccent, { backgroundColor: account.accent }]} />
             <View style={styles.accountCopy}>
               <Text style={[styles.accountTitle, { color: colors.text }]}>{account.label}</Text>
-              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}> 
                 {account.subtitle} • {account.mask}
               </Text>
-              <Text style={[styles.accountHint, { color: colors.primaryDark }]}>
-                {goal.recurringLabel}
-              </Text>
+              <Text style={[styles.accountHint, { color: colors.primaryDark }]}>{goal.recurringLabel}</Text>
             </View>
-            <Text style={[styles.accountBalance, { color: colors.text }]}>
+            <Text style={[styles.accountBalance, { color: colors.text }]}> 
               {formatCurrency(account.balance)}
             </Text>
           </View>
@@ -259,8 +299,8 @@ export default function FinancialGoalDetailScreen() {
           <View style={styles.milestoneStack}>
             {goal.milestones.map((milestone, index) => (
               <View key={milestone} style={styles.milestoneRow}>
-                <View style={[styles.milestoneIndex, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}>
-                  <Text style={[styles.milestoneIndexText, { color: goal.accent }]}>
+                <View style={[styles.milestoneIndex, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}> 
+                  <Text style={[styles.milestoneIndexText, { color: goal.accent }]}> 
                     {index + 1}
                   </Text>
                 </View>
@@ -270,32 +310,34 @@ export default function FinancialGoalDetailScreen() {
           </View>
         </FinanceCard>
 
-        <View style={styles.footerActions}>
-          <ThemeButton
-            title="Edit Goal"
-            onPress={() =>
-              router.push({
-                pathname: '/(finance)/financial-goals/create',
-                params: { goalId: goal.id, mode: 'edit' },
-              })
-            }
-            colorBackground={colors.card}
-            colorText={colors.text}
-            style={[styles.footerButton, { borderWidth: 1, borderColor: colors.border }]}
-          />
-          <ThemeButton
-            title="Delete Goal"
-            onPress={() =>
-              router.push({
-                pathname: '/(finance)/financial-goals/delete',
-                params: { goalId: goal.id },
-              })
-            }
-            colorBackground={colors.error}
-            colorText={colors.card}
-            style={styles.footerButton}
-          />
-        </View>
+        {!isUsingLiveGoals ? (
+          <View style={styles.footerActions}>
+            <ThemeButton
+              title="Edit Goal"
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/create',
+                  params: { goalId: goal.id, mode: 'edit' },
+                })
+              }
+              colorBackground={colors.card}
+              colorText={colors.text}
+              style={[styles.footerButton, { borderWidth: 1, borderColor: colors.border }]}
+            />
+            <ThemeButton
+              title="Delete Goal"
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/delete',
+                  params: { goalId: goal.id },
+                })
+              }
+              colorBackground={colors.error}
+              colorText={colors.card}
+              style={styles.footerButton}
+            />
+          </View>
+        ) : null}
       </View>
     </FinanceScreen>
   );
@@ -316,6 +358,19 @@ const styles = StyleSheet.create({
   stack: {
     marginTop: 18,
     gap: 16,
+  },
+  noticeCard: {
+    borderWidth: 1,
+  },
+  noticeBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  emptyBody: {
+    marginTop: 8,
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   heroCard: {
     borderWidth: 1,
@@ -342,7 +397,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     marginTop: 8,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '900',
     letterSpacing: -0.8,
   },
@@ -352,14 +407,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   heroStats: {
-    marginTop: 16,
+    marginTop: 18,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   heroStatCard: {
     flex: 1,
-    minWidth: 110,
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -372,16 +425,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     fontWeight: '700',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButtonWrap: {
-    flex: 1,
-  },
-  actionButton: {
-    width: '100%',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -397,6 +440,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButtonWrap: {
+    flex: 1,
+  },
+  actionButton: {
+    width: '100%',
+  },
+  flagWrap: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  flagChip: {
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+  },
+  flagText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  constraintBody: {
+    marginTop: 12,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
   accountCard: {
     marginTop: 16,
     borderWidth: 1,
@@ -408,7 +483,7 @@ const styles = StyleSheet.create({
   },
   accountAccent: {
     width: 10,
-    height: 46,
+    height: 48,
     borderRadius: 999,
   },
   accountCopy: {
@@ -433,29 +508,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
-  flagWrap: {
-    marginTop: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  flagChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  flagText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  constraintBody: {
-    marginTop: 12,
-    fontSize: 12,
-    lineHeight: 18,
-  },
   milestoneStack: {
-    marginTop: 16,
+    marginTop: 14,
     gap: 12,
   },
   milestoneRow: {
@@ -466,19 +520,18 @@ const styles = StyleSheet.create({
   milestoneIndex: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   milestoneIndexText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
   milestoneText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '600',
+    fontSize: Typography.body,
+    lineHeight: 20,
   },
   footerActions: {
     flexDirection: 'row',

@@ -11,7 +11,7 @@ import { ColorTheme } from '@/constants/theme';
 import { useProfileSetup } from '@/hooks/use-profile-setup';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter } from '@/lib/expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
