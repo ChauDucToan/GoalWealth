@@ -1,12 +1,14 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { groupTransactionsByDate } from '@/components/finance/finance-utils';
+import { UnavailableWorkspace } from '@/components/shared/UnavailableWorkspace';
 import { Typography } from '@/constants/theme';
 import { useFinance } from '@/hooks/use-finance';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useSmartBudgeting } from '@/hooks/use-smart-budgeting';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -80,6 +82,15 @@ export default function TransactionsScreen() {
     [categories]
   );
   const totalCompletedTransactions = filteredTransactions.length;
+
+  if (!isEndpointBackedFeatureEnabled('transactions')) {
+    return (
+      <UnavailableWorkspace
+        title="Transactions are off in live mode"
+        body="The current frontend transactions workspace still depends on local budget and ledger seeds. It stays hidden until GoalWealth exposes transaction, category and account endpoints."
+      />
+    );
+  }
 
   const handleLoadMore = () => {
     if (visibleSectionCount < sections.length) {

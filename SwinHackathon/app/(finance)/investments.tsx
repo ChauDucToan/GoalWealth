@@ -2,6 +2,7 @@ import { ThemeButton } from '@/components/ThemeButton';
 import { ResponsiveGrid } from '@/components/ResponsiveGrid';
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { getGoalAwareStockAdvice } from '@/components/finance/stock-advice';
+import { UnavailableWorkspace } from '@/components/shared/UnavailableWorkspace';
 import {
   investmentNewsImpacts,
   investmentPortfolioSnapshot,
@@ -20,6 +21,7 @@ import {
 import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import type { RebalanceRecommendation, WatchlistAlert } from '@/types/product-domain';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
@@ -179,6 +181,15 @@ export default function InvestmentsScreen() {
       params: { scenario: 'custom' },
     });
   };
+
+  if (!isEndpointBackedFeatureEnabled('portfolio')) {
+    return (
+      <UnavailableWorkspace
+        title="Portfolio is off in live mode"
+        body="This portfolio workspace still depends on local holdings, quotes, rebalance and market-intelligence mock data. It stays hidden until GoalWealth exposes portfolio endpoints."
+      />
+    );
+  }
 
   return (
     <FinanceScreen

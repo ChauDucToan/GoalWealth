@@ -4,6 +4,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   financialGoalIntroHighlights,
   getGoalsByPriority,
+  getGoalsPortfolioRecommendation,
   getGoalTransferSummary,
 } from '@/components/financial-goals/data';
 import {
@@ -12,7 +13,7 @@ import {
   GoalLifecycleBadge,
   GoalPriorityStack,
   GoalProgressRing,
-  GoalRecommendationSummary,
+  GoalsPortfolioRecommendationCard,
 } from '@/components/financial-goals/ui';
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
@@ -21,26 +22,73 @@ import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { buildGoalwealthRecommendationDetailRoute } from '@/lib/goalwealth-recommendations';
+import { normalizeGoalwealthError } from '@/services/api/errors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from '@/lib/expo-router';
-import React from 'react';
+import { useFocusEffect, useRouter } from '@/lib/expo-router';
+import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function FinancialGoalsScreen() {
   const { colors } = useTheme();
   const { isSmallPhone } = useResponsive();
   const router = useRouter();
-  const { goals, isUsingLiveGoals, isLoading, error } = useFinancialGoals();
+  const {
+    goals,
+    isUsingLiveGoals,
+    isLoading,
+    error,
+    capabilities,
+    refreshGoals,
+    goalRecommendation,
+    isGoalRecommendationLoading,
+    goalRecommendationError,
+    dismissGoalRecommendation,
+    completeGoalRecommendation,
+    refreshGoalRecommendation,
+  } = useFinancialGoals();
   const {
     hasSeenFinancialGoalsIntro,
     isIntroPreferencesReady,
     markFinancialGoalsIntroSeen,
   } = useIntroPreferences();
+  const [goalRecommendationAction, setGoalRecommendationAction] = useState<
+    'dismiss' | 'complete' | null
+  >(null);
+  const [goalRecommendationActionError, setGoalRecommendationActionError] = useState<string | null>(
+    null
+  );
   const summary = getGoalTransferSummary(goals);
   const orderedGoals = getGoalsByPriority(goals);
   const activeOrderedGoals = orderedGoals.filter((goal) => goal.lifecycleStatus === 'active');
   const overallProgress = summary.totalTarget > 0 ? summary.totalSaved / summary.totalTarget : 0;
   const leadGoal = summary.nextPriorityGoal ?? null;
+  const portfolioRecommendation = getGoalsPortfolioRecommendation(goals);
+  const introHighlights = isUsingLiveGoals
+    ? [
+        {
+          id: 'goal-intro-live-track',
+          title: 'Track synced goal progress',
+          body: 'Create goals, edit core fields and keep lifecycle status aligned with GoalWealth.',
+          icon: 'pie-chart' as const,
+          accent: '#1A73E8',
+        },
+        {
+          id: 'goal-intro-live-priority',
+          title: 'Keep one live funding order',
+          body: 'Review active goals in one place without mixing in preview-only transfer or history tools.',
+          icon: 'flag' as const,
+          accent: '#6A927A',
+        },
+        {
+          id: 'goal-intro-live-status',
+          title: 'Update goal lifecycle directly',
+          body: 'Pause, resume, complete or archive a goal from the detail screen with live backend updates.',
+          icon: 'task-alt' as const,
+          accent: '#B2955A',
+        },
+      ]
+    : financialGoalIntroHighlights;
   const prioritySummary =
     summary.activeGoals === 0 && summary.totalGoals > 0
       ? 'No goals are actively funding right now. Resume or restore one to restart the plan.'
@@ -85,11 +133,184 @@ export default function FinancialGoalsScreen() {
     },
   ];
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!isUsingLiveGoals) {
+        return;
+      }
+
+      void refreshGoals();
+      void refreshGoalRecommendation();
+    }, [isUsingLiveGoals, refreshGoalRecommendation, refreshGoals])
+  );
+
+  const handleDismissGoalRecommendation = useCallback(async () => {
+    if (!goalRecommendation || goalRecommendationAction) {
+      return;
+    }
+
+    setGoalRecommendationAction('dismiss');
+    setGoalRecommendationActionError(null);
+
+    try {
+      await dismissGoalRecommendation(goalRecommendation.id);
+    } catch (incomingError) {
+      setGoalRecommendationActionError(normalizeGoalwealthError(incomingError).message);
+    } finally {
+      setGoalRecommendationAction(null);
+    }
+  }, [dismissGoalRecommendation, goalRecommendation, goalRecommendationAction]);
+
+  const handleCompleteGoalRecommendation = useCallback(async () => {
+    if (!goalRecommendation || goalRecommendationAction) {
+      return;
+    }
+
+    setGoalRecommendationAction('complete');
+    setGoalRecommendationActionError(null);
+
+    try {
+      await completeGoalRecommendation(goalRecommendation.id, goalRecommendation.action.target);
+      router.push('/(finance)/financial-goals/create');
+    } catch (incomingError) {
+      setGoalRecommendationActionError(normalizeGoalwealthError(incomingError).message);
+    } finally {
+      setGoalRecommendationAction(null);
+    }
+  }, [
+    completeGoalRecommendation,
+    goalRecommendationAction,
+    goalRecommendation,
+    router,
+  ]);
+
+  const handleOpenGoalRecommendation = useCallback(() => {
+    if (!goalRecommendation || goalRecommendationAction) {
+      return;
+    }
+
+    router.push(buildGoalwealthRecommendationDetailRoute(goalRecommendation.id));
+  }, [goalRecommendation, goalRecommendationAction, router]);
+
+  const goalRecommendationCard =
+    isUsingLiveGoals &&
+    (
+      goalRecommendation ||
+      isGoalRecommendationLoading ||
+      goalRecommendationError ||
+      goalRecommendationActionError
+    ) ? (
+      <FinanceCard
+        style={[
+          styles.noticeCard,
+          {
+            backgroundColor: hexToRgba(colors.primaryDark, 0.05),
+            borderColor: hexToRgba(colors.primaryDark, 0.12),
+          },
+        ]}
+      >
+        <View style={styles.goalRecommendationHeader}>
+          <View style={[styles.goalRecommendationIcon, { backgroundColor: hexToRgba(colors.primaryDark, 0.12) }]}>
+            <MaterialIcons name="auto-awesome" size={18} color={colors.primaryDark} />
+          </View>
+          <View style={styles.goalRecommendationCopy}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Goal suggestion</Text>
+            <Text style={[styles.goalRecommendationMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+              Live recommendation from GoalWealth for scope: goals
+            </Text>
+          </View>
+        </View>
+
+        {isGoalRecommendationLoading && !goalRecommendation ? (
+          <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}>
+            Checking GoalWealth recommendations for the goals flow...
+          </Text>
+        ) : null}
+
+        {goalRecommendationError ? (
+          <Text style={[styles.goalRecommendationError, { color: colors.error }]}>
+            {goalRecommendationError}
+          </Text>
+        ) : null}
+
+        {goalRecommendation ? (
+          <>
+            <Text style={[styles.goalRecommendationTitle, { color: colors.text }]}>
+              {goalRecommendation.title}
+            </Text>
+            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              {goalRecommendation.message}
+            </Text>
+            {goalRecommendation.preview ? (
+              <View
+                style={[
+                  styles.goalRecommendationPreview,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.goalRecommendationPreviewText, { color: colors.text }]}>
+                  {goalRecommendation.preview}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.goalRecommendationActions}>
+              <ThemeButton
+                title={goalRecommendationAction === 'dismiss' ? 'Dismissing...' : 'Dismiss'}
+                onPress={handleDismissGoalRecommendation}
+                disabled={Boolean(goalRecommendationAction)}
+                colorBackground={colors.card}
+                colorText={colors.text}
+                style={[
+                  styles.goalRecommendationActionButton,
+                  { borderWidth: 1, borderColor: colors.border },
+                ]}
+              />
+              {goalRecommendation.action.type === 'complete' ? (
+                <ThemeButton
+                  title={
+                    goalRecommendationAction === 'complete' ? 'Applying...' : 'Use suggestion'
+                  }
+                  onPress={handleCompleteGoalRecommendation}
+                  disabled={Boolean(goalRecommendationAction)}
+                  colorBackground={colors.primaryDark}
+                  colorText={colors.card}
+                  style={styles.goalRecommendationActionButton}
+                />
+              ) : (
+                <ThemeButton
+                  title="Review suggestion"
+                  onPress={handleOpenGoalRecommendation}
+                  disabled={Boolean(goalRecommendationAction)}
+                  colorBackground={colors.primaryDark}
+                  colorText={colors.card}
+                  style={styles.goalRecommendationActionButton}
+                />
+              )}
+            </View>
+          </>
+        ) : null}
+
+        {goalRecommendationActionError ? (
+          <Text style={[styles.goalRecommendationError, { color: colors.error }]}>
+            {goalRecommendationActionError}
+          </Text>
+        ) : null}
+      </FinanceCard>
+    ) : null;
+
   if (!isIntroPreferencesReady) {
     return (
       <FinanceScreen
         title="Financial Goals"
-        subtitle="Track goal progress, recurring contributions and account-linked savings plans."
+        subtitle={
+          isUsingLiveGoals
+            ? 'Track live goal progress, priority order and lifecycle changes from GoalWealth.'
+            : 'Track goal progress, recurring contributions and account-linked savings plans.'
+        }
       >
         <View />
       </FinanceScreen>
@@ -103,6 +324,8 @@ export default function FinancialGoalsScreen() {
         subtitle="Create, prioritize and fund each goal from one planning workspace."
       >
         <View style={styles.stack}>
+          {goalRecommendationCard}
+
           <FinanceCard
             style={[
               styles.introCard,
@@ -119,8 +342,9 @@ export default function FinancialGoalsScreen() {
                   Keep every goal visible, prioritized and easier to fund.
                 </Text>
                 <Text style={[styles.introBody, { color: hexToRgba(colors.text, 0.58) }]}> 
-                  This flow now combines creation, priority planning, savings account selection,
-                  trade-off review, history and delete states into fewer, clearer screens.
+                  {isUsingLiveGoals
+                    ? 'Live mode keeps this workspace focused on endpoint-backed goal creation, synced progress and lifecycle updates.'
+                    : 'This flow now combines creation, priority planning, savings account selection, trade-off review, history and delete states into fewer, clearer screens.'}
                 </Text>
               </View>
 
@@ -133,7 +357,7 @@ export default function FinancialGoalsScreen() {
             </View>
 
             <View style={styles.introHighlightStack}>
-              {financialGoalIntroHighlights.map((item) => (
+              {introHighlights.map((item) => (
                 <View
                   key={item.id}
                   style={[
@@ -197,7 +421,11 @@ export default function FinancialGoalsScreen() {
   return (
     <FinanceScreen
       title="Financial Goals"
-      subtitle="Multi-goal planner with priority order, feasibility signals and funding trade-offs."
+      subtitle={
+        isUsingLiveGoals
+          ? 'Live goal workspace for synced progress, priority order and lifecycle updates.'
+          : 'Multi-goal planner with priority order, feasibility signals and funding trade-offs.'
+      }
       contentStyle={styles.contentStyle}
       rightAccessory={
         <Pressable
@@ -212,6 +440,8 @@ export default function FinancialGoalsScreen() {
       }
     >
       <View style={styles.stack}>
+        {goalRecommendationCard}
+
         {isUsingLiveGoals && error ? (
           <FinanceCard
             style={[
@@ -322,16 +552,18 @@ export default function FinancialGoalsScreen() {
                 style={styles.heroActionButton}
               />
             </View>
-            <View style={styles.heroActionWrap}>
-              <ThemeButton
-                title="Open History"
-                onPress={() => router.push('/(finance)/financial-goals/history')}
-                colorBackground={colors.card}
-                colorText={colors.text}
-                disabled={!orderedGoals.length}
-                style={[styles.heroActionButton, { borderWidth: 1, borderColor: colors.border }]}
-              />
-            </View>
+            {capabilities.canViewHistory ? (
+              <View style={styles.heroActionWrap}>
+                <ThemeButton
+                  title="Open History"
+                  onPress={() => router.push('/(finance)/financial-goals/history')}
+                  colorBackground={colors.card}
+                  colorText={colors.text}
+                  disabled={!orderedGoals.length}
+                  style={[styles.heroActionButton, { borderWidth: 1, borderColor: colors.border }]}
+                />
+              </View>
+            ) : null}
           </View>
         </FinanceCard>
 
@@ -344,7 +576,7 @@ export default function FinancialGoalsScreen() {
           </FinanceCard>
         ) : null}
 
-        {leadGoal ? (
+        {leadGoal && capabilities.canViewHistory ? (
           <GoalHistoryCard
             title="Balance History"
             points={leadGoal.history}
@@ -362,7 +594,10 @@ export default function FinancialGoalsScreen() {
           </View>
 
           {activeOrderedGoals.length ? (
-            <GoalPriorityStack goals={activeOrderedGoals} />
+            <GoalPriorityStack
+              goals={activeOrderedGoals}
+              showPlanningSignals={capabilities.canViewDerivedInsights}
+            />
           ) : (
             <Text style={[styles.emptySectionBody, { color: hexToRgba(colors.text, 0.56) }]}> 
               No active goals are funding right now. Resume or create a goal to rebuild the live order.
@@ -373,9 +608,11 @@ export default function FinancialGoalsScreen() {
         <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Goals workspace</Text>
-            <Pressable onPress={() => router.push('/(finance)/financial-goals/history')}>
-              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>History</Text>
-            </Pressable>
+            {capabilities.canViewHistory ? (
+              <Pressable onPress={() => router.push('/(finance)/financial-goals/history')}>
+                <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>History</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <View style={styles.goalStack}>
@@ -409,7 +646,9 @@ export default function FinancialGoalsScreen() {
                           label={goal.lifecycleLabel}
                         />
                         <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}>
-                          {goal.priority} priority • {goal.allowedRisk}
+                          {capabilities.canViewDerivedInsights
+                            ? `${goal.priority} priority • ${goal.allowedRisk}`
+                            : `${goal.priority} priority`}
                         </Text>
                       </View>
                     </View>
@@ -419,7 +658,9 @@ export default function FinancialGoalsScreen() {
                         {Math.round(progress * 100)}%
                       </Text>
                       <Text style={[styles.goalProgressMeta, { color: hexToRgba(colors.text, 0.48) }]}>
-                        {Math.round(goal.feasibilityProbability * 100)}% feasible
+                        {capabilities.canViewDerivedInsights
+                          ? `${Math.round(goal.feasibilityProbability * 100)}% feasible`
+                          : goal.dueLabel}
                       </Text>
                     </View>
                   </View>
@@ -462,8 +703,12 @@ export default function FinancialGoalsScreen() {
           </View>
         </FinanceCard>
 
-        {leadGoal ? <GoalRecommendationSummary goal={leadGoal} /> : null}
-        {leadGoal ? <GoalConflictNotice conflicts={leadGoal.conflictWithOtherGoals} /> : null}
+        {capabilities.canViewDerivedInsights ? (
+          <GoalsPortfolioRecommendationCard recommendation={portfolioRecommendation} />
+        ) : null}
+        {leadGoal && capabilities.canViewDerivedInsights ? (
+          <GoalConflictNotice conflicts={leadGoal.conflictWithOtherGoals} />
+        ) : null}
 
         <ResponsiveGrid minItemWidth={190} horizontalPadding={18} gap={12} maxColumns={2}>
           {insightCards.map((item) => (
@@ -511,6 +756,59 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: Typography.body,
     lineHeight: 20,
+  },
+  goalRecommendationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  goalRecommendationIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalRecommendationCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  goalRecommendationMeta: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  goalRecommendationTitle: {
+    marginTop: 12,
+    fontSize: 17,
+    fontWeight: '800',
+    lineHeight: 22,
+  },
+  goalRecommendationPreview: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  goalRecommendationPreviewText: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '700',
+  },
+  goalRecommendationActions: {
+    marginTop: 14,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  goalRecommendationActionButton: {
+    flex: 1,
+  },
+  goalRecommendationError: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   introTop: {
     flexDirection: 'row',

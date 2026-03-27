@@ -16,10 +16,17 @@ import {
   getGoalwealthGoals,
   updateGoalwealthGoal,
 } from '@/services/api/goals';
+import {
+  completeGoalwealthRecommendation,
+  dismissGoalwealthRecommendation,
+  getGoalwealthRecommendations,
+} from '@/services/api/recommendations';
 import type {
   GoalwealthGoalCreateRequest,
   GoalwealthGoalRecord,
   GoalwealthGoalUpdateRequest,
+  GoalwealthRecommendationGoalPrefill,
+  GoalwealthRecommendationItem,
 } from '@/services/api/types';
 import React, {
   createContext,
@@ -35,6 +42,10 @@ type FinancialGoalsCapabilities = {
   canEdit: boolean;
   canDelete: boolean;
   canTransfer: boolean;
+  canViewHistory: boolean;
+  canManageFundingAccount: boolean;
+  canConfigureFundingPlan: boolean;
+  canViewDerivedInsights: boolean;
 };
 
 type FinancialGoalsContextValue = {
@@ -42,12 +53,23 @@ type FinancialGoalsContextValue = {
   isUsingLiveGoals: boolean;
   isLoading: boolean;
   error: string | null;
+  goalRecommendation: GoalwealthRecommendationItem | null;
+  isGoalRecommendationLoading: boolean;
+  goalRecommendationError: string | null;
   capabilities: FinancialGoalsCapabilities;
   refreshGoals: () => Promise<void>;
+  refreshGoalRecommendation: () => Promise<void>;
+  dismissGoalRecommendation: (recommendationId: string) => Promise<void>;
+  completeGoalRecommendation: (
+    recommendationId: string,
+    targetPath?: string | null
+  ) => Promise<GoalwealthRecommendationGoalPrefill>;
+  clearGoalRecommendationPrefill: () => void;
   createGoal: (payload: GoalwealthGoalCreateRequest) => Promise<FinancialGoalItem>;
   refreshGoal: (goalId: string) => Promise<FinancialGoalItem | null>;
   updateGoal: (goalId: string, payload: GoalwealthGoalUpdateRequest) => Promise<FinancialGoalItem>;
   getGoalById: (goalId?: string | string[] | null) => FinancialGoalItem | null;
+  appliedGoalRecommendationPrefill: GoalwealthRecommendationGoalPrefill | null;
 };
 
 const FinancialGoalsContext = createContext<FinancialGoalsContextValue | null>(null);
@@ -65,6 +87,12 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
   const [liveGoalRecords, setLiveGoalRecords] = useState<GoalwealthGoalRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [goalRecommendation, setGoalRecommendation] =
+    useState<GoalwealthRecommendationItem | null>(null);
+  const [isGoalRecommendationLoading, setIsGoalRecommendationLoading] = useState(false);
+  const [goalRecommendationError, setGoalRecommendationError] = useState<string | null>(null);
+  const [appliedGoalRecommendationPrefill, setAppliedGoalRecommendationPrefill] =
+    useState<GoalwealthRecommendationGoalPrefill | null>(null);
 
   const goals = useMemo(
     () => (shouldUseLiveGoals ? mapGoalwealthGoalsToFinancialGoals(liveGoalRecords) : mockGoals),
@@ -98,11 +126,78 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
       setLiveGoalRecords([]);
       setError(null);
       setIsLoading(false);
+      setGoalRecommendation(null);
+      setGoalRecommendationError(null);
+      setIsGoalRecommendationLoading(false);
+      setAppliedGoalRecommendationPrefill(null);
       return;
     }
 
     void refreshGoals();
   }, [refreshGoals, shouldUseLiveGoals]);
+
+  const refreshGoalRecommendation = useCallback(async () => {
+    if (!shouldUseLiveGoals) {
+      setGoalRecommendation(null);
+      setGoalRecommendationError(null);
+      setIsGoalRecommendationLoading(false);
+      return;
+    }
+
+    setIsGoalRecommendationLoading(true);
+    setGoalRecommendationError(null);
+
+    try {
+      let response;
+      try {
+        response = await getGoalwealthRecommendations(userState.accessToken, {
+          scope: 'goals',
+          limit: 1,
+        });
+      } catch (incomingError) {
+        const normalizedError = normalizeGoalwealthError(incomingError);
+
+        if (
+          normalizedError.code === 'BAD_REQUEST' &&
+          normalizedError.message.toLowerCase().includes('status is invalid')
+        ) {
+          response = await getGoalwealthRecommendations(userState.accessToken, {
+            scope: 'goals',
+            status: 'open',
+            limit: 1,
+          });
+        } else {
+          throw incomingError;
+        }
+      }
+
+      setGoalRecommendation(response.data.items[0] ?? null);
+    } catch (incomingError) {
+      const normalizedError = normalizeGoalwealthError(incomingError);
+
+      if (normalizedError.status === 404 || normalizedError.code === 'NOT_FOUND') {
+        setGoalRecommendation(null);
+        setGoalRecommendationError(null);
+      } else {
+        setGoalRecommendation(null);
+        setGoalRecommendationError(
+          normalizedError.code === 'AUTH_REQUIRED'
+            ? normalizedError.message
+            : 'GoalWealth goals recommendation is not available right now.'
+        );
+      }
+    } finally {
+      setIsGoalRecommendationLoading(false);
+    }
+  }, [shouldUseLiveGoals, userState.accessToken]);
+
+  useEffect(() => {
+    if (!shouldUseLiveGoals) {
+      return;
+    }
+
+    void refreshGoalRecommendation();
+  }, [refreshGoalRecommendation, shouldUseLiveGoals]);
 
   const createGoal = useCallback(
     async (payload: GoalwealthGoalCreateRequest) => {
@@ -118,11 +213,12 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
       const response = await createGoalwealthGoal(payload, userState.accessToken);
       const nextRecords = [response.data.goal, ...liveGoalRecords];
       setLiveGoalRecords(nextRecords);
+      void refreshGoalRecommendation();
       return mapGoalwealthGoalsToFinancialGoals(nextRecords).find(
         (goal) => goal.id === response.data.goal.goal_id
       )!;
     },
-    [liveGoalRecords, shouldUseLiveGoals, userState.accessToken]
+    [liveGoalRecords, refreshGoalRecommendation, shouldUseLiveGoals, userState.accessToken]
   );
 
   const refreshGoal = useCallback(
@@ -168,6 +264,44 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
     [mockGoals, shouldUseLiveGoals, userState.accessToken]
   );
 
+  const dismissGoalRecommendation = useCallback(
+    async (recommendationId: string) => {
+      if (!shouldUseLiveGoals || !recommendationId) {
+        return;
+      }
+
+      await dismissGoalwealthRecommendation(recommendationId, userState.accessToken);
+      await refreshGoalRecommendation();
+    },
+    [refreshGoalRecommendation, shouldUseLiveGoals, userState.accessToken]
+  );
+
+  const completeGoalRecommendation = useCallback(
+    async (recommendationId: string, targetPath?: string | null) => {
+      if (!shouldUseLiveGoals || !recommendationId) {
+        throw new Error('Goal recommendation is not available');
+      }
+
+      const response = await completeGoalwealthRecommendation(
+        recommendationId,
+        userState.accessToken,
+        targetPath
+      );
+      setAppliedGoalRecommendationPrefill(response.data.goal_prefill);
+      setGoalRecommendation((current) =>
+        current && current.id === recommendationId
+          ? { ...current, status: response.data.status }
+          : current
+      );
+      return response.data.goal_prefill;
+    },
+    [shouldUseLiveGoals, userState.accessToken]
+  );
+
+  const clearGoalRecommendationPrefill = useCallback(() => {
+    setAppliedGoalRecommendationPrefill(null);
+  }, []);
+
   const getGoalById = useCallback(
     (goalId?: string | string[] | null) => findFinancialGoalById(goalId, goals),
     [goals]
@@ -179,6 +313,10 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
       canEdit: true,
       canDelete: !shouldUseLiveGoals,
       canTransfer: !shouldUseLiveGoals,
+      canViewHistory: !shouldUseLiveGoals,
+      canManageFundingAccount: !shouldUseLiveGoals,
+      canConfigureFundingPlan: !shouldUseLiveGoals,
+      canViewDerivedInsights: !shouldUseLiveGoals,
     }),
     [shouldUseLiveGoals]
   );
@@ -189,21 +327,37 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
       isUsingLiveGoals: shouldUseLiveGoals,
       isLoading,
       error,
+      goalRecommendation,
+      isGoalRecommendationLoading,
+      goalRecommendationError,
       capabilities,
       refreshGoals,
+      refreshGoalRecommendation,
+      dismissGoalRecommendation,
+      completeGoalRecommendation,
+      clearGoalRecommendationPrefill,
       createGoal,
       refreshGoal,
       updateGoal,
       getGoalById,
+      appliedGoalRecommendationPrefill,
     }),
     [
+      appliedGoalRecommendationPrefill,
       capabilities,
+      clearGoalRecommendationPrefill,
+      completeGoalRecommendation,
       createGoal,
+      dismissGoalRecommendation,
       error,
       getGoalById,
+      goalRecommendation,
+      goalRecommendationError,
       goals,
+      isGoalRecommendationLoading,
       isLoading,
       refreshGoal,
+      refreshGoalRecommendation,
       refreshGoals,
       shouldUseLiveGoals,
       updateGoal,

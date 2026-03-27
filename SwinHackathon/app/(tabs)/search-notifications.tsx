@@ -1,9 +1,11 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
 import { ResponsiveGrid } from '@/components/ResponsiveGrid';
+import { UnavailableWorkspace } from '@/components/shared/UnavailableWorkspace';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { communityNotifications } from '@/components/community/mock-data';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useMemo, useState } from 'react';
 import {
@@ -162,6 +164,15 @@ export default function SearchNotificationsScreen() {
       : searchPreview === 'suggest' || searchPreview === 'loading'
         ? 'Groceries'
         : query;
+
+  if (!isEndpointBackedFeatureEnabled('alerts')) {
+    return (
+      <UnavailableWorkspace
+        title="Alerts and search are off in live mode"
+        body="This screen still runs on local notification and search preview data. It stays hidden until GoalWealth exposes notification and transaction-search endpoints."
+      />
+    );
+  }
 
 
   return (

@@ -90,7 +90,7 @@ export default function FinancialGoalDetailScreen() {
         <View style={styles.stack}>
           <FinanceCard>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Goal unavailable</Text>
-            <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}> 
+            <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}>
               Refresh the goals dashboard or create a new goal to continue.
             </Text>
           </FinanceCard>
@@ -102,6 +102,9 @@ export default function FinancialGoalDetailScreen() {
   const account = getGoalAccountById(goal.accountId);
   const progress = goal.saved / goal.target;
   const lifecycleActions = isUsingLiveGoals ? getGoalLifecycleActions(goal.lifecycleStatus) : [];
+  const detailSubtitle = isUsingLiveGoals
+    ? `${goal.lifecycleLabel} • ${goal.priority} priority • ${goal.dueLabel}`
+    : `${goal.lifecycleLabel} • ${goal.priority} priority • ${goal.allowedRisk} • ${goal.dueLabel}`;
 
   const handleLifecycleUpdate = async (nextStatus: GoalwealthMemoryGoalStatus) => {
     if (!isUsingLiveGoals || pendingStatus) {
@@ -123,7 +126,7 @@ export default function FinancialGoalDetailScreen() {
   return (
     <FinanceScreen
       title={goal.title}
-      subtitle={`${goal.lifecycleLabel} • ${goal.priority} priority • ${goal.allowedRisk} • ${goal.dueLabel}`}
+      subtitle={detailSubtitle}
       contentStyle={styles.contentStyle}
       onBackPress={() => router.replace(getFinancialGoalsDashboardHref())}
       rightAccessory={
@@ -157,9 +160,10 @@ export default function FinancialGoalDetailScreen() {
             ]}
           >
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Live goal sync is active</Text>
-            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
-              GoalWealth now supports live goal detail and edit. Delete and transfer actions stay
-              preview-only until the backend adds those endpoints.
+            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              GoalWealth now supports live goal detail, edit and lifecycle updates. Transfer,
+              savings account, history, milestone and planner-derived sections stay off until the
+              backend adds those endpoints.
             </Text>
           </FinanceCard>
         ) : null}
@@ -180,8 +184,10 @@ export default function FinancialGoalDetailScreen() {
               <View style={styles.heroStatusRow}>
                 <GoalLifecycleBadge status={goal.lifecycleStatus} label={goal.lifecycleLabel} />
               </View>
-              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
-                {goal.note}
+              <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                {isUsingLiveGoals
+                  ? 'GoalWealth is syncing the saved amount, target, timeline and lifecycle for this goal.'
+                  : goal.note}
               </Text>
             </View>
 
@@ -196,27 +202,27 @@ export default function FinancialGoalDetailScreen() {
           </View>
 
           <View style={styles.heroStats}>
-            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}> 
-              <Text style={[styles.heroStatValue, { color: goal.accent }]}> 
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroStatValue, { color: goal.accent }]}>
                 {formatCurrency(goal.fundingGap)}
               </Text>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
                 funding gap
               </Text>
             </View>
-            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}> 
-              <Text style={[styles.heroStatValue, { color: colors.success }]}> 
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroStatValue, { color: colors.success }]}>
                 {formatCurrency(goal.recommendedMonthlyAllocation)}
               </Text>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
                 recommended / month
               </Text>
             </View>
-            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}> 
-              <Text style={[styles.heroStatValue, { color: colors.primaryDark, fontSize: 13 }]}> 
+            <View style={[styles.heroStatCard, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroStatValue, { color: colors.primaryDark, fontSize: 13 }]}>
                 {prioritySummary.feasibilityLabel}
               </Text>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}> 
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.text, 0.54) }]}>
                 feasibility
               </Text>
             </View>
@@ -225,19 +231,33 @@ export default function FinancialGoalDetailScreen() {
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Planner rationale</Text>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}> 
-              sequence {goal.recommendedSequence}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {isUsingLiveGoals ? 'Goal snapshot' : 'Planner rationale'}
             </Text>
+            {!isUsingLiveGoals ? (
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+                sequence {goal.recommendedSequence}
+              </Text>
+            ) : null}
           </View>
 
-          <GoalRecommendationSummary goal={goal} />
           <FundingGapSummary
             gap={goal.fundingGap}
             monthlyAllocation={goal.recommendedMonthlyAllocation}
           />
-          <FeasibilityMeter probability={goal.feasibilityProbability} accent={goal.accent} />
-          <GoalConflictNotice conflicts={goal.conflictWithOtherGoals} />
+          {!isUsingLiveGoals ? (
+            <>
+              <GoalRecommendationSummary goal={goal} />
+              <FeasibilityMeter probability={goal.feasibilityProbability} accent={goal.accent} />
+              <GoalConflictNotice conflicts={goal.conflictWithOtherGoals} />
+            </>
+          ) : (
+            <Text style={[styles.snapshotBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              Live sync currently exposes the core goal fields only. Planner conflicts, feasibility,
+              transfers and funding account details stay hidden until GoalWealth exposes those
+              endpoints.
+            </Text>
+          )}
         </FinanceCard>
 
         {isUsingLiveGoals ? (
@@ -324,57 +344,60 @@ export default function FinancialGoalDetailScreen() {
           </View>
         ) : null}
 
-        <GoalHistoryCard
-          title="Balance History"
-          points={goal.history}
-          accent={goal.accent}
-          footer={`${goal.title} is pacing toward ${goal.targetDate}.`}
-        />
+        {!isUsingLiveGoals ? (
+          <GoalHistoryCard
+            title="Balance History"
+            points={goal.history}
+            accent={goal.accent}
+            footer={`${goal.title} is pacing toward ${goal.targetDate}.`}
+          />
+        ) : null}
 
-        <FinanceCard>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Constraint flags</Text>
-            <Text style={[styles.sectionLink, { color: colors.primaryDark }]}> 
-              {prioritySummary.fundingGapLabel}
+        {!isUsingLiveGoals ? (
+          <FinanceCard>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Constraint flags</Text>
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>
+                {prioritySummary.fundingGapLabel}
+              </Text>
+            </View>
+            <View style={styles.flagWrap}>
+              {goal.constraintFlags.map((flag) => (
+                <View
+                  key={flag}
+                  style={[
+                    styles.flagChip,
+                    { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
+                  ]}
+                >
+                  <Text style={[styles.flagText, { color: colors.text }]}>{flag}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[styles.constraintBody, { color: hexToRgba(colors.text, 0.54) }]}>
+              {prioritySummary.conflicts}
             </Text>
-          </View>
-          <View style={styles.flagWrap}>
-            {goal.constraintFlags.map((flag) => (
-              <View
-                key={flag}
-                style={[
-                  styles.flagChip,
-                  { backgroundColor: colors.backgroundSoft, borderColor: colors.border },
-                ]}
-              >
-                <Text style={[styles.flagText, { color: colors.text }]}>{flag}</Text>
-              </View>
-            ))}
-          </View>
-          <Text style={[styles.constraintBody, { color: hexToRgba(colors.text, 0.54) }]}> 
-            {prioritySummary.conflicts}
-          </Text>
-        </FinanceCard>
+          </FinanceCard>
+        ) : null}
 
-        <FinanceCard>
+        {!isUsingLiveGoals ? (
+          <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Savings account</Text>
-            {!isUsingLiveGoals ? (
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: '/(finance)/financial-goals/account',
-                    params: {
-                      origin: 'detail',
-                      goalId: goal.id,
-                      accountId: account.id,
-                    },
-                  })
-                }
-              >
-                <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Switch</Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: '/(finance)/financial-goals/account',
+                  params: {
+                    origin: 'detail',
+                    goalId: goal.id,
+                    accountId: account.id,
+                  },
+                })
+              }
+            >
+              <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>Switch</Text>
+            </Pressable>
           </View>
 
           <View
@@ -386,18 +409,20 @@ export default function FinancialGoalDetailScreen() {
             <View style={[styles.accountAccent, { backgroundColor: account.accent }]} />
             <View style={styles.accountCopy}>
               <Text style={[styles.accountTitle, { color: colors.text }]}>{account.label}</Text>
-              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}> 
+              <Text style={[styles.accountMeta, { color: hexToRgba(colors.text, 0.54) }]}>
                 {account.subtitle} • {account.mask}
               </Text>
               <Text style={[styles.accountHint, { color: colors.primaryDark }]}>{goal.recurringLabel}</Text>
             </View>
-            <Text style={[styles.accountBalance, { color: colors.text }]}> 
+            <Text style={[styles.accountBalance, { color: colors.text }]}>
               {formatCurrency(account.balance)}
             </Text>
           </View>
         </FinanceCard>
+        ) : null}
 
-        <FinanceCard>
+        {!isUsingLiveGoals ? (
+          <FinanceCard>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent activity</Text>
             <Pressable
@@ -413,14 +438,16 @@ export default function FinancialGoalDetailScreen() {
           </View>
           <GoalTransferList rows={goal.transfers} />
         </FinanceCard>
+        ) : null}
 
-        <FinanceCard>
+        {!isUsingLiveGoals ? (
+          <FinanceCard>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Milestones</Text>
           <View style={styles.milestoneStack}>
             {goal.milestones.map((milestone, index) => (
               <View key={milestone} style={styles.milestoneRow}>
-                <View style={[styles.milestoneIndex, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}> 
-                  <Text style={[styles.milestoneIndexText, { color: goal.accent }]}> 
+                <View style={[styles.milestoneIndex, { backgroundColor: hexToRgba(goal.accent, 0.12) }]}>
+                  <Text style={[styles.milestoneIndexText, { color: goal.accent }]}>
                     {index + 1}
                   </Text>
                 </View>
@@ -429,6 +456,7 @@ export default function FinancialGoalDetailScreen() {
             ))}
           </View>
         </FinanceCard>
+        ) : null}
 
         {!isUsingLiveGoals ? (
           <View style={styles.footerActions}>
@@ -567,6 +595,11 @@ const styles = StyleSheet.create({
   lifecycleBody: {
     marginTop: 12,
     fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  snapshotBody: {
+    marginTop: 12,
+    fontSize: 14,
     lineHeight: 20,
   },
   lifecycleActionGrid: {

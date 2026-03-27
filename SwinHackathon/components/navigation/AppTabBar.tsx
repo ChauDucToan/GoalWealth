@@ -3,6 +3,7 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import { Typography } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,11 +49,40 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isMoreVisible, setIsMoreVisible] = useState(false);
   const currentRouteName = state.routes[state.index]?.name as TabRouteName;
-  const isOverflowActive = overflowTabs.includes(currentRouteName);
   const morePanelTranslateY = useRef(new Animated.Value(18)).current;
   const morePanelOpacity = useRef(new Animated.Value(0)).current;
   const morePanelScale = useRef(new Animated.Value(0.96)).current;
   const centerIconRotation = useRef(new Animated.Value(0)).current;
+  const isTabEnabled = (name: TabRouteName) => {
+    switch (name) {
+      case 'transactions':
+        return isEndpointBackedFeatureEnabled('transactions');
+      case 'smart-budgeting':
+        return isEndpointBackedFeatureEnabled('smartBudgeting');
+      case 'insights':
+        return isEndpointBackedFeatureEnabled('insights');
+      case 'achievements':
+        return isEndpointBackedFeatureEnabled('achievements');
+      case 'news-resources':
+        return isEndpointBackedFeatureEnabled('newsResources');
+      case 'search-notifications':
+        return isEndpointBackedFeatureEnabled('alerts');
+      default:
+        return true;
+    }
+  };
+  const visiblePrimaryTabs = primaryTabs.filter(isTabEnabled);
+  const visibleFeaturedTabs = (['smart-budgeting', 'news-resources'] as const).filter(isTabEnabled);
+  const visibleOverflowTabs = overflowTabs.filter(
+    (name) => isTabEnabled(name) && name !== 'news-resources'
+  );
+  const hasOverflowMenu = visibleFeaturedTabs.length > 0 || visibleOverflowTabs.length > 0;
+  const isOverflowActive =
+    hasOverflowMenu &&
+    (visibleFeaturedTabs.some((name) => name === currentRouteName) ||
+      visibleOverflowTabs.includes(currentRouteName));
+  const leftPrimaryTabs = visiblePrimaryTabs.slice(0, Math.ceil(visiblePrimaryTabs.length / 2));
+  const rightPrimaryTabs = visiblePrimaryTabs.slice(Math.ceil(visiblePrimaryTabs.length / 2));
 
   useEffect(() => {
     setIsMoreOpen(false);
@@ -146,26 +176,17 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
     }
   };
 
-  const featuredActions = [
-    {
-      id: 'smart-budgeting',
-      label: 'Smart Budgeting',
-      body: 'Open the budgeting workspace that keeps your monthly plan executable.',
-      icon: routeMeta['smart-budgeting'].icon,
-      onPress: () => navigateTo('smart-budgeting'),
-      active: currentRouteName === 'smart-budgeting',
-    },
-    {
-      id: 'news',
-      label: 'News',
-      body: 'Review market signals, explainers and community discussion in one place.',
-      icon: routeMeta['news-resources'].icon,
-      onPress: () => navigateTo('news-resources'),
-      active: currentRouteName === 'news-resources',
-    },
-  ] as const;
-
-  const overflowMenuTabs = overflowTabs.filter((name) => name !== 'news-resources');
+  const featuredActions = visibleFeaturedTabs.map((name) => ({
+    id: name,
+    label: name === 'smart-budgeting' ? 'Smart Budgeting' : 'News',
+    body:
+      name === 'smart-budgeting'
+        ? 'Open the budgeting workspace that keeps your monthly plan executable.'
+        : 'Review market signals, explainers and community discussion in one place.',
+    icon: routeMeta[name].icon,
+    onPress: () => navigateTo(name),
+    active: currentRouteName === name,
+  }));
   const centerRotate = centerIconRotation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '45deg'],
@@ -304,7 +325,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
           </View>
 
           <View style={styles.moreGrid}>
-            {overflowMenuTabs.map((name) => {
+            {visibleOverflowTabs.map((name) => {
               const active = currentRouteName === name;
               const meta = routeMeta[name];
 
@@ -377,58 +398,60 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
         ]}
       >
         <View style={styles.sideGroup}>
-          {primaryTabs.slice(0, 2).map(renderPrimaryTab)}
+          {leftPrimaryTabs.map(renderPrimaryTab)}
         </View>
 
-        <View style={[styles.centerSpacer, { width: scale(78, 0.76) }]} />
+        {hasOverflowMenu ? <View style={[styles.centerSpacer, { width: scale(78, 0.76) }]} /> : null}
 
         <View style={styles.sideGroup}>
-          {primaryTabs.slice(2).map(renderPrimaryTab)}
+          {rightPrimaryTabs.map(renderPrimaryTab)}
         </View>
       </View>
 
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.centerFloatWrap,
-          { bottom: Math.max(insets.bottom, verticalScale(8, 0.7)) + verticalScale(18, 0.72) },
-        ]}
-      >
-        <MotionPressable
+      {hasOverflowMenu ? (
+        <View
+          pointerEvents="box-none"
           style={[
-            styles.centerButton,
-            {
-              backgroundColor:
-                isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
-                  ? colors.primaryDark
-                  : colors.card,
-              borderColor: hexToRgba(colors.primaryDark, 0.12),
-              shadowColor: colors.shadow,
-              width: scale(64, 0.76),
-              height: scale(64, 0.76),
-              borderRadius: scale(32, 0.72),
-            },
+            styles.centerFloatWrap,
+            { bottom: Math.max(insets.bottom, verticalScale(8, 0.7)) + verticalScale(18, 0.72) },
           ]}
-          pressableStyle={styles.centerButtonPressable}
-          onPress={() => setIsMoreOpen((current) => !current)}
-          onLongPress={() => setIsMoreOpen((current) => !current)}
-          scaleTo={0.94}
-          translateYTo={1}
-          activeOpacity={0.92}
         >
-          <Animated.View style={{ transform: [{ rotate: centerRotate }] }}>
-            <MaterialIcons
-              name="apps"
-              size={scale(26, 0.72)}
-              color={
-                isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
-                  ? colors.card
-                  : colors.primaryDark
-              }
-            />
-          </Animated.View>
-        </MotionPressable>
-      </View>
+          <MotionPressable
+            style={[
+              styles.centerButton,
+              {
+                backgroundColor:
+                  isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
+                    ? colors.primaryDark
+                    : colors.card,
+                borderColor: hexToRgba(colors.primaryDark, 0.12),
+                shadowColor: colors.shadow,
+                width: scale(64, 0.76),
+                height: scale(64, 0.76),
+                borderRadius: scale(32, 0.72),
+              },
+            ]}
+            pressableStyle={styles.centerButtonPressable}
+            onPress={() => setIsMoreOpen((current) => !current)}
+            onLongPress={() => setIsMoreOpen((current) => !current)}
+            scaleTo={0.94}
+            translateYTo={1}
+            activeOpacity={0.92}
+          >
+            <Animated.View style={{ transform: [{ rotate: centerRotate }] }}>
+              <MaterialIcons
+                name="apps"
+                size={scale(26, 0.72)}
+                color={
+                  isMoreOpen || isOverflowActive || currentRouteName === 'smart-budgeting'
+                    ? colors.card
+                    : colors.primaryDark
+                }
+              />
+            </Animated.View>
+          </MotionPressable>
+        </View>
+      ) : null}
     </View>
   );
 }

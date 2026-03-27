@@ -1,4 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { formatCurrency } from '@/components/finance/finance-utils';
 import type { GoalwealthMemoryGoalStatus } from '@/services/api/types';
 import type { GoalPlanningItem, GoalPriority } from '@/types/product-domain';
 
@@ -91,6 +92,15 @@ export type GoalIntroHighlight = {
   body: string;
   icon: GoalIconName;
   accent: string;
+};
+
+export type GoalsPortfolioRecommendation = {
+  title: string;
+  body: string;
+  tone: 'primaryDark' | 'success' | 'warning';
+  planTitle: string;
+  planSteps: string[];
+  signals: string[];
 };
 
 export const financialGoalAccounts: FinancialGoalAccount[] = [
@@ -625,5 +635,110 @@ export function getGoalPrioritySummary(
     conflicts,
     feasibilityLabel: `${Math.round(goal.feasibilityProbability * 100)}% feasible`,
     fundingGapLabel: `$${goal.fundingGap.toFixed(0)} still needs funding`,
+  };
+}
+
+export function getGoalsPortfolioRecommendation(
+  goals: FinancialGoalItem[] = financialGoals
+): GoalsPortfolioRecommendation {
+  const orderedGoals = sortFinancialGoalsByPriority(goals);
+  const summary = getGoalTransferSummary(orderedGoals);
+  const activeGoals = orderedGoals.filter((goal) => goal.lifecycleStatus === 'active');
+  const leadGoal = summary.nextPriorityGoal;
+  const averageFeasibilityLabel = `${Math.round(summary.averageFeasibility * 100)}% feasible`;
+
+  if (!orderedGoals.length) {
+    return {
+      title: 'Start with one anchor goal before you diversify the plan',
+      body:
+        'A single anchor goal gives GoalWealth a clean funding order, a clearer monthly pace, and a better base for future trade-off advice.',
+      tone: 'primaryDark',
+      planTitle: 'Plan for the first cycle',
+      planSteps: [
+        'Create one goal that protects resilience first, such as an emergency fund or debt payoff target.',
+        `Commit one recurring amount you can defend every month, even if it starts small.`,
+        'Wait for the first recurring transfer to land before you add a second goal to the workspace.',
+      ],
+      signals: ['0 goals live', 'No funding order yet', 'Add one anchor goal'],
+    };
+  }
+
+  if (!activeGoals.length) {
+    return {
+      title: 'Restore one active funding track before adding anything new',
+      body:
+        'The workspace has saved goals, but none of them are actively receiving funding. The overall plan is stalled until one goal becomes the anchor again.',
+      tone: 'warning',
+      planTitle: 'Plan to restart the workspace',
+      planSteps: [
+        `Resume the strongest paused goal first${leadGoal ? `, starting with ${leadGoal.title}` : ''}.`,
+        'Keep all other paused or archived goals visible, but do not reopen them yet.',
+        `Re-establish one monthly contribution lane before reintroducing any secondary target.`,
+      ],
+      signals: [
+        `${summary.totalGoals} saved goals`,
+        `${summary.pausedGoals} paused`,
+        `${summary.archivedGoals} archived`,
+      ],
+    };
+  }
+
+  if (activeGoals.length >= 4) {
+    const keptGoals = activeGoals.slice(0, 2).map((goal) => goal.title).join(' and ');
+    return {
+      title: 'Reduce parallel funding so the portfolio stops competing with itself',
+      body:
+        'Too many active goals are drawing from the same monthly pace. The overall plan will stabilize faster if you protect only the top sequence and pause the tail temporarily.',
+      tone: 'warning',
+      planTitle: 'Plan to simplify the queue',
+      planSteps: [
+        `Keep ${keptGoals || 'the top two goals'} active as the primary funding lane for now.`,
+        `Pause ${activeGoals.length - 2} lower-priority active goal${activeGoals.length - 2 === 1 ? '' : 's'} until the lead gaps shrink.`,
+        `Concentrate the current ${formatCurrency(summary.monthlyContribution)} monthly pace into fewer goals so milestones land sooner.`,
+      ],
+      signals: [
+        `${activeGoals.length} active goals`,
+        formatCurrency(summary.monthlyContribution),
+        averageFeasibilityLabel,
+      ],
+    };
+  }
+
+  if (summary.averageFeasibility < 0.72) {
+    return {
+      title: 'Reset the plan pace before targets start slipping',
+      body:
+        'The current mix of targets and monthly funding is stretching the workspace too thin. A small reset now is cheaper than carrying multiple underfunded goals forward.',
+      tone: 'warning',
+      planTitle: 'Plan to recover feasibility',
+      planSteps: [
+        `Protect ${leadGoal?.title ?? 'the lead goal'} first and keep it at the front of the queue.`,
+        'Extend at least one deadline or trim one lower-value target before adding anything new.',
+        `Increase total monthly funding above ${formatCurrency(summary.monthlyContribution)} only if it stays sustainable after core spending.`,
+      ],
+      signals: [
+        averageFeasibilityLabel,
+        `${summary.activeGoals} active`,
+        `${formatCurrency(summary.totalLeft)} left overall`,
+      ],
+    };
+  }
+
+  return {
+    title: 'Keep the current funding order and work the plan by milestones',
+    body:
+      'The overall portfolio is coherent enough to keep compounding. The next improvement comes from holding the current sequence steady instead of opening extra parallel work.',
+    tone: 'success',
+    planTitle: 'Plan for the next milestone',
+    planSteps: [
+      `Keep ${leadGoal?.title ?? 'the lead goal'} as the anchor until its next visible milestone lands.`,
+      `Hold the recurring pace at ${formatCurrency(summary.monthlyContribution)} and avoid spreading it across new goals this cycle.`,
+      `Once ${leadGoal?.title ?? 'the anchor goal'} moves materially, reopen the next goal in the queue instead of reprioritizing the whole workspace.`,
+    ],
+    signals: [
+      `${summary.activeGoals} active goals`,
+      formatCurrency(summary.totalSaved),
+      averageFeasibilityLabel,
+    ],
   };
 }

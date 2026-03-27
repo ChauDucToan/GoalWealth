@@ -13,7 +13,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 export default function FinancialGoalHistoryScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { goals } = useFinancialGoals();
+  const { goals, isUsingLiveGoals } = useFinancialGoals();
   const { goalId } = useLocalSearchParams<{ goalId?: string }>();
   const initialGoal = findFinancialGoalById(goalId, goals) ?? goals[0] ?? null;
   const backHref = getHistoryBackHref({ goalId });
@@ -28,6 +28,27 @@ export default function FinancialGoalHistoryScreen() {
       setSelectedGoalId(goals[0].id);
     }
   }, [goals, selectedGoalId]);
+
+  if (isUsingLiveGoals) {
+    return (
+      <FinanceScreen
+        title="Balance History"
+        subtitle="This screen stays off until GoalWealth exposes goal history and transfer endpoints."
+        contentStyle={styles.contentStyle}
+        onBackPress={() => router.replace(backHref)}
+      >
+        <View style={styles.stack}>
+          <FinanceCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>History is unavailable in live mode</Text>
+            <Text style={[styles.emptyBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              The current backend only syncs core goal records. History charts and funding activity
+              stay hidden until dedicated endpoints are available.
+            </Text>
+          </FinanceCard>
+        </View>
+      </FinanceScreen>
+    );
+  }
 
   return (
     <FinanceScreen

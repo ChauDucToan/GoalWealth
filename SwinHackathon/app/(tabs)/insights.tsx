@@ -1,5 +1,6 @@
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { UnavailableWorkspace } from '@/components/shared/UnavailableWorkspace';
 import { StockTrendChart } from '@/components/finance/StockTrendChart';
 import {
   formatCurrency,
@@ -19,6 +20,7 @@ import { useAssistant } from '@/hooks/use-assistant';
 import { useFinance } from '@/hooks/use-finance';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from '@/lib/expo-router';
 import React from 'react';
@@ -91,6 +93,15 @@ export default function InsightsScreen() {
       params: { scenario: 'custom' },
     });
   };
+
+  if (!isEndpointBackedFeatureEnabled('insights')) {
+    return (
+      <UnavailableWorkspace
+        title="Insights are off in live mode"
+        body="This strategy workspace still relies on local portfolio intelligence, backtests and rebalance mock data. It stays hidden until GoalWealth exposes portfolio and recommendation endpoints for it."
+      />
+    );
+  }
 
   return (
     <ScrollView

@@ -41,7 +41,7 @@ const resultMap = {
 export default function FinancialGoalResultScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { getGoalById } = useFinancialGoals();
+  const { getGoalById, isUsingLiveGoals } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     mode?: keyof typeof resultMap;
@@ -49,6 +49,10 @@ export default function FinancialGoalResultScreen() {
   const goal = getGoalById(params.goalId);
   const mode = resultMap[params.mode ?? 'created'] ? (params.mode ?? 'created') : 'created';
   const result = resultMap[mode];
+  const resultBody =
+    isUsingLiveGoals && mode === 'updated'
+      ? 'The core goal record now reflects the latest synced target, timeline, priority and lifecycle.'
+      : result.body;
   const backHref = getResultBackHref({
     goalId: params.goalId,
     mode,
@@ -77,7 +81,7 @@ export default function FinancialGoalResultScreen() {
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>{result.title}</Text>
           <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
-            {result.body}
+            {resultBody}
           </Text>
         </FinanceCard>
 
@@ -94,9 +98,11 @@ export default function FinancialGoalResultScreen() {
                 <Text style={[styles.metaValue, { color: colors.text }]}>{formatCurrency(goal.target)}</Text>
               </View>
               <View style={styles.metaRow}>
-                <Text style={[styles.metaLabel, { color: hexToRgba(colors.text, 0.56) }]}>Monthly pace</Text>
+                <Text style={[styles.metaLabel, { color: hexToRgba(colors.text, 0.56) }]}>
+                  {isUsingLiveGoals ? 'Status' : 'Monthly pace'}
+                </Text>
                 <Text style={[styles.metaValue, { color: colors.text }]}> 
-                  {formatCurrency(goal.monthlyContribution)}
+                  {isUsingLiveGoals ? goal.lifecycleLabel : formatCurrency(goal.monthlyContribution)}
                 </Text>
               </View>
             </View>

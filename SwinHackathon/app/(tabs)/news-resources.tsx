@@ -1,4 +1,5 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { UnavailableWorkspace } from '@/components/shared/UnavailableWorkspace';
 import {
   communityAuthors,
   communityFeedTags,
@@ -22,6 +23,7 @@ import { useIntroPreferences } from '@/context/introPreferencesContext';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -152,6 +154,15 @@ export default function FinanceCommunityScreen() {
     setSelectedTag(selectedFilterCategory.toLowerCase());
     setShowFilterSheet(false);
   };
+
+  if (!isEndpointBackedFeatureEnabled('newsResources')) {
+    return (
+      <UnavailableWorkspace
+        title="News and community are off in live mode"
+        body="This workspace still runs on article, workshop and community mock data. It stays hidden until GoalWealth exposes news, resources and community endpoints."
+      />
+    );
+  }
 
   if (!isIntroPreferencesReady) {
     return <SafeAreaView style={[styles.root, { backgroundColor: colors.backgroundSoft }]} edges={['top']} />;

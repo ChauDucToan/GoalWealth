@@ -30,6 +30,7 @@ import { useFinance } from '@/hooks/use-finance';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import { buildGoalwealthRecommendationDetailRoute } from '@/lib/goalwealth-recommendations';
 import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
 import { getGoalwealthRecommendations } from '@/services/api/recommendations';
@@ -152,6 +153,19 @@ function buildEmptyRecommendationItem(): HomePriorityCardItem {
   };
 }
 
+function buildSyncingRecommendationItem(): HomePriorityCardItem {
+  return {
+    id: 'live-recommendations-syncing',
+    title: 'Live priorities are syncing',
+    detail:
+      'GoalWealth is refreshing the next actions from your profile, goals and OCR context.',
+    status: 'Live',
+    icon: 'sync',
+    tone: 'primaryDark',
+    route: '/(tabs)/assistant',
+  };
+}
+
 function formatSummaryGoalStatus(status: GoalwealthSummaryRecentGoal['status']) {
   switch (status) {
     case 'paused':
@@ -227,6 +241,12 @@ export default function HomeScreen() {
     defaultStockSymbol,
     displayCurrency,
   } = useFinance();
+  const liveHomeEnabled =
+    liveAdapterEnabled &&
+    isSessionReady &&
+    userState.isAuthenticated &&
+    Boolean(userState.accessToken?.trim()) &&
+    userState.authMode !== 'registered-password';
 
   const holdings = stockHoldings
     .map((holding) => {
@@ -266,6 +286,8 @@ export default function HomeScreen() {
   );
   const [liveSummary, setLiveSummary] = useState<GoalwealthSummaryData | null>(null);
   const [liveRecommendations, setLiveRecommendations] = useState<GoalwealthRecommendationsData | null>(null);
+  const portfolioEnabled = isEndpointBackedFeatureEnabled('portfolio');
+  const transactionsEnabled = isEndpointBackedFeatureEnabled('transactions');
   const recentTransactions = transactions.slice(0, 3);
   const topSignal = proposalNewsSignals[0];
   const topRebalance = proposalRebalanceActions[0];
@@ -386,30 +408,47 @@ export default function HomeScreen() {
     userState.isAuthenticated,
   ]);
 
-  const fallbackPriorityGoal = financeGoals.find((goal) => goal.id === 'emergency') ?? financeGoals[0];
+  const fallbackPriorityGoal = liveHomeEnabled
+    ? null
+    : financeGoals.find((goal) => goal.id === 'emergency') ?? financeGoals[0];
   const livePriorityGoal =
     liveSummary?.goals.recent_goals.find((goal) => goal.status === 'active') ??
     liveSummary?.goals.recent_goals[0] ??
     null;
-  const priorityGoalTitle = livePriorityGoal?.title?.trim() || fallbackPriorityGoal?.title || 'Goal priority';
+  const priorityGoalTitle =
+    livePriorityGoal?.title?.trim() ||
+    fallbackPriorityGoal?.title ||
+    (liveHomeEnabled ? 'GoalWealth sync' : 'Goal priority');
   const priorityGoalSaved = Math.max(
     0,
     livePriorityGoal?.current_progress ?? fallbackPriorityGoal?.saved ?? 0
   );
-  const priorityGoalTarget = Math.max(
-    livePriorityGoal?.target_amount ?? fallbackPriorityGoal?.target ?? priorityGoalSaved,
-    priorityGoalSaved,
-    1
-  );
+  const priorityGoalTarget = livePriorityGoal
+    ? Math.max(livePriorityGoal.target_amount ?? 0, priorityGoalSaved, 1)
+    : fallbackPriorityGoal
+      ? Math.max(fallbackPriorityGoal.target, priorityGoalSaved, 1)
+      : 1;
   const priorityGoalProgress = priorityGoalTarget > 0 ? priorityGoalSaved / priorityGoalTarget : 0;
-  const priorityGoalGap = Math.max(priorityGoalTarget - priorityGoalSaved, 0);
+  const priorityGoalGap = livePriorityGoal
+    ? Math.max(priorityGoalTarget - priorityGoalSaved, 0)
+    : fallbackPriorityGoal
+      ? Math.max(priorityGoalTarget - priorityGoalSaved, 0)
+      : 0;
   const priorityGoalStatus = livePriorityGoal
     ? formatSummaryGoalStatus(livePriorityGoal.status)
-    : 'Funding';
+    : liveHomeEnabled
+      ? 'Syncing'
+      : 'Funding';
   const priorityGoalDueLabel = livePriorityGoal
     ? formatSummaryGoalDueLabel(livePriorityGoal)
-    : fallbackPriorityGoal?.dueLabel;
-  const heroBody = liveSummary ? buildLiveSummaryBody(liveSummary) : proposalAdvisorSnapshot.summary;
+    : liveHomeEnabled
+      ? 'Waiting for live goals'
+      : fallbackPriorityGoal?.dueLabel;
+  const heroBody = liveSummary
+    ? buildLiveSummaryBody(liveSummary)
+    : liveHomeEnabled
+      ? 'GoalWealth is syncing your live goals, documents and planning context.'
+      : proposalAdvisorSnapshot.summary;
   const heroSignalItems = liveSummary
     ? [
         {
@@ -428,6 +467,24 @@ export default function HomeScreen() {
           tint: colors.warning,
         },
       ]
+    : liveHomeEnabled
+      ? [
+          {
+            label: 'Live sync',
+            icon: 'sync' as const,
+            tint: colors.primaryDark,
+          },
+          {
+            label: 'Goals live',
+            icon: 'flag' as const,
+            tint: colors.success,
+          },
+          {
+            label: 'Docs pending',
+            icon: 'description' as const,
+            tint: colors.warning,
+          },
+        ]
     : [
         {
           label: `${proposalAdvisorSnapshot.disciplineScore}/100 discipline`,
@@ -446,6 +503,10 @@ export default function HomeScreen() {
         },
       ];
   const priorityItems = useMemo<HomePriorityCardItem[]>(() => {
+    if (liveHomeEnabled && !liveRecommendations) {
+      return [buildSyncingRecommendationItem()];
+    }
+
     if (!liveRecommendations) {
       return proposalTopPriorities.map((item) => ({ ...item }));
     }
@@ -455,10 +516,40 @@ export default function HomeScreen() {
     }
 
     return liveRecommendations.items.map(mapRecommendationToPriorityItem);
-  }, [liveRecommendations]);
+  }, [liveHomeEnabled, liveRecommendations]);
   const prioritySectionMeta = liveRecommendations
     ? `${liveRecommendations.summary.high_priority} high • ${liveRecommendations.summary.total} total`
+    : liveHomeEnabled
+      ? 'Syncing live priorities'
     : 'Act on the highest-value items first';
+  const profileRiskValue = liveSummary?.risk_profile.risk_tolerance
+    ? liveSummary.risk_profile.risk_tolerance
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (match) => match.toUpperCase())
+    : liveHomeEnabled
+      ? 'Pending'
+      : 'Moderate growth';
+  const profileRiskHelper = liveSummary?.risk_profile.investment_horizon
+    ? `${liveSummary.risk_profile.investment_horizon.replaceAll('_', ' ')} horizon`
+    : liveHomeEnabled
+      ? 'Complete assessment to sync live risk guidance'
+      : 'Balanced upside with tighter safety needs';
+  const profileAssessmentValue =
+    liveSummary?.risk_profile.calculated_score !== null &&
+    liveSummary?.risk_profile.calculated_score !== undefined
+      ? `${Math.round(liveSummary.risk_profile.calculated_score)}/100`
+      : liveHomeEnabled
+        ? 'Pending'
+        : '4.2 months';
+  const profileAssessmentHelper = liveSummary?.risk_profile.knowledge_level
+    ? `${liveSummary.risk_profile.knowledge_level.replaceAll('_', ' ')} knowledge`
+    : liveHomeEnabled
+      ? 'Risk profile not fully synced yet'
+      : 'Target 6 months';
+  const profileInputBody = liveHomeEnabled
+    ? 'Assessment answers sync into GoalWealth and update the live profile used by planning.'
+    : 'Guided setup, manual entries and OCR review feed the current profile.';
+  const profileInputRightText = liveHomeEnabled ? 'Live sync' : 'No live sync';
 
   useEffect(() => {
     return () => {
@@ -532,9 +623,13 @@ export default function HomeScreen() {
               </Text>
             </View>
             <View style={[styles.heroStatCard, { backgroundColor: hexToRgba(colors.card, 0.12) }]}>
-              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>Portfolio</Text>
+              <Text style={[styles.heroStatLabel, { color: hexToRgba(colors.card, 0.72) }]}>
+                {portfolioEnabled ? 'Portfolio' : 'Docs synced'}
+              </Text>
               <Text style={[styles.heroStatValue, { color: colors.card }]}>
-                {formatDisplayCurrency(portfolioValue, displayCurrency)}
+                {portfolioEnabled
+                  ? formatDisplayCurrency(portfolioValue, displayCurrency)
+                  : `${liveSummary?.documents.recent_document_count ?? 0}`}
               </Text>
             </View>
           </View>
@@ -602,7 +697,10 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.sectionStack}>
-          <ProductSectionHeader title="Core guidance" meta="Goal, portfolio and risk in one view" />
+          <ProductSectionHeader
+            title="Core guidance"
+            meta={portfolioEnabled ? 'Goal, portfolio and risk in one view' : 'Goal funding and risk in one view'}
+          />
 
           <ResponsiveGrid
             minItemWidth={220}
@@ -659,97 +757,99 @@ export default function HomeScreen() {
               </View>
             </ProductSurfaceCard>
 
-            <ProductSurfaceCard>
-              <ProductSectionHeader
-                title="Portfolio"
-                meta={featuredStock?.symbol ?? 'No symbol selected'}
-                actionLabel="Desk"
-                onPress={() => pushDebounced('/(finance)/investments')}
-              />
+            {portfolioEnabled ? (
+              <ProductSurfaceCard>
+                <ProductSectionHeader
+                  title="Portfolio"
+                  meta={featuredStock?.symbol ?? 'No symbol selected'}
+                  actionLabel="Desk"
+                  onPress={() => pushDebounced('/(finance)/investments')}
+                />
 
-              <View style={styles.portfolioHeader}>
-                <View>
-                  <Text style={[styles.portfolioValue, { color: colors.text }]}>
-                    {formatDisplayCurrency(portfolioValue, displayCurrency)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.portfolioChange,
-                      { color: portfolioDayChange >= 0 ? colors.primaryDark : colors.error },
-                    ]}
-                  >
-                    {formatSignedDisplayCurrency(portfolioDayChange, displayCurrency)} today
-                  </Text>
+                <View style={styles.portfolioHeader}>
+                  <View>
+                    <Text style={[styles.portfolioValue, { color: colors.text }]}>
+                      {formatDisplayCurrency(portfolioValue, displayCurrency)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.portfolioChange,
+                        { color: portfolioDayChange >= 0 ? colors.primaryDark : colors.error },
+                      ]}
+                    >
+                      {formatSignedDisplayCurrency(portfolioDayChange, displayCurrency)} today
+                    </Text>
+                  </View>
+                  <ProductStatusChip label="Rebalance watch" tone="warning" icon="query-stats" />
                 </View>
-                <ProductStatusChip label="Rebalance watch" tone="warning" icon="query-stats" />
-              </View>
 
-              {featuredStock ? (
-                <View style={styles.chartWrap}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.portfolioSymbolScroll}
-                  >
-                    {selectableStocks.map((item) => {
-                      const selected = item.symbol === featuredStock.symbol;
+                {featuredStock ? (
+                  <View style={styles.chartWrap}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.portfolioSymbolScroll}
+                    >
+                      {selectableStocks.map((item) => {
+                        const selected = item.symbol === featuredStock.symbol;
 
-                      return (
-                        <Pressable
-                          key={item.symbol}
-                          style={[
-                            styles.portfolioSymbolChip,
-                            {
-                              backgroundColor: selected
-                                ? colors.primaryDark
-                                : colors.backgroundSoft,
-                              borderColor: selected
-                                ? colors.primaryDark
-                                : hexToRgba(colors.primaryDark, 0.08),
-                            },
-                          ]}
-                          onPress={() => setSelectedStockSymbol(item.symbol)}
-                        >
-                          <Text
+                        return (
+                          <Pressable
+                            key={item.symbol}
                             style={[
-                              styles.portfolioSymbolText,
+                              styles.portfolioSymbolChip,
                               {
-                                color: selected ? colors.card : colors.text,
+                                backgroundColor: selected
+                                  ? colors.primaryDark
+                                  : colors.backgroundSoft,
+                                borderColor: selected
+                                  ? colors.primaryDark
+                                  : hexToRgba(colors.primaryDark, 0.08),
                               },
                             ]}
+                            onPress={() => setSelectedStockSymbol(item.symbol)}
                           >
-                            {item.symbol}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
+                            <Text
+                              style={[
+                                styles.portfolioSymbolText,
+                                {
+                                  color: selected ? colors.card : colors.text,
+                                },
+                              ]}
+                            >
+                              {item.symbol}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
 
-                  <StockTrendChart
-                    values={featuredStock.chart}
-                    accent={featuredStock.accent}
-                    labelColor={hexToRgba(colors.text, 0.38)}
-                    height={84}
-                    barWidth={10}
-                  />
-                </View>
-              ) : null}
+                    <StockTrendChart
+                      values={featuredStock.chart}
+                      accent={featuredStock.accent}
+                      labelColor={hexToRgba(colors.text, 0.38)}
+                      height={84}
+                      barWidth={10}
+                    />
+                  </View>
+                ) : null}
 
-              <ProductRow
-                title={topRebalance.title}
-                body={topRebalance.body}
-                icon={topRebalance.icon}
-                tone={topRebalance.tone}
-                rightText={topRebalance.impact}
-                divider={false}
-                onPress={() => pushDebounced('/(finance)/investments')}
-              />
-            </ProductSurfaceCard>
+                <ProductRow
+                  title={topRebalance.title}
+                  body={topRebalance.body}
+                  icon={topRebalance.icon}
+                  tone={topRebalance.tone}
+                  rightText={topRebalance.impact}
+                  divider={false}
+                  onPress={() => pushDebounced('/(finance)/investments')}
+                />
+              </ProductSurfaceCard>
+            ) : null}
 
             <ProductSurfaceCard>
               <ProductSectionHeader
                 title="Financial profile"
-                meta="Assessment-based"
+                meta={liveHomeEnabled ? 'GoalWealth live profile' : 'Assessment-based'}
                 actionLabel="Open"
                 onPress={() => pushDebounced('/(finance)/financial-assessment')}
               />
@@ -757,23 +857,23 @@ export default function HomeScreen() {
               <View style={styles.metricRow}>
                 <ProductMetricTile
                   label="Risk mode"
-                  value="Moderate growth"
-                  helper="Balanced upside with tighter safety needs"
+                  value={profileRiskValue}
+                  helper={profileRiskHelper}
                   tone="primaryDark"
                 />
                 <ProductMetricTile
-                  label="Emergency cover"
-                  value="4.2 months"
-                  helper="Target 6 months"
+                  label={liveHomeEnabled ? 'Assessment' : 'Emergency cover'}
+                  value={profileAssessmentValue}
+                  helper={profileAssessmentHelper}
                   tone="success"
                 />
               </View>
               <ProductRow
                 title="Input model"
-                body="Guided setup, manual entries and OCR review feed the current profile."
+                body={profileInputBody}
                 icon="edit-note"
                 tone="primaryDark"
-                rightText="No live sync"
+                rightText={profileInputRightText}
                 divider={false}
               />
 
@@ -788,44 +888,46 @@ export default function HomeScreen() {
           </ResponsiveGrid>
         </View>
 
-        <View style={styles.sectionStack}>
-          <ProductSurfaceCard>
-            <ProductSectionHeader
-              title="Next activity"
-              meta="Recent ledger and alert context"
-              actionLabel="Ledger"
-              onPress={() => pushDebounced('/(tabs)/transactions')}
-            />
-
-            <ProductRow
-              title={topSignal.title}
-              body={topSignal.body}
-              icon={topSignal.icon}
-              tone={topSignal.tone}
-              rightText={topSignal.impact}
-              onPress={() => openRoute(topSignal.route)}
-            />
-
-            {recentTransactions.map((item, index) => (
-              <ProductRow
-                key={item.id}
-                title={item.merchant}
-                meta={item.timeLabel}
-                body={item.category}
-                icon={item.icon}
-                tone={item.type === 'income' ? 'success' : 'neutral'}
-                rightText={formatCurrency(item.amount)}
-                divider={index < recentTransactions.length - 1}
-                onPress={() =>
-                  pushDebounced({
-                    pathname: '/(finance)/transaction/[id]',
-                    params: { id: item.id },
-                  })
-                }
+        {transactionsEnabled ? (
+          <View style={styles.sectionStack}>
+            <ProductSurfaceCard>
+              <ProductSectionHeader
+                title="Next activity"
+                meta="Recent ledger and alert context"
+                actionLabel="Ledger"
+                onPress={() => pushDebounced('/(tabs)/transactions')}
               />
-            ))}
-          </ProductSurfaceCard>
-        </View>
+
+              <ProductRow
+                title={topSignal.title}
+                body={topSignal.body}
+                icon={topSignal.icon}
+                tone={topSignal.tone}
+                rightText={topSignal.impact}
+                onPress={() => openRoute(topSignal.route)}
+              />
+
+              {recentTransactions.map((item, index) => (
+                <ProductRow
+                  key={item.id}
+                  title={item.merchant}
+                  meta={item.timeLabel}
+                  body={item.category}
+                  icon={item.icon}
+                  tone={item.type === 'income' ? 'success' : 'neutral'}
+                  rightText={formatCurrency(item.amount)}
+                  divider={index < recentTransactions.length - 1}
+                  onPress={() =>
+                    pushDebounced({
+                      pathname: '/(finance)/transaction/[id]',
+                      params: { id: item.id },
+                    })
+                  }
+                />
+              ))}
+            </ProductSurfaceCard>
+          </View>
+        ) : null}
       </View>
     </ScrollView>
   );

@@ -12,6 +12,7 @@ import { useMyUser } from '@/context/myUserContext';
 import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from '@/lib/expo-router';
@@ -54,6 +55,7 @@ export default function ProfileScreen() {
   }, [router]);
   const { profile, notifications, linkedAccounts, invite, updateNotifications, updateProfile } =
     useProfileSettings();
+  const profileWorkspaceEnabled = isEndpointBackedFeatureEnabled('profileWorkspace');
 
   const enabledNotifications = Object.values(notifications).filter(Boolean).length;
   const activeAccounts = linkedAccounts.filter((item) => item.status === 'Active').length;
@@ -82,6 +84,83 @@ export default function ProfileScreen() {
         : { avatarUri: result.assets[0].uri }
     );
   }, [updateProfile]);
+
+  if (!profileWorkspaceEnabled) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(120, tabBarFloatingClearance) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerRow}>
+            <View style={styles.headerCopy}>
+              <Text style={styles.headerEyebrow}>Profile</Text>
+              <Text style={styles.headerTitle}>Live account only</Text>
+            </View>
+          </View>
+
+          <ProfileSettingsCard>
+            <Text style={[styles.sectionLabel, { marginTop: 0, marginBottom: 4 }]}>Endpoint-backed</Text>
+            <Text style={[styles.actionTitle, { color: colors.text }]}>{profile.name}</Text>
+            <Text style={[styles.userMeta, { marginTop: 4 }]}>{profile.city}</Text>
+            <Text style={[styles.streakSubTitle, { marginTop: 12 }]}>
+              Preferences, linked accounts, notification controls, cover photo and support cards
+              stay off in live mode until GoalWealth exposes those endpoints.
+            </Text>
+            <View style={[styles.metricsRow, { marginHorizontal: 0, marginBottom: 0, marginTop: 16 }]}>
+              <View style={styles.metricItem}>
+                <ProfileSettingsStat
+                  value={profile.memberSince.replace('Joined ', '')}
+                  label="Member since"
+                  icon="calendar-month"
+                  tone="soft"
+                />
+              </View>
+            </View>
+          </ProfileSettingsCard>
+
+          <ResponsiveGrid minItemWidth={160} horizontalPadding={20} gap={12} maxColumns={2}>
+            <Pressable
+              style={[styles.actionCard, { backgroundColor: colors.card }]}
+              onPress={() => pushRoute('/(profile)/account')}
+            >
+              <View
+                style={[
+                  styles.actionIconWrap,
+                  { backgroundColor: hexToRgba(colors.primaryDark, 0.08) },
+                ]}
+              >
+                <MaterialIcons name="person-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Account</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.actionCard, { backgroundColor: colors.card }]}
+              onPress={() => {
+                void signOut().then(() => {
+                  router.replace('/(auth)/signIn');
+                });
+              }}
+            >
+              <View
+                style={[
+                  styles.actionIconWrap,
+                  { backgroundColor: hexToRgba(colors.error, 0.08) },
+                ]}
+              >
+                <MaterialIcons name="logout" size={22} color={colors.error} />
+              </View>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>Sign Out</Text>
+            </Pressable>
+          </ResponsiveGrid>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>

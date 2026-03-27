@@ -1,7 +1,9 @@
 import { hexToRgba } from '@/components/auth/AuthKit';
+import { UnavailableWorkspace } from '@/components/shared/UnavailableWorkspace';
 import { ColorTheme, Typography } from '@/constants/theme';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from '@/lib/expo-router';
 import React, { useMemo, useState } from 'react';
@@ -155,6 +157,15 @@ export default function AchievementsScreen() {
   const [selectedSegment, setSelectedSegment] = useState<(typeof segments)[number]>('Badges');
   const tone = (key: ThemeTone) => colors[key];
   const unlockedCount = badges.filter((item) => item.unlocked).length;
+
+  if (!isEndpointBackedFeatureEnabled('achievements')) {
+    return (
+      <UnavailableWorkspace
+        title="Achievements are off in live mode"
+        body="The achievements workspace is still demo-only and not backed by GoalWealth endpoints. It stays hidden until those stats and badges are served from the backend."
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>

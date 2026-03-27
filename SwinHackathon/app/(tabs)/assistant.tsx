@@ -22,6 +22,7 @@ import { useAssistant } from '@/hooks/use-assistant';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isEndpointBackedFeatureEnabled } from '@/lib/endpoint-backed-features';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from '@/lib/expo-router';
 import React, { useMemo, useState } from 'react';
@@ -43,9 +44,11 @@ export default function AssistantTabScreen() {
     assistantSettings,
     selectAssistantScenario,
     getAssistantScenario,
+    openCustomAssistantThread,
   } = useAssistant();
   const [introIndex, setIntroIndex] = useState(0);
   const activeScenario = getAssistantScenario(activeScenarioId);
+  const assistantWorkspaceEnabled = isEndpointBackedFeatureEnabled('assistantWorkspace');
 
   const sortedScenarios = useMemo(() => {
     return [...assistantScenarios].sort((left, right) => {
@@ -153,6 +156,87 @@ export default function AssistantTabScreen() {
               <Text style={[styles.introSkip, { color: colors.primaryDark }]}>Skip for now</Text>
             </Pressable>
           ) : null}
+        </View>
+      </ScrollView>
+    );
+  }
+
+  if (!assistantWorkspaceEnabled) {
+    return (
+      <ScrollView
+        style={[styles.screen, { backgroundColor: colors.backgroundSoft }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(tabBarFloatingClearance, 152) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerCopy}>
+              <Text style={[styles.eyebrow, { color: colors.primaryDark }]}>ASSISTANT</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>GoalWealth live chat</Text>
+              <Text style={[styles.headerBody, { color: hexToRgba(colors.text, 0.56) }]}>
+                Mock advisor cards, canned threads and workspace summaries are off in live mode.
+                Only endpoint-backed chat entry stays available here.
+              </Text>
+            </View>
+            <Pressable
+              style={[
+                styles.headerButton,
+                { backgroundColor: colors.card, borderColor: hexToRgba(colors.primaryDark, 0.08) },
+              ]}
+              onPress={() => router.push('/(assistant)/settings')}
+            >
+              <MaterialIcons name="tune" size={20} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <ProductSurfaceCard style={[styles.heroCard, { backgroundColor: colors.primaryDark, borderColor: 'transparent' }]}>
+            <View style={[styles.heroTop, isSmallPhone && styles.heroTopCompact]}>
+              <View style={styles.heroCopy}>
+                <Text style={[styles.heroTitle, { color: colors.card }]}>
+                  {assistantSettings.aiCompanionName}
+                </Text>
+                <Text style={[styles.heroSummary, { color: hexToRgba(colors.card, 0.82) }]}>
+                  Start a live thread and GoalWealth will respond against the current profile,
+                  goals and OCR context available for this user.
+                </Text>
+              </View>
+              <View style={[styles.heroAvatar, { backgroundColor: hexToRgba(colors.card, 0.14) }]}>
+                <MaterialIcons name="smart-toy" size={26} color={colors.card} />
+              </View>
+            </View>
+
+            <View style={[styles.heroActions, isSmallPhone && styles.heroActionsCompact]}>
+              <ThemeButton
+                title="Open live chat"
+                onPress={() => {
+                  openCustomAssistantThread({
+                    id: 'goalwealth-live',
+                    title: 'GoalWealth Live',
+                    prompt: 'Ask about goals, profile, OCR records or planning.',
+                    icon: 'smart-toy',
+                    messages: [],
+                  });
+                  router.push({
+                    pathname: '/(assistant)/chat/[scenario]',
+                    params: { scenario: 'custom' },
+                  });
+                }}
+                colorBackground={colors.card}
+                colorText={colors.primaryDark}
+                style={styles.heroButton}
+              />
+              <ThemeButton
+                title="Settings"
+                onPress={() => router.push('/(assistant)/settings')}
+                colorBackground={hexToRgba(colors.card, 0.26)}
+                colorText={colors.card}
+                style={[styles.heroButton, styles.heroOutlineButton]}
+              />
+            </View>
+          </ProductSurfaceCard>
         </View>
       </ScrollView>
     );

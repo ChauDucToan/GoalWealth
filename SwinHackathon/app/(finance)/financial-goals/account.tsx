@@ -16,7 +16,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 export default function FinancialGoalAccountScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { getGoalById } = useFinancialGoals();
+  const { getGoalById, isUsingLiveGoals } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     accountId?: string;
@@ -36,6 +36,27 @@ export default function FinancialGoalAccountScreen() {
     origin: params.origin,
     mode: params.mode,
   });
+
+  if (isUsingLiveGoals) {
+    return (
+      <FinanceScreen
+        title="Select Savings Account"
+        subtitle="This screen stays off until GoalWealth exposes funding-account endpoints."
+        contentStyle={styles.contentStyle}
+        onBackPress={() => router.replace(backHref)}
+      >
+        <View style={styles.stack}>
+          <FinanceCard>
+            <Text style={[styles.heroTitle, { color: colors.text }]}>Savings account is unavailable in live mode</Text>
+            <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              The current backend does not persist linked savings accounts for goals. This selector
+              stays hidden until those endpoints exist.
+            </Text>
+          </FinanceCard>
+        </View>
+      </FinanceScreen>
+    );
+  }
 
   const handleContinue = () => {
     if (params.origin === 'transfer' && goal) {

@@ -5,6 +5,7 @@ import {
   FinancialGoalHistoryPoint,
   FinancialGoalItem,
   FinancialGoalTransfer,
+  GoalsPortfolioRecommendation,
 } from '@/components/financial-goals/data';
 import { Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme-colors';
@@ -203,8 +204,10 @@ export function GoalTransferList({
 
 export function GoalPriorityStack({
   goals,
+  showPlanningSignals = true,
 }: {
   goals: FinancialGoalItem[];
+  showPlanningSignals?: boolean;
 }) {
   const { colors } = useTheme();
 
@@ -228,12 +231,12 @@ export function GoalPriorityStack({
             <View style={styles.priorityMetaRow}>
               <GoalLifecycleBadge status={goal.lifecycleStatus} label={goal.lifecycleLabel} />
               <Text style={[styles.priorityMeta, { color: hexToRgba(colors.text, 0.54) }]}>
-                {goal.priority} priority • {goal.allowedRisk}
+                {showPlanningSignals ? `${goal.priority} priority • ${goal.allowedRisk}` : `${goal.priority} priority`}
               </Text>
             </View>
           </View>
           <Text style={[styles.priorityValue, { color: goal.accent }]}>
-            {Math.round(goal.feasibilityProbability * 100)}%
+            {showPlanningSignals ? `${Math.round(goal.feasibilityProbability * 100)}%` : goal.dueLabel}
           </Text>
         </View>
       ))}
@@ -391,6 +394,105 @@ export function GoalRecommendationSummary({
               : 'This goal is archived. It stays available for history and reference without competing for the current funding plan.'}
       </Text>
     </View>
+  );
+}
+
+export function GoalsPortfolioRecommendationCard({
+  recommendation,
+}: {
+  recommendation: GoalsPortfolioRecommendation;
+}) {
+  const { colors } = useTheme();
+  const accent =
+    recommendation.tone === 'success'
+      ? colors.success
+      : recommendation.tone === 'warning'
+        ? colors.warning
+        : colors.primaryDark;
+  const iconName =
+    recommendation.tone === 'success'
+      ? 'done-all'
+      : recommendation.tone === 'warning'
+        ? 'timeline'
+        : 'insights';
+
+  return (
+    <FinanceCard
+      style={[
+        styles.portfolioRecommendationCard,
+        {
+          backgroundColor: hexToRgba(accent, 0.08),
+          borderColor: hexToRgba(accent, 0.16),
+        },
+      ]}
+    >
+      <View style={styles.portfolioRecommendationHeader}>
+        <View
+          style={[
+            styles.portfolioRecommendationIcon,
+            { backgroundColor: hexToRgba(accent, 0.14) },
+          ]}
+        >
+          <MaterialIcons name={iconName} size={18} color={accent} />
+        </View>
+        <View style={styles.portfolioRecommendationCopy}>
+          <Text style={[styles.portfolioRecommendationEyebrow, { color: accent }]}>
+            Overall recommendation
+          </Text>
+          <Text style={[styles.portfolioRecommendationTitle, { color: colors.text }]}>
+            {recommendation.title}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={[styles.portfolioRecommendationBody, { color: hexToRgba(colors.text, 0.56) }]}>
+        {recommendation.body}
+      </Text>
+
+      <View style={styles.portfolioSignalRow}>
+        {recommendation.signals.map((signal) => (
+          <View
+            key={signal}
+            style={[
+              styles.portfolioSignalChip,
+              { backgroundColor: colors.card, borderColor: hexToRgba(accent, 0.12) },
+            ]}
+          >
+            <Text style={[styles.portfolioSignalText, { color: colors.text }]}>{signal}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View
+        style={[
+          styles.portfolioPlanCard,
+          { backgroundColor: colors.card, borderColor: hexToRgba(accent, 0.12) },
+        ]}
+      >
+        <Text style={[styles.portfolioPlanTitle, { color: colors.text }]}>
+          {recommendation.planTitle}
+        </Text>
+        <View style={styles.portfolioPlanStack}>
+          {recommendation.planSteps.map((step, index) => (
+            <View key={step} style={styles.portfolioPlanRow}>
+              <View
+                style={[
+                  styles.portfolioPlanIndex,
+                  { backgroundColor: hexToRgba(accent, 0.14) },
+                ]}
+              >
+                <Text style={[styles.portfolioPlanIndexText, { color: accent }]}>
+                  {index + 1}
+                </Text>
+              </View>
+              <Text style={[styles.portfolioPlanBody, { color: hexToRgba(colors.text, 0.58) }]}>
+                {step}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </FinanceCard>
   );
 }
 
@@ -613,6 +715,96 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
     gap: 6,
+  },
+  portfolioRecommendationCard: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 18,
+  },
+  portfolioRecommendationHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  portfolioRecommendationIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  portfolioRecommendationCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  portfolioRecommendationEyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  portfolioRecommendationTitle: {
+    marginTop: 6,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+  },
+  portfolioRecommendationBody: {
+    marginTop: 12,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  portfolioSignalRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  portfolioSignalChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  portfolioSignalText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  portfolioPlanCard: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+  },
+  portfolioPlanTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  portfolioPlanStack: {
+    marginTop: 12,
+    gap: 10,
+  },
+  portfolioPlanRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  portfolioPlanIndex: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  portfolioPlanIndexText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  portfolioPlanBody: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
   },
   recommendationTitle: {
     fontSize: 13,

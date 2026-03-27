@@ -253,6 +253,9 @@ export type GoalwealthRecommendationsData = {
     generated_at: string;
     freshness: string;
     sources_used: string[];
+    dismissed_count?: number;
+    completed_count?: number;
+    scope?: string;
   };
 };
 
@@ -261,6 +264,24 @@ export type GoalwealthRecommendationMutationData = {
   status: 'open' | 'dismissed';
   dismissed_at?: string;
   undismissed_at?: string;
+};
+
+export type GoalwealthRecommendationGoalPrefill = {
+  title: string;
+  goal_type: GoalwealthMemoryGoalType;
+  priority?: number | null;
+  target_amount?: number | null;
+  current_progress?: number | null;
+  status?: GoalwealthMemoryGoalStatus | null;
+  target_date?: string | null;
+  description?: string | null;
+};
+
+export type GoalwealthRecommendationCompleteData = {
+  recommendation_id: string;
+  status: 'completed';
+  completed_at?: string;
+  goal_prefill: GoalwealthRecommendationGoalPrefill;
 };
 
 export type GoalwealthRecommendationDetailItem = GoalwealthRecommendationItem & {

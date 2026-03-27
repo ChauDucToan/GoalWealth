@@ -9,6 +9,7 @@ import {
 import { FinanceCard, FinanceScreen } from '@/components/finance/FinanceScaffold';
 import { formatCurrency } from '@/components/finance/finance-utils';
 import { getTransferBackHref } from '@/app/(finance)/financial-goals/navigation';
+import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
 import React, { useState } from 'react';
@@ -17,6 +18,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 export default function FinancialGoalTransferScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { isUsingLiveGoals } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     accountId?: string;
@@ -34,6 +36,27 @@ export default function FinancialGoalTransferScreen() {
     accountId: params.accountId,
     mode: params.mode,
   });
+
+  if (isUsingLiveGoals) {
+    return (
+      <FinanceScreen
+        title={isRecurring ? 'Recurring Transfer' : 'Add Money'}
+        subtitle="This action stays off until GoalWealth exposes transfer and funding-account endpoints."
+        contentStyle={styles.contentStyle}
+        onBackPress={() => router.replace(backHref)}
+      >
+        <View style={styles.stack}>
+          <FinanceCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Transfer actions are unavailable in live mode</Text>
+            <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              GoalWealth currently syncs the goal record only. Top ups, recurring transfers and
+              account-linked funding will stay hidden until the backend supports them.
+            </Text>
+          </FinanceCard>
+        </View>
+      </FinanceScreen>
+    );
+  }
 
   return (
     <FinanceScreen
