@@ -4,8 +4,10 @@ import { hexToRgba } from '@/components/auth/AuthKit';
 import {
   contributionPresets,
   getGoalAccountById,
+  getGoalLifecycleDescription,
   goalDeadlineOptions,
   goalFrequencyOptions,
+  goalLifecycleOptions,
   goalPriorityOptions,
   goalRiskOptions,
   goalTemplates,
@@ -21,6 +23,8 @@ import { normalizeGoalwealthError } from '@/services/api/errors';
 import type {
   GoalwealthGoalCreateRequest,
   GoalwealthMemoryGoalType,
+  GoalwealthMemoryGoalStatus,
+  GoalwealthGoalUpdateRequest,
 } from '@/services/api/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
@@ -71,7 +75,7 @@ export default function CreateFinancialGoalScreen() {
   const { colors } = useTheme();
   const { isSmallPhone } = useResponsive();
   const router = useRouter();
-  const { getGoalById, createGoal, isUsingLiveGoals, capabilities } = useFinancialGoals();
+  const { getGoalById, createGoal, updateGoal, isUsingLiveGoals } = useFinancialGoals();
   const params = useLocalSearchParams<{
     goalId?: string;
     accountId?: string;
@@ -102,6 +106,9 @@ export default function CreateFinancialGoalScreen() {
   const [selectedRisk, setSelectedRisk] = useState(
     goal?.allowedRisk ?? createDefaults.allowedRisk
   );
+  const [selectedStatus, setSelectedStatus] = useState<GoalwealthMemoryGoalStatus>(
+    goal?.lifecycleStatus ?? 'active'
+  );
   const [selectedDeadline, setSelectedDeadline] = useState<typeof goalDeadlineOptions[number]>(
     goalDeadlineOptions[1]
   );
@@ -118,8 +125,6 @@ export default function CreateFinancialGoalScreen() {
     accountId: params.accountId,
     mode: params.mode,
   });
-  const isLiveEditLocked = isUsingLiveGoals && isEditMode && !capabilities.canEdit;
-
   const submitPayload = useMemo<GoalwealthGoalCreateRequest>(
     () => ({
       title: previewTitle,
@@ -150,8 +155,37 @@ export default function CreateFinancialGoalScreen() {
     ]
   );
 
+  const updatePayload = useMemo<GoalwealthGoalUpdateRequest>(
+    () => ({
+      title: previewTitle,
+      goal_type: mapTemplateIdToGoalType(selectedTemplate),
+      status: selectedStatus,
+      priority: mapPriorityLabelToValue(selectedPriority),
+      target_amount: selectedTarget,
+      target_date: buildTargetDate(selectedDeadline),
+      description: [
+        selectedTemplateMeta.helper,
+        `Allowed risk: ${selectedRisk}.`,
+        `Transfer rhythm: ${selectedFrequency}.`,
+        `Funding source: ${activeAccount.label}.`,
+      ].join(' '),
+    }),
+    [
+      activeAccount.label,
+      previewTitle,
+      selectedDeadline,
+      selectedFrequency,
+      selectedPriority,
+      selectedRisk,
+      selectedStatus,
+      selectedTarget,
+      selectedTemplate,
+      selectedTemplateMeta.helper,
+    ]
+  );
+
   const handleSaveGoal = async () => {
-    if (isSaving || isLiveEditLocked) {
+    if (isSaving) {
       return;
     }
 
@@ -169,12 +203,21 @@ export default function CreateFinancialGoalScreen() {
       return;
     }
 
-    if (isEditMode) {
-      return;
-    }
-
     try {
       setIsSaving(true);
+      if (isEditMode && goal) {
+        const updatedGoal = await updateGoal(goal.id, updatePayload);
+        router.replace({
+          pathname: '/(finance)/financial-goals/result',
+          params: {
+            mode: 'updated',
+            goalId: updatedGoal.id,
+            accountId: activeAccount.id,
+          },
+        });
+        return;
+      }
+
       const createdGoal = await createGoal(submitPayload);
       router.replace({
         pathname: '/(finance)/financial-goals/result',
@@ -199,26 +242,6 @@ export default function CreateFinancialGoalScreen() {
       onBackPress={() => router.replace(backHref)}
     >
       <View style={styles.stack}>
-        {isLiveEditLocked ? (
-          <FinanceCard
-            style={[
-              styles.noticeCard,
-              {
-                backgroundColor: hexToRgba(colors.warning, 0.08),
-                borderColor: hexToRgba(colors.warning, 0.18),
-              },
-            ]}
-          >
-            <Text style={[styles.noticeTitle, { color: colors.text }]}> 
-              Live goal updates are not enabled yet
-            </Text>
-            <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
-              GoalWealth currently supports listing and creating goals. Editing stays locked until
-              the backend exposes an update endpoint.
-            </Text>
-          </FinanceCard>
-        ) : null}
-
         {saveError ? (
           <FinanceCard
             style={[
@@ -466,6 +489,40 @@ export default function CreateFinancialGoalScreen() {
               );
             })}
           </View>
+
+          {isEditMode ? (
+            <>
+              <Text style={[styles.fieldLabel, styles.sectionTop, { color: hexToRgba(colors.text, 0.56) }]}>
+                Goal lifecycle
+              </Text>
+              <View style={styles.priorityStack}>
+                {goalLifecycleOptions.map((item) => {
+                  const active = item.id === selectedStatus;
+
+                  return (
+                    <Pressable
+                      key={item.id}
+                      style={[
+                        styles.priorityCard,
+                        {
+                          backgroundColor: active ? hexToRgba(colors.primaryDark, 0.08) : colors.card,
+                          borderColor: active ? colors.primaryDark : colors.border,
+                        },
+                      ]}
+                      onPress={() => setSelectedStatus(item.id)}
+                    >
+                      <Text style={[styles.priorityLabel, { color: active ? colors.primaryDark : colors.text }]}>
+                        {item.label}
+                      </Text>
+                      <Text style={[styles.priorityBody, { color: hexToRgba(colors.text, 0.54) }]}>
+                        {item.body}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
         </FinanceCard>
 
         <FinanceCard>
@@ -543,6 +600,16 @@ export default function CreateFinancialGoalScreen() {
                 allowed risk
               </Text>
             </View>
+            {isEditMode ? (
+              <View style={[styles.previewMetaCard, { backgroundColor: colors.backgroundSoft }]}>
+                <Text style={[styles.previewMetaValue, { color: colors.warning }]}>
+                  {selectedStatus[0].toUpperCase() + selectedStatus.slice(1)}
+                </Text>
+                <Text style={[styles.previewMetaLabel, { color: hexToRgba(colors.text, 0.54) }]}>
+                  lifecycle
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <View
@@ -562,6 +629,17 @@ export default function CreateFinancialGoalScreen() {
               compete for about {formatCurrency(selectedContribution)}/month. Estimated funding gap after
               current savings: {formatCurrency(estimatedFundingGap)}.
             </Text>
+            {isEditMode ? (
+              <Text
+                style={[
+                  styles.previewExplainBody,
+                  styles.previewLifecycleNote,
+                  { color: hexToRgba(colors.text, 0.56) },
+                ]}
+              >
+                {getGoalLifecycleDescription(selectedStatus)}
+              </Text>
+            ) : null}
           </View>
         </FinanceCard>
 
@@ -580,18 +658,16 @@ export default function CreateFinancialGoalScreen() {
               title={
                 isSaving
                   ? 'Saving...'
-                  : isLiveEditLocked
-                    ? 'Update coming soon'
-                    : isEditMode
-                      ? 'Update Goal'
-                      : 'Save Goal'
+                  : isEditMode
+                    ? 'Update Goal'
+                    : 'Save Goal'
               }
               onPress={() => {
                 void handleSaveGoal();
               }}
               colorBackground={colors.primaryDark}
               colorText={colors.card}
-              disabled={isSaving || isLiveEditLocked}
+              disabled={isSaving}
               style={styles.actionButton}
             />
           </View>
@@ -864,6 +940,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: Typography.body,
     lineHeight: 20,
+  },
+  previewLifecycleNote: {
+    marginTop: 10,
   },
   actionRow: {
     flexDirection: 'row',

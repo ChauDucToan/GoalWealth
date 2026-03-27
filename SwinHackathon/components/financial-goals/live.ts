@@ -4,6 +4,8 @@ import {
   FinancialGoalHistoryPoint,
   FinancialGoalItem,
   FinancialGoalTransfer,
+  getGoalLifecycleLabel,
+  getGoalLifecycleRank,
   GoalIconName,
 } from '@/components/financial-goals/data';
 import type {
@@ -178,6 +180,14 @@ function buildDueLabel(
     return 'Fully funded';
   }
 
+  if (status === 'paused') {
+    return 'Paused for review';
+  }
+
+  if (status === 'archived') {
+    return 'Archived from planner';
+  }
+
   const diffDays = diffDaysFromNow(targetDate);
   if (diffDays == null) {
     return 'Flexible timeline';
@@ -346,7 +356,7 @@ export function mapGoalwealthGoalRecordToFinancialGoal(
   const targetAmount = Math.max(goal.target_amount ?? savedAmount, savedAmount, 1000);
   const currentProgress = targetAmount > 0 ? clamp(savedAmount / targetAmount, 0, 1.2) : 0;
   const monthlyContribution =
-    goal.status === 'completed'
+    goal.status !== 'active'
       ? 0
       : Math.max(
           50,
@@ -372,6 +382,8 @@ export function mapGoalwealthGoalRecordToFinancialGoal(
     goalTitle: title,
     title,
     category: visuals.category,
+    lifecycleStatus: goal.status,
+    lifecycleLabel: getGoalLifecycleLabel(goal.status),
     saved: savedAmount,
     target: targetAmount,
     targetAmount,
@@ -404,6 +416,11 @@ export function mapGoalwealthGoalRecordToFinancialGoal(
 
 export function mapGoalwealthGoalsToFinancialGoals(goals: GoalwealthGoalRecord[]) {
   const ordered = [...goals].sort((left, right) => {
+    const lifecycleRank = getGoalLifecycleRank(left.status) - getGoalLifecycleRank(right.status);
+    if (lifecycleRank !== 0) {
+      return lifecycleRank;
+    }
+
     const leftOrder = priorityValueToOrder(left.priority);
     const rightOrder = priorityValueToOrder(right.priority);
     if (leftOrder !== rightOrder) {

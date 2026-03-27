@@ -53,13 +53,14 @@ export default function FinancialGoalResultScreen() {
     goalId: params.goalId,
     mode,
   });
+  const homeHref = '/(tabs)/home' as const;
 
   return (
     <FinanceScreen
       title={result.title}
       subtitle="One shared success state keeps the flow lighter than the original multi-screen kit."
       contentStyle={styles.contentStyle}
-      onBackPress={() => router.replace(backHref)}
+      onBackPress={() => router.replace(homeHref)}
     >
       <View style={styles.stack}>
         <FinanceCard

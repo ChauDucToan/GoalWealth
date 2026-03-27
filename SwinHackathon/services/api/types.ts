@@ -156,6 +156,144 @@ export type GoalwealthGoalCreateData = {
   goal: GoalwealthGoalRecord;
 };
 
+export type GoalwealthGoalDetailData = {
+  user_id: string;
+  goal: GoalwealthGoalRecord;
+};
+
+export type GoalwealthGoalUpdateRequest = {
+  title?: string;
+  goal_type?: GoalwealthMemoryGoalType;
+  status?: GoalwealthMemoryGoalStatus;
+  priority?: number | null;
+  target_amount?: number | null;
+  current_progress?: number | null;
+  target_date?: string | null;
+  description?: string | null;
+};
+
+export type GoalwealthGoalUpdateData = {
+  user_id: string;
+  goal: GoalwealthGoalRecord;
+};
+
+export type GoalwealthSummaryRecentGoal = {
+  goal_id: string;
+  title: string | null;
+  goal_type: GoalwealthMemoryGoalType | null;
+  status: GoalwealthMemoryGoalStatus | null;
+  priority: number | null;
+  target_amount: number | null;
+  current_progress: number | null;
+  target_date: string | null;
+};
+
+export type GoalwealthSummaryData = {
+  user: GoalwealthMeUserData;
+  risk_profile: {
+    risk_tolerance: GoalwealthRiskTolerance | null;
+    calculated_score: number | null;
+    investment_horizon: GoalwealthInvestmentHorizon | null;
+    knowledge_level: GoalwealthKnowledgeLevel | null;
+    liquidity_needs: GoalwealthLiquidityNeeds | null;
+    max_loss: number | null;
+    min_return: number | null;
+  };
+  goals: {
+    total_goals: number;
+    total_active_goals: number;
+    recent_goals: GoalwealthSummaryRecentGoal[];
+  };
+  documents: {
+    recent_document_count: number;
+  };
+  conversation: {
+    last_topic: string | null;
+    last_message: string | null;
+  };
+};
+
+export type GoalwealthRecommendationPriority = 'high' | 'medium' | 'low';
+
+export type GoalwealthRecommendationType = 'next_action' | 'warning' | 'opportunity';
+
+export type GoalwealthRecommendationItem = {
+  id: string;
+  type: GoalwealthRecommendationType;
+  category: string;
+  priority: GoalwealthRecommendationPriority;
+  source_type: string;
+  generated_by: string;
+  title: string;
+  message: string;
+  preview: string;
+  why: string[];
+  action: {
+    type?: string;
+    target?: string;
+    [key: string]: unknown;
+  };
+  context: GoalwealthJsonObject;
+  source_refs: GoalwealthJsonObject;
+  status: string;
+  score: number | null;
+  updated_at: string | null;
+};
+
+export type GoalwealthRecommendationsData = {
+  items: GoalwealthRecommendationItem[];
+  summary: {
+    total: number;
+    high_priority: number;
+    medium_priority: number;
+    low_priority: number;
+  };
+  meta: {
+    market_included: boolean;
+    generated_at: string;
+    freshness: string;
+    sources_used: string[];
+  };
+};
+
+export type GoalwealthRecommendationMutationData = {
+  recommendation_id: string;
+  status: 'open' | 'dismissed';
+  dismissed_at?: string;
+  undismissed_at?: string;
+};
+
+export type GoalwealthRecommendationDetailItem = GoalwealthRecommendationItem & {
+  full_reasoning: string;
+  impact: string[];
+  confidence: string | null;
+  related_entities: GoalwealthJsonObject;
+  supporting_data: GoalwealthJsonObject;
+  actions: Array<{
+    type?: string;
+    target?: string;
+    [key: string]: unknown;
+  }>;
+  freshness: {
+    generated_at?: string;
+    market_included?: boolean;
+    sources_used?: string[];
+    [key: string]: unknown;
+  };
+};
+
+export type GoalwealthRecommendationDetailData = {
+  item: GoalwealthRecommendationDetailItem;
+  meta: {
+    market_included?: boolean;
+    generated_at?: string;
+    freshness?: string;
+    sources_used?: string[];
+    dismissed_count?: number;
+    [key: string]: unknown;
+  };
+};
+
 export type GoalwealthChatRequest = {
   message: string;
   session_id?: string;

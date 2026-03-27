@@ -10,8 +10,17 @@ import {
 import { useMyUser } from '@/context/myUserContext';
 import { normalizeGoalwealthError } from '@/services/api/errors';
 import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
-import { createGoalwealthGoal, getGoalwealthGoals } from '@/services/api/goals';
-import type { GoalwealthGoalCreateRequest, GoalwealthGoalRecord } from '@/services/api/types';
+import {
+  createGoalwealthGoal,
+  getGoalwealthGoal,
+  getGoalwealthGoals,
+  updateGoalwealthGoal,
+} from '@/services/api/goals';
+import type {
+  GoalwealthGoalCreateRequest,
+  GoalwealthGoalRecord,
+  GoalwealthGoalUpdateRequest,
+} from '@/services/api/types';
 import React, {
   createContext,
   useCallback,
@@ -36,6 +45,8 @@ type FinancialGoalsContextValue = {
   capabilities: FinancialGoalsCapabilities;
   refreshGoals: () => Promise<void>;
   createGoal: (payload: GoalwealthGoalCreateRequest) => Promise<FinancialGoalItem>;
+  refreshGoal: (goalId: string) => Promise<FinancialGoalItem | null>;
+  updateGoal: (goalId: string, payload: GoalwealthGoalUpdateRequest) => Promise<FinancialGoalItem>;
   getGoalById: (goalId?: string | string[] | null) => FinancialGoalItem | null;
 };
 
@@ -114,6 +125,49 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
     [liveGoalRecords, shouldUseLiveGoals, userState.accessToken]
   );
 
+  const refreshGoal = useCallback(
+    async (goalId: string) => {
+      if (!goalId) {
+        return null;
+      }
+
+      if (!shouldUseLiveGoals) {
+        return findFinancialGoalById(goalId, mockGoals);
+      }
+
+      const response = await getGoalwealthGoal(goalId, userState.accessToken);
+      setLiveGoalRecords((current) => {
+        const next = current.filter((record) => record.goal_id !== goalId);
+        return [response.data.goal, ...next];
+      });
+      return mapGoalwealthGoalsToFinancialGoals([response.data.goal])[0] ?? null;
+    },
+    [mockGoals, shouldUseLiveGoals, userState.accessToken]
+  );
+
+  const updateGoal = useCallback(
+    async (goalId: string, payload: GoalwealthGoalUpdateRequest) => {
+      if (!goalId) {
+        throw new Error('Goal ID is required');
+      }
+
+      if (!shouldUseLiveGoals) {
+        const existingGoal = findFinancialGoalById(goalId, mockGoals);
+        if (!existingGoal) {
+          throw new Error('Goal not found');
+        }
+        return existingGoal;
+      }
+
+      const response = await updateGoalwealthGoal(goalId, payload, userState.accessToken);
+      setLiveGoalRecords((current) =>
+        current.map((record) => (record.goal_id === goalId ? response.data.goal : record))
+      );
+      return mapGoalwealthGoalsToFinancialGoals([response.data.goal])[0]!;
+    },
+    [mockGoals, shouldUseLiveGoals, userState.accessToken]
+  );
+
   const getGoalById = useCallback(
     (goalId?: string | string[] | null) => findFinancialGoalById(goalId, goals),
     [goals]
@@ -122,7 +176,7 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
   const capabilities = useMemo<FinancialGoalsCapabilities>(
     () => ({
       canCreate: true,
-      canEdit: !shouldUseLiveGoals,
+      canEdit: true,
       canDelete: !shouldUseLiveGoals,
       canTransfer: !shouldUseLiveGoals,
     }),
@@ -138,9 +192,22 @@ export function FinancialGoalsProvider({ children }: { children: React.ReactNode
       capabilities,
       refreshGoals,
       createGoal,
+      refreshGoal,
+      updateGoal,
       getGoalById,
     }),
-    [capabilities, createGoal, error, getGoalById, goals, isLoading, refreshGoals, shouldUseLiveGoals]
+    [
+      capabilities,
+      createGoal,
+      error,
+      getGoalById,
+      goals,
+      isLoading,
+      refreshGoal,
+      refreshGoals,
+      shouldUseLiveGoals,
+      updateGoal,
+    ]
   );
 
   return <FinancialGoalsContext.Provider value={value}>{children}</FinancialGoalsContext.Provider>;

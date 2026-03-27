@@ -9,6 +9,10 @@ import {
   loadStoredAuthSession,
   persistAuthSession,
 } from '@/services/auth/session';
+import {
+  getStoredProfileOverride,
+  mergeProfileWithOverride,
+} from '@/services/auth/profile-overrides';
 import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
 import { getGoalwealthMe, mapGoalwealthMeToUserProfile } from '@/services/api/me';
 import React, {
@@ -40,14 +44,23 @@ export function MyUserProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     void loadStoredAuthSession()
-      .then((session) => {
+      .then(async (session) => {
         if (cancelled) {
           return;
         }
 
         if (session) {
+          const override = await getStoredProfileOverride(session.profile.id);
+          if (cancelled) {
+            return;
+          }
+
           dispatch(
-            userActions.signInSuccess(session.profile, session.accessToken, session.authMode)
+            userActions.signInSuccess(
+              mergeProfileWithOverride(session.profile, override),
+              session.accessToken,
+              session.authMode
+            )
           );
         }
       })
@@ -99,12 +112,18 @@ export function MyUserProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     void getGoalwealthMe(state.accessToken)
-      .then((response) => {
+      .then(async (response) => {
         if (cancelled) {
           return;
         }
 
-        dispatch(userActions.updateProfile(mapGoalwealthMeToUserProfile(response.data)));
+        const mappedProfile = mapGoalwealthMeToUserProfile(response.data);
+        const override = await getStoredProfileOverride(mappedProfile.id ?? state.profile?.id);
+        if (cancelled) {
+          return;
+        }
+
+        dispatch(userActions.updateProfile(override ? { ...mappedProfile, ...override } : mappedProfile));
       })
       .catch(() => {
         // The app can continue with the locally restored session if /v1/me is unavailable.

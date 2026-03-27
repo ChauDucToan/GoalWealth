@@ -16,6 +16,7 @@ import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
 import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
 import { normalizeGoalwealthError } from '@/services/api/errors';
+import { persistStoredProfileOverride } from '@/services/auth/profile-overrides';
 import { mapGoalwealthMeToUserProfile, patchGoalwealthMe } from '@/services/api/me';
 import { useRouter } from '@/lib/expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -102,6 +103,14 @@ export default function ProfileAccountScreen() {
           locale: response.data.user.locale?.trim() || profile.locale,
         });
         dispatch(actions.updateProfile(mapGoalwealthMeToUserProfile(response.data)));
+        await persistStoredProfileOverride(response.data.user.user_id, {
+          name: response.data.user.display_name?.trim() || localPatch.name,
+          phone: response.data.user.phone?.trim() || localPatch.phone,
+          city: response.data.user.location.city?.trim() || localPatch.city,
+          countryCode: response.data.user.location.country?.trim() || localPatch.countryCode,
+          timezone: response.data.user.timezone?.trim() || localPatch.timezone,
+          locale: response.data.user.locale?.trim() || profile.locale,
+        });
       } else {
         dispatch(
           actions.updateProfile({
@@ -112,6 +121,16 @@ export default function ProfileAccountScreen() {
             timezone: localPatch.timezone || undefined,
           })
         );
+        if (userState.profile?.id) {
+          await persistStoredProfileOverride(userState.profile.id, {
+            name: localPatch.name,
+            phone: localPatch.phone || undefined,
+            city: localPatch.city || undefined,
+            countryCode: localPatch.countryCode || undefined,
+            timezone: localPatch.timezone || undefined,
+            locale: profile.locale,
+          });
+        }
       }
 
       router.push({ pathname: '/(profile)/result', params: { mode: 'profile' } });

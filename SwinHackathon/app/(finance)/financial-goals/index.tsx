@@ -9,6 +9,7 @@ import {
 import {
   GoalConflictNotice,
   GoalHistoryCard,
+  GoalLifecycleBadge,
   GoalPriorityStack,
   GoalProgressRing,
   GoalRecommendationSummary,
@@ -37,15 +38,17 @@ export default function FinancialGoalsScreen() {
   } = useIntroPreferences();
   const summary = getGoalTransferSummary(goals);
   const orderedGoals = getGoalsByPriority(goals);
-  const overallProgress =
-    summary.totalTarget > 0 ? summary.totalSaved / summary.totalTarget : 0;
-  const leadGoal = orderedGoals[0] ?? null;
+  const activeOrderedGoals = orderedGoals.filter((goal) => goal.lifecycleStatus === 'active');
+  const overallProgress = summary.totalTarget > 0 ? summary.totalSaved / summary.totalTarget : 0;
+  const leadGoal = summary.nextPriorityGoal ?? null;
   const prioritySummary =
-    summary.highPriorityGoals > 0
-      ? `${summary.highPriorityGoals} high-priority ${
+    summary.activeGoals === 0 && summary.totalGoals > 0
+      ? 'No goals are actively funding right now. Resume or restore one to restart the plan.'
+      : summary.highPriorityGoals > 0
+        ? `${summary.highPriorityGoals} active high-priority ${
           summary.highPriorityGoals === 1 ? 'goal is' : 'goals are'
         } being funded first before the rest.`
-      : 'All current goals are funded without a separate high-priority tier.';
+        : 'Active goals are funded without a separate high-priority tier.';
   const insightCards = [
     {
       id: 'goal-live-pace',
@@ -58,19 +61,25 @@ export default function FinancialGoalsScreen() {
     },
     {
       id: 'goal-live-count',
-      title: isUsingLiveGoals ? 'Live goals synced' : 'Tracked goals',
-      body: leadGoal
-        ? `${leadGoal.title} is currently the lead funding target.`
-        : 'Create a goal to start building a live funding order.',
-      value: `${summary.activeGoals}`,
+      title: isUsingLiveGoals ? 'Goals in workspace' : 'Tracked goals',
+      body:
+        summary.activeGoals > 0 && leadGoal
+          ? `${leadGoal.title} is currently the lead funding target.`
+          : summary.totalGoals > 0
+            ? 'Live goals are synced, but none are actively funding right now.'
+            : 'Create a goal to start building a live funding order.',
+      value: `${summary.totalGoals}`,
       tone: 'success' as const,
     },
     {
       id: 'goal-live-readiness',
       title: 'Needs attention',
-      body: leadGoal
-        ? `${leadGoal.title} still has ${formatCurrency(leadGoal.fundingGap)} left to fund.`
-        : 'No active goals yet. Create one to unlock planning signals.',
+      body:
+        summary.activeGoals > 0 && leadGoal
+          ? `${leadGoal.title} still has ${formatCurrency(leadGoal.fundingGap)} left to fund.`
+          : summary.totalGoals > 0
+            ? 'Review paused, completed or archived goals before you reopen the next funding track.'
+            : 'No active goals yet. Create one to unlock planning signals.',
       value: leadGoal ? leadGoal.dueLabel : 'No goals',
       tone: 'warning' as const,
     },
@@ -241,7 +250,9 @@ export default function FinancialGoalsScreen() {
               </Text>
               <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
                 {leadGoal
-                  ? `Saved across ${summary.activeGoals} active goals with ${formatCurrency(summary.monthlyContribution)} allocated monthly. ${prioritySummary}`
+                  ? `Saved across ${summary.totalGoals} goals. ${summary.activeGoals} ${
+                      summary.activeGoals === 1 ? 'goal is' : 'goals are'
+                    } actively funding with ${formatCurrency(summary.monthlyContribution)} allocated monthly. ${prioritySummary}`
                   : 'Create your first goal to start syncing live goal progress, funding pace and priority order from GoalWealth.'}
               </Text>
             </View>
@@ -350,18 +361,18 @@ export default function FinancialGoalsScreen() {
             </Pressable>
           </View>
 
-          {orderedGoals.length ? (
-            <GoalPriorityStack goals={orderedGoals} />
+          {activeOrderedGoals.length ? (
+            <GoalPriorityStack goals={activeOrderedGoals} />
           ) : (
             <Text style={[styles.emptySectionBody, { color: hexToRgba(colors.text, 0.56) }]}> 
-              No goals are available yet. Create one to see the funding order here.
+              No active goals are funding right now. Resume or create a goal to rebuild the live order.
             </Text>
           )}
         </FinanceCard>
 
         <FinanceCard>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Active goals</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Goals workspace</Text>
             <Pressable onPress={() => router.push('/(finance)/financial-goals/history')}>
               <Text style={[styles.sectionLink, { color: colors.primaryDark }]}>History</Text>
             </Pressable>
@@ -392,9 +403,15 @@ export default function FinancialGoalsScreen() {
 
                     <View style={styles.goalCopy}>
                       <Text style={[styles.goalTitle, { color: colors.text }]}>{goal.title}</Text>
-                      <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}>
-                        {goal.priority} priority • {goal.allowedRisk}
-                      </Text>
+                      <View style={styles.goalMetaRow}>
+                        <GoalLifecycleBadge
+                          status={goal.lifecycleStatus}
+                          label={goal.lifecycleLabel}
+                        />
+                        <Text style={[styles.goalMeta, { color: hexToRgba(colors.text, 0.52) }]}>
+                          {goal.priority} priority • {goal.allowedRisk}
+                        </Text>
+                      </View>
                     </View>
 
                     <View style={styles.goalProgressWrap}>
@@ -713,9 +730,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   goalMeta: {
-    marginTop: 4,
     fontSize: 12,
     fontWeight: '600',
+  },
+  goalMetaRow: {
+    marginTop: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
   },
   goalProgress: {
     fontSize: 14,

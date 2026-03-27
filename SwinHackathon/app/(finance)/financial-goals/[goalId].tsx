@@ -1,12 +1,17 @@
 import { getFinancialGoalsDashboardHref } from '@/app/(finance)/financial-goals/navigation';
 import { ThemeButton } from '@/components/ThemeButton';
 import { hexToRgba } from '@/components/auth/AuthKit';
-import { getGoalAccountById, getGoalPrioritySummary } from '@/components/financial-goals/data';
+import {
+  getGoalAccountById,
+  getGoalLifecycleDescription,
+  getGoalPrioritySummary,
+} from '@/components/financial-goals/data';
 import {
   FeasibilityMeter,
   FundingGapSummary,
   GoalConflictNotice,
   GoalHistoryCard,
+  GoalLifecycleBadge,
   GoalProgressRing,
   GoalRecommendationSummary,
   GoalTransferList,
@@ -17,19 +22,62 @@ import { Typography } from '@/constants/theme';
 import { useFinancialGoals } from '@/hooks/use-financial-goals';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { normalizeGoalwealthError } from '@/services/api/errors';
+import type { GoalwealthMemoryGoalStatus } from '@/services/api/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from '@/lib/expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+type GoalLifecycleAction = {
+  label: string;
+  nextStatus: GoalwealthMemoryGoalStatus;
+  tone: 'primary' | 'secondary' | 'success' | 'danger';
+};
+
+function getGoalLifecycleActions(status: GoalwealthMemoryGoalStatus): GoalLifecycleAction[] {
+  switch (status) {
+    case 'paused':
+      return [
+        { label: 'Resume goal', nextStatus: 'active', tone: 'primary' },
+        { label: 'Mark complete', nextStatus: 'completed', tone: 'success' },
+        { label: 'Archive goal', nextStatus: 'archived', tone: 'danger' },
+      ];
+    case 'completed':
+      return [
+        { label: 'Reopen goal', nextStatus: 'active', tone: 'primary' },
+        { label: 'Archive goal', nextStatus: 'archived', tone: 'secondary' },
+      ];
+    case 'archived':
+      return [{ label: 'Restore goal', nextStatus: 'active', tone: 'primary' }];
+    default:
+      return [
+        { label: 'Pause goal', nextStatus: 'paused', tone: 'secondary' },
+        { label: 'Mark complete', nextStatus: 'completed', tone: 'success' },
+        { label: 'Archive goal', nextStatus: 'archived', tone: 'danger' },
+      ];
+  }
+}
 
 export default function FinancialGoalDetailScreen() {
   const { colors } = useTheme();
   const { isSmallPhone } = useResponsive();
   const { goalId } = useLocalSearchParams<{ goalId: string }>();
   const router = useRouter();
-  const { getGoalById, goals, isUsingLiveGoals, capabilities } = useFinancialGoals();
+  const { getGoalById, goals, isUsingLiveGoals, capabilities, refreshGoal, updateGoal } =
+    useFinancialGoals();
   const goal = getGoalById(goalId);
   const prioritySummary = getGoalPrioritySummary(goalId, goals);
+  const [pendingStatus, setPendingStatus] = useState<GoalwealthMemoryGoalStatus | null>(null);
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isUsingLiveGoals || !goalId) {
+      return;
+    }
+
+    void refreshGoal(goalId);
+  }, [goalId, isUsingLiveGoals, refreshGoal]);
 
   if (!goal) {
     return (
@@ -53,11 +101,29 @@ export default function FinancialGoalDetailScreen() {
 
   const account = getGoalAccountById(goal.accountId);
   const progress = goal.saved / goal.target;
+  const lifecycleActions = isUsingLiveGoals ? getGoalLifecycleActions(goal.lifecycleStatus) : [];
+
+  const handleLifecycleUpdate = async (nextStatus: GoalwealthMemoryGoalStatus) => {
+    if (!isUsingLiveGoals || pendingStatus) {
+      return;
+    }
+
+    setLifecycleError(null);
+    setPendingStatus(nextStatus);
+
+    try {
+      await updateGoal(goal.id, { status: nextStatus });
+    } catch (incomingError) {
+      setLifecycleError(normalizeGoalwealthError(incomingError).message);
+    } finally {
+      setPendingStatus(null);
+    }
+  };
 
   return (
     <FinanceScreen
       title={goal.title}
-      subtitle={`${goal.priority} priority • ${goal.allowedRisk} • ${goal.dueLabel}`}
+      subtitle={`${goal.lifecycleLabel} • ${goal.priority} priority • ${goal.allowedRisk} • ${goal.dueLabel}`}
       contentStyle={styles.contentStyle}
       onBackPress={() => router.replace(getFinancialGoalsDashboardHref())}
       rightAccessory={
@@ -92,8 +158,8 @@ export default function FinancialGoalDetailScreen() {
           >
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Live goal sync is active</Text>
             <Text style={[styles.noticeBody, { color: hexToRgba(colors.text, 0.56) }]}> 
-              GoalWealth currently supports live goal list and create. Edit, delete and transfer
-              actions stay preview-only until the backend adds those endpoints.
+              GoalWealth now supports live goal detail and edit. Delete and transfer actions stay
+              preview-only until the backend adds those endpoints.
             </Text>
           </FinanceCard>
         ) : null}
@@ -111,6 +177,9 @@ export default function FinancialGoalDetailScreen() {
             <View style={styles.heroCopy}>
               <Text style={[styles.heroEyebrow, { color: goal.accent }]}>Goal health</Text>
               <Text style={[styles.heroTitle, { color: colors.text }]}>{formatCurrency(goal.saved)}</Text>
+              <View style={styles.heroStatusRow}>
+                <GoalLifecycleBadge status={goal.lifecycleStatus} label={goal.lifecycleLabel} />
+              </View>
               <Text style={[styles.heroBody, { color: hexToRgba(colors.text, 0.58) }]}> 
                 {goal.note}
               </Text>
@@ -170,6 +239,57 @@ export default function FinancialGoalDetailScreen() {
           <FeasibilityMeter probability={goal.feasibilityProbability} accent={goal.accent} />
           <GoalConflictNotice conflicts={goal.conflictWithOtherGoals} />
         </FinanceCard>
+
+        {isUsingLiveGoals ? (
+          <FinanceCard>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Goal lifecycle</Text>
+              <GoalLifecycleBadge status={goal.lifecycleStatus} label={goal.lifecycleLabel} />
+            </View>
+            <Text style={[styles.lifecycleBody, { color: hexToRgba(colors.text, 0.56) }]}>
+              {getGoalLifecycleDescription(goal.lifecycleStatus)}
+            </Text>
+
+            <View style={styles.lifecycleActionGrid}>
+              {lifecycleActions.map((action) => {
+                const isPending = pendingStatus === action.nextStatus;
+                const isDanger = action.tone === 'danger';
+                const isSecondary = action.tone === 'secondary';
+                const isSuccess = action.tone === 'success';
+                const backgroundColor = isDanger
+                  ? colors.error
+                  : isSuccess
+                    ? colors.success
+                    : isSecondary
+                      ? colors.card
+                      : colors.primaryDark;
+                const textColor = isSecondary ? colors.text : colors.card;
+
+                return (
+                  <View key={action.nextStatus} style={styles.lifecycleActionWrap}>
+                    <ThemeButton
+                      title={isPending ? 'Updating...' : action.label}
+                      onPress={() => {
+                        void handleLifecycleUpdate(action.nextStatus);
+                      }}
+                      colorBackground={backgroundColor}
+                      colorText={textColor}
+                      disabled={Boolean(pendingStatus)}
+                      style={[
+                        styles.lifecycleActionButton,
+                        isSecondary && { borderWidth: 1, borderColor: colors.border },
+                      ]}
+                    />
+                  </View>
+                );
+              })}
+            </View>
+
+            {lifecycleError ? (
+              <Text style={[styles.lifecycleError, { color: colors.error }]}>{lifecycleError}</Text>
+            ) : null}
+          </FinanceCard>
+        ) : null}
 
         {!isUsingLiveGoals ? (
           <View style={styles.actionRow}>
@@ -406,6 +526,10 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     lineHeight: 20,
   },
+  heroStatusRow: {
+    marginTop: 12,
+    alignItems: 'flex-start',
+  },
   heroStats: {
     marginTop: 18,
     flexDirection: 'row',
@@ -439,6 +563,29 @@ const styles = StyleSheet.create({
   sectionLink: {
     fontSize: 13,
     fontWeight: '800',
+  },
+  lifecycleBody: {
+    marginTop: 12,
+    fontSize: Typography.body,
+    lineHeight: 20,
+  },
+  lifecycleActionGrid: {
+    marginTop: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  lifecycleActionWrap: {
+    flexBasis: '48%',
+    flexGrow: 1,
+  },
+  lifecycleActionButton: {
+    width: '100%',
+  },
+  lifecycleError: {
+    marginTop: 12,
+    fontSize: 12,
+    fontWeight: '700',
   },
   actionRow: {
     flexDirection: 'row',

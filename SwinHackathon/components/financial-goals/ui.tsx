@@ -225,15 +225,51 @@ export function GoalPriorityStack({
           </View>
           <View style={styles.priorityCopy}>
             <Text style={[styles.priorityTitle, { color: colors.text }]}>{goal.title}</Text>
-            <Text style={[styles.priorityMeta, { color: hexToRgba(colors.text, 0.54) }]}>
-              {goal.priority} priority • {goal.allowedRisk}
-            </Text>
+            <View style={styles.priorityMetaRow}>
+              <GoalLifecycleBadge status={goal.lifecycleStatus} label={goal.lifecycleLabel} />
+              <Text style={[styles.priorityMeta, { color: hexToRgba(colors.text, 0.54) }]}>
+                {goal.priority} priority • {goal.allowedRisk}
+              </Text>
+            </View>
           </View>
           <Text style={[styles.priorityValue, { color: goal.accent }]}>
             {Math.round(goal.feasibilityProbability * 100)}%
           </Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+export function GoalLifecycleBadge({
+  status,
+  label,
+}: {
+  status: FinancialGoalItem['lifecycleStatus'];
+  label?: string;
+}) {
+  const { colors } = useTheme();
+  const resolvedLabel = label ?? status[0].toUpperCase() + status.slice(1);
+  const accent =
+    status === 'active'
+      ? colors.success
+      : status === 'paused'
+        ? colors.warning
+        : status === 'completed'
+          ? colors.primaryDark
+          : colors.text;
+
+  return (
+    <View
+      style={[
+        styles.lifecycleBadge,
+        {
+          backgroundColor: hexToRgba(accent, 0.12),
+          borderColor: hexToRgba(accent, 0.18),
+        },
+      ]}
+    >
+      <Text style={[styles.lifecycleBadgeText, { color: accent }]}>{resolvedLabel}</Text>
     </View>
   );
 }
@@ -343,12 +379,16 @@ export function GoalRecommendationSummary({
       ]}
     >
       <Text style={[styles.recommendationTitle, { color: colors.text }]}>
-        Why this allocation comes first
+        {goal.lifecycleStatus === 'active' ? 'Why this allocation comes first' : 'Why this status matters'}
       </Text>
       <Text style={[styles.recommendationBody, { color: hexToRgba(colors.text, 0.56) }]}>
-        {goal.priority} priority goals are funded first in GoalWealth. This goal currently receives
-        {` ${formatCurrency(goal.recommendedMonthlyAllocation)}/mo `}because it must protect the plan
-        before lower-priority goals absorb the remaining free cash.
+        {goal.lifecycleStatus === 'active'
+          ? `${goal.priority} priority goals are funded first in GoalWealth. This goal currently receives ${formatCurrency(goal.recommendedMonthlyAllocation)}/mo because it must protect the plan before lower-priority goals absorb the remaining free cash.`
+          : goal.lifecycleStatus === 'paused'
+            ? 'This goal is paused, so GoalWealth keeps it visible but removes it from the active monthly funding sequence until you resume it.'
+            : goal.lifecycleStatus === 'completed'
+              ? 'This goal is marked completed. GoalWealth keeps the progress history while freeing the monthly funding pace for the rest of the plan.'
+              : 'This goal is archived. It stays available for history and reference without competing for the current funding plan.'}
       </Text>
     </View>
   );
@@ -494,13 +534,33 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   priorityMeta: {
-    marginTop: 4,
     fontSize: 12,
     fontWeight: '600',
+  },
+  priorityMetaRow: {
+    marginTop: 4,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
   },
   priorityValue: {
     fontSize: 12,
     fontWeight: '800',
+  },
+  lifecycleBadge: {
+    minHeight: 24,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lifecycleBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.35,
   },
   meterWrap: {
     gap: 6,

@@ -13,7 +13,8 @@ import {
   proposalNewsSignals,
   proposalRebalanceActions,
   proposalTopPriorities,
-  type ProposalRoute,
+  type ProposalIcon,
+  type ProposalPriorityItem,
   type ProposalTone,
 } from '@/components/home/proposal-data';
 import {
@@ -24,12 +25,23 @@ import {
   ProductSurfaceCard,
 } from '@/components/shared/ProductSurface';
 import { Typography } from '@/constants/theme';
+import { useMyUser } from '@/context/myUserContext';
 import { useFinance } from '@/hooks/use-finance';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { buildGoalwealthRecommendationDetailRoute } from '@/lib/goalwealth-recommendations';
+import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
+import { getGoalwealthRecommendations } from '@/services/api/recommendations';
+import { getGoalwealthSummary } from '@/services/api/summary';
+import type {
+  GoalwealthRecommendationItem,
+  GoalwealthRecommendationsData,
+  GoalwealthSummaryData,
+  GoalwealthSummaryRecentGoal,
+} from '@/services/api/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from '@/lib/expo-router';
+import { useFocusEffect, useRouter } from '@/lib/expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -38,11 +50,173 @@ function toneColor(colors: ReturnType<typeof useTheme>['colors'], tone: Proposal
 }
 
 type HomeRouteTarget = Parameters<ReturnType<typeof useRouter>['push']>[0];
+type HomeRoutePath = Extract<HomeRouteTarget, string>;
+type HomePriorityCardItem = Omit<ProposalPriorityItem, 'route'> & { route: HomeRoutePath };
+
+function formatRecommendationStatus(category: string) {
+  switch (category) {
+    case 'risk':
+      return 'Risk';
+    case 'goals':
+      return 'Goals';
+    case 'documents':
+      return 'Documents';
+    case 'planning':
+      return 'Planning';
+    case 'onboarding':
+      return 'Profile';
+    default:
+      return 'Action';
+  }
+}
+
+function resolveRecommendationTone(item: GoalwealthRecommendationItem): ProposalTone {
+  if (item.type === 'warning') {
+    return item.priority === 'high' ? 'error' : 'warning';
+  }
+
+  switch (item.category) {
+    case 'goals':
+      return 'success';
+    case 'risk':
+      return 'warning';
+    case 'documents':
+      return 'secondary';
+    case 'planning':
+      return 'primaryDark';
+    case 'onboarding':
+      return 'secondary';
+    default:
+      return item.priority === 'high' ? 'warning' : 'primaryDark';
+  }
+}
+
+function resolveRecommendationIcon(item: GoalwealthRecommendationItem): ProposalIcon {
+  if (item.action.target === '/chat') {
+    return 'forum';
+  }
+
+  if (item.action.target === '/me') {
+    return 'person';
+  }
+
+  if (item.action.target === '/risk-profile') {
+    return 'analytics';
+  }
+
+  if (item.action.target === '/goals') {
+    return 'flag';
+  }
+
+  if (item.action.target === '/ocr' || item.action.target?.startsWith('/ocr/records')) {
+    return 'document-scanner';
+  }
+
+  switch (item.category) {
+    case 'risk':
+      return 'analytics';
+    case 'goals':
+      return 'flag';
+    case 'documents':
+      return 'description';
+    case 'planning':
+      return 'forum';
+    case 'onboarding':
+      return 'person';
+    default:
+      return 'insights';
+  }
+}
+
+function mapRecommendationToPriorityItem(item: GoalwealthRecommendationItem): HomePriorityCardItem {
+  return {
+    id: item.id,
+    title: item.title,
+    detail: item.preview?.trim() || item.message,
+    status: formatRecommendationStatus(item.category),
+    icon: resolveRecommendationIcon(item),
+    tone: resolveRecommendationTone(item),
+    route: buildGoalwealthRecommendationDetailRoute(item.id) as HomeRoutePath,
+  };
+}
+
+function buildEmptyRecommendationItem(): HomePriorityCardItem {
+  return {
+    id: 'all-caught-up',
+    title: 'No urgent follow-up right now',
+    detail: 'Your profile, goals, and documents are in a stable state. Open the assistant if you want a fresh planning pass.',
+    status: 'Planning',
+    icon: 'task-alt',
+    tone: 'success',
+    route: '/(tabs)/assistant',
+  };
+}
+
+function formatSummaryGoalStatus(status: GoalwealthSummaryRecentGoal['status']) {
+  switch (status) {
+    case 'paused':
+      return 'Paused';
+    case 'completed':
+      return 'Completed';
+    case 'archived':
+      return 'Archived';
+    default:
+      return 'Active';
+  }
+}
+
+function formatSummaryGoalDueLabel(goal: GoalwealthSummaryRecentGoal | null) {
+  if (!goal) {
+    return undefined;
+  }
+
+  if (goal.status === 'completed') {
+    return 'Completed';
+  }
+
+  if (goal.status === 'paused') {
+    return 'Paused for review';
+  }
+
+  if (goal.status === 'archived') {
+    return 'Archived from planner';
+  }
+
+  if (!goal.target_date) {
+    return 'Flexible target';
+  }
+
+  const parsed = new Date(goal.target_date);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Flexible target';
+  }
+
+  return `Target by ${new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(parsed)}`;
+}
+
+function buildLiveSummaryBody(summary: GoalwealthSummaryData) {
+  const displayName = summary.user.display_name || 'You';
+  const riskLabel = summary.risk_profile.risk_tolerance
+    ? summary.risk_profile.risk_tolerance.replaceAll('_', ' ')
+    : 'pending';
+
+  if (summary.goals.total_active_goals > 0) {
+    return `${displayName} have ${summary.goals.total_active_goals} active goals, ${summary.documents.recent_document_count} synced documents, and a ${riskLabel} risk profile in GoalWealth.`;
+  }
+
+  if (summary.goals.total_goals > 0) {
+    return `${displayName} have ${summary.goals.total_goals} goals in the workspace, but none are actively funding right now. ${summary.documents.recent_document_count} synced documents are available for review.`;
+  }
+
+  return `${displayName} are connected to GoalWealth. Risk profile and document context are ready; create the next goal to start the live funding plan.`;
+}
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const navigationCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { state: userState, isSessionReady } = useMyUser();
+  const liveAdapterEnabled = isGoalwealthLiveAdapterEnabled();
   const { isSmallPhone } = useResponsive();
   const { tabBarFloatingClearance } = useTabBarClearance();
   const {
@@ -90,12 +264,201 @@ export default function HomeScreen() {
     (sum, item) => sum + item.holding.shares * item.stock.dayChange,
     0
   );
-  const priorityGoal = financeGoals.find((goal) => goal.id === 'emergency') ?? financeGoals[0];
-  const priorityGoalProgress = priorityGoal ? priorityGoal.saved / priorityGoal.target : 0;
-  const priorityGoalGap = priorityGoal ? Math.max(priorityGoal.target - priorityGoal.saved, 0) : 0;
+  const [liveSummary, setLiveSummary] = useState<GoalwealthSummaryData | null>(null);
+  const [liveRecommendations, setLiveRecommendations] = useState<GoalwealthRecommendationsData | null>(null);
   const recentTransactions = transactions.slice(0, 3);
   const topSignal = proposalNewsSignals[0];
   const topRebalance = proposalRebalanceActions[0];
+
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        !liveAdapterEnabled ||
+        !isSessionReady ||
+        !userState.isAuthenticated ||
+        !userState.accessToken?.trim() ||
+        userState.authMode === 'registered-password'
+      ) {
+        setLiveSummary(null);
+        return undefined;
+      }
+
+      let cancelled = false;
+
+      void getGoalwealthSummary(userState.accessToken)
+        .then((response) => {
+          if (!cancelled) {
+            setLiveSummary(response.data);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setLiveSummary(null);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [
+      isSessionReady,
+      liveAdapterEnabled,
+      userState.accessToken,
+      userState.authMode,
+      userState.isAuthenticated,
+    ])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        !liveAdapterEnabled ||
+        !isSessionReady ||
+        !userState.isAuthenticated ||
+        !userState.accessToken?.trim() ||
+        userState.authMode === 'registered-password'
+      ) {
+        setLiveRecommendations(null);
+        return undefined;
+      }
+
+      let cancelled = false;
+
+      void getGoalwealthRecommendations(userState.accessToken)
+        .then((response) => {
+          if (!cancelled) {
+            setLiveRecommendations(response.data);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setLiveRecommendations(null);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [
+      isSessionReady,
+      liveAdapterEnabled,
+      userState.accessToken,
+      userState.authMode,
+      userState.isAuthenticated,
+    ])
+  );
+
+  useEffect(() => {
+    if (
+      !liveAdapterEnabled ||
+      !isSessionReady ||
+      !userState.isAuthenticated ||
+      !userState.accessToken?.trim() ||
+      userState.authMode === 'registered-password'
+    ) {
+      setLiveSummary(null);
+      return undefined;
+    }
+  }, [
+    isSessionReady,
+    liveAdapterEnabled,
+    userState.accessToken,
+    userState.authMode,
+    userState.isAuthenticated,
+  ]);
+
+  useEffect(() => {
+    if (
+      !liveAdapterEnabled ||
+      !isSessionReady ||
+      !userState.isAuthenticated ||
+      !userState.accessToken?.trim() ||
+      userState.authMode === 'registered-password'
+    ) {
+      setLiveRecommendations(null);
+      return undefined;
+    }
+  }, [
+    isSessionReady,
+    liveAdapterEnabled,
+    userState.accessToken,
+    userState.authMode,
+    userState.isAuthenticated,
+  ]);
+
+  const fallbackPriorityGoal = financeGoals.find((goal) => goal.id === 'emergency') ?? financeGoals[0];
+  const livePriorityGoal =
+    liveSummary?.goals.recent_goals.find((goal) => goal.status === 'active') ??
+    liveSummary?.goals.recent_goals[0] ??
+    null;
+  const priorityGoalTitle = livePriorityGoal?.title?.trim() || fallbackPriorityGoal?.title || 'Goal priority';
+  const priorityGoalSaved = Math.max(
+    0,
+    livePriorityGoal?.current_progress ?? fallbackPriorityGoal?.saved ?? 0
+  );
+  const priorityGoalTarget = Math.max(
+    livePriorityGoal?.target_amount ?? fallbackPriorityGoal?.target ?? priorityGoalSaved,
+    priorityGoalSaved,
+    1
+  );
+  const priorityGoalProgress = priorityGoalTarget > 0 ? priorityGoalSaved / priorityGoalTarget : 0;
+  const priorityGoalGap = Math.max(priorityGoalTarget - priorityGoalSaved, 0);
+  const priorityGoalStatus = livePriorityGoal
+    ? formatSummaryGoalStatus(livePriorityGoal.status)
+    : 'Funding';
+  const priorityGoalDueLabel = livePriorityGoal
+    ? formatSummaryGoalDueLabel(livePriorityGoal)
+    : fallbackPriorityGoal?.dueLabel;
+  const heroBody = liveSummary ? buildLiveSummaryBody(liveSummary) : proposalAdvisorSnapshot.summary;
+  const heroSignalItems = liveSummary
+    ? [
+        {
+          label: `${Math.round(liveSummary.risk_profile.calculated_score ?? 0)}/100 risk`,
+          icon: 'analytics' as const,
+          tint: colors.primaryDark,
+        },
+        {
+          label: `${liveSummary.goals.total_active_goals} goals live`,
+          icon: 'flag' as const,
+          tint: colors.success,
+        },
+        {
+          label: `${liveSummary.documents.recent_document_count} docs synced`,
+          icon: 'description' as const,
+          tint: colors.warning,
+        },
+      ]
+    : [
+        {
+          label: `${proposalAdvisorSnapshot.disciplineScore}/100 discipline`,
+          icon: 'emoji-events' as const,
+          tint: colors.primaryDark,
+        },
+        {
+          label: `${proposalAdvisorSnapshot.activeGoals} goals live`,
+          icon: 'flag' as const,
+          tint: colors.success,
+        },
+        {
+          label: `${proposalAdvisorSnapshot.highImpactSignals} alerts`,
+          icon: 'notifications-active' as const,
+          tint: colors.warning,
+        },
+      ];
+  const priorityItems = useMemo<HomePriorityCardItem[]>(() => {
+    if (!liveRecommendations) {
+      return proposalTopPriorities.map((item) => ({ ...item }));
+    }
+
+    if (liveRecommendations.items.length === 0) {
+      return [buildEmptyRecommendationItem()];
+    }
+
+    return liveRecommendations.items.map(mapRecommendationToPriorityItem);
+  }, [liveRecommendations]);
+  const prioritySectionMeta = liveRecommendations
+    ? `${liveRecommendations.summary.high_priority} high • ${liveRecommendations.summary.total} total`
+    : 'Act on the highest-value items first';
 
   useEffect(() => {
     return () => {
@@ -116,7 +479,7 @@ export default function HomeScreen() {
     }, 650);
   }, [router]);
 
-  const openRoute = useCallback((route: ProposalRoute) => {
+  const openRoute = useCallback((route: HomeRoutePath) => {
     pushDebounced(route as HomeRouteTarget);
   }, [pushDebounced]);
 
@@ -138,27 +501,11 @@ export default function HomeScreen() {
             Stay on plan.
           </Text>
           <Text style={[styles.heroBody, { color: hexToRgba(colors.card, 0.82) }]}>
-            {proposalAdvisorSnapshot.summary}
+            {heroBody}
           </Text>
 
           <View style={styles.heroChipRow}>
-            {[
-              {
-                label: `${proposalAdvisorSnapshot.disciplineScore}/100 discipline`,
-                icon: 'emoji-events' as const,
-                tint: colors.primaryDark,
-              },
-              {
-                label: `${proposalAdvisorSnapshot.activeGoals} goals live`,
-                icon: 'flag' as const,
-                tint: colors.success,
-              },
-              {
-                label: `${proposalAdvisorSnapshot.highImpactSignals} alerts`,
-                icon: 'notifications-active' as const,
-                tint: colors.warning,
-              },
-            ].map((item) => (
+            {heroSignalItems.map((item) => (
               <View
                 key={item.label}
                 style={[
@@ -219,7 +566,7 @@ export default function HomeScreen() {
         <View style={styles.sectionStack}>
           <ProductSectionHeader
             title="Top priorities"
-            meta="Act on the highest-value items first"
+            meta={prioritySectionMeta}
             actionLabel="Advisor"
             onPress={() => pushDebounced('/(tabs)/assistant')}
           />
@@ -231,7 +578,7 @@ export default function HomeScreen() {
             maxColumns={2}
             maxContentWidth={960}
           >
-            {proposalTopPriorities.map((item) => {
+            {priorityItems.map((item) => {
               const accent = toneColor(colors, item.tone);
 
               return (
@@ -267,14 +614,14 @@ export default function HomeScreen() {
             <ProductSurfaceCard>
               <ProductSectionHeader
                 title="Goal funding"
-                meta={priorityGoal ? priorityGoal.title : 'Goal priority'}
+                meta={priorityGoalTitle}
                 actionLabel="Planner"
                 onPress={() => pushDebounced('/(finance)/financial-goals')}
               />
 
               <View style={styles.progressHeader}>
                 <Text style={[styles.progressValue, { color: colors.text }]}>
-                  {priorityGoal ? formatCurrency(priorityGoal.saved) : '$0'}
+                  {formatCurrency(priorityGoalSaved)}
                 </Text>
                 <Text style={[styles.progressMeta, { color: colors.primaryDark }]}>
                   {Math.round(priorityGoalProgress * 100)}%
@@ -296,14 +643,18 @@ export default function HomeScreen() {
                 <ProductMetricTile
                   label="Gap"
                   value={formatCurrency(priorityGoalGap)}
-                  helper={priorityGoal?.dueLabel}
+                  helper={priorityGoalDueLabel}
                   tone="warning"
                 />
                 <ProductMetricTile
-                  label="Monthly focus"
-                  value="$450"
-                  helper="Fund high-priority goal first"
-                  tone="success"
+                  label={livePriorityGoal ? 'Current status' : 'Monthly focus'}
+                  value={livePriorityGoal ? priorityGoalStatus : '$450'}
+                  helper={
+                    livePriorityGoal
+                      ? `${liveSummary?.goals.total_active_goals ?? 0} active goals in GoalWealth`
+                      : 'Fund high-priority goal first'
+                  }
+                  tone={livePriorityGoal ? 'primaryDark' : 'success'}
                 />
               </View>
             </ProductSurfaceCard>

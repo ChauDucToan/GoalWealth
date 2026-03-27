@@ -1,4 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import type { GoalwealthMemoryGoalStatus } from '@/services/api/types';
 import type { GoalPlanningItem, GoalPriority } from '@/types/product-domain';
 
 export type GoalIconName = React.ComponentProps<typeof MaterialIcons>['name'];
@@ -31,6 +32,8 @@ export type FinancialGoalItem = GoalPlanningItem & {
   id: string;
   title: string;
   category: string;
+  lifecycleStatus: GoalwealthMemoryGoalStatus;
+  lifecycleLabel: string;
   saved: number;
   target: number;
   dueLabel: string;
@@ -72,6 +75,12 @@ export type GoalPriorityOption = {
 
 export type GoalRiskOption = {
   id: string;
+  label: string;
+  body: string;
+};
+
+export type GoalLifecycleOption = {
+  id: GoalwealthMemoryGoalStatus;
   label: string;
   body: string;
 };
@@ -119,6 +128,8 @@ export const financialGoals: FinancialGoalItem[] = [
     goalTitle: 'Vacation',
     title: 'Vacation',
     category: 'Lifestyle',
+    lifecycleStatus: 'active',
+    lifecycleLabel: 'Active',
     saved: 1480,
     target: 2400,
     targetAmount: 2400,
@@ -186,6 +197,8 @@ export const financialGoals: FinancialGoalItem[] = [
     goalTitle: 'Emergency Fund',
     title: 'Emergency Fund',
     category: 'Safety',
+    lifecycleStatus: 'active',
+    lifecycleLabel: 'Active',
     saved: 3200,
     target: 5000,
     targetAmount: 5000,
@@ -253,6 +266,8 @@ export const financialGoals: FinancialGoalItem[] = [
     goalTitle: 'Home Office Upgrade',
     title: 'Home Office Upgrade',
     category: 'Work',
+    lifecycleStatus: 'active',
+    lifecycleLabel: 'Active',
     saved: 860,
     target: 1800,
     targetAmount: 1800,
@@ -427,6 +442,29 @@ export const financialGoalIntroHighlights: GoalIntroHighlight[] = [
   },
 ];
 
+export const goalLifecycleOptions: GoalLifecycleOption[] = [
+  {
+    id: 'active',
+    label: 'Active',
+    body: 'The goal stays in the live funding plan and keeps receiving monthly allocation.',
+  },
+  {
+    id: 'paused',
+    label: 'Paused',
+    body: 'The goal stays visible but stops taking monthly funding until you resume it.',
+  },
+  {
+    id: 'completed',
+    label: 'Completed',
+    body: 'The goal is finished and no longer competes for the active funding plan.',
+  },
+  {
+    id: 'archived',
+    label: 'Archived',
+    body: 'The goal is kept for history only and removed from the live workspace sequence.',
+  },
+];
+
 function normalizeGoalId(goalId?: string | string[] | null) {
   return Array.isArray(goalId) ? goalId[0] ?? null : goalId ?? null;
 }
@@ -464,19 +502,57 @@ export function getGoalAccountById(accountId?: string | string[] | null) {
   return financialGoalAccounts.find((account) => account.id === normalized) ?? financialGoalAccounts[0];
 }
 
+export function getGoalLifecycleLabel(status: GoalwealthMemoryGoalStatus) {
+  return goalLifecycleOptions.find((option) => option.id === status)?.label ?? 'Active';
+}
+
+export function getGoalLifecycleDescription(status: GoalwealthMemoryGoalStatus) {
+  return (
+    goalLifecycleOptions.find((option) => option.id === status)?.body ??
+    'The goal stays in the live funding plan.'
+  );
+}
+
+export function getGoalLifecycleRank(status: GoalwealthMemoryGoalStatus) {
+  switch (status) {
+    case 'active':
+      return 0;
+    case 'paused':
+      return 1;
+    case 'completed':
+      return 2;
+    case 'archived':
+      return 3;
+    default:
+      return 4;
+  }
+}
+
 export function sortFinancialGoalsByPriority(goals: FinancialGoalItem[] = financialGoals) {
-  return [...goals].sort((left, right) => left.priorityOrder - right.priorityOrder);
+  return [...goals].sort((left, right) => {
+    const lifecycleRank = getGoalLifecycleRank(left.lifecycleStatus) - getGoalLifecycleRank(right.lifecycleStatus);
+    if (lifecycleRank !== 0) {
+      return lifecycleRank;
+    }
+
+    return left.priorityOrder - right.priorityOrder;
+  });
 }
 
 export function getGoalTransferSummary(goals: FinancialGoalItem[] = financialGoals) {
   const orderedGoals = sortFinancialGoalsByPriority(goals);
+  const activeGoalRows = orderedGoals.filter((goal) => goal.lifecycleStatus === 'active');
   if (!orderedGoals.length) {
     return {
       totalSaved: 0,
       totalTarget: 0,
       monthlyContribution: 0,
       totalLeft: 0,
+      totalGoals: 0,
       activeGoals: 0,
+      pausedGoals: 0,
+      completedGoals: 0,
+      archivedGoals: 0,
       highPriorityGoals: 0,
       nextPriorityGoal: null,
       averageFeasibility: 0,
@@ -485,21 +561,26 @@ export function getGoalTransferSummary(goals: FinancialGoalItem[] = financialGoa
 
   const totalSaved = orderedGoals.reduce((sum, goal) => sum + goal.saved, 0);
   const totalTarget = orderedGoals.reduce((sum, goal) => sum + goal.target, 0);
-  const monthlyContribution = orderedGoals.reduce(
+  const monthlyContribution = activeGoalRows.reduce(
     (sum, goal) => sum + goal.monthlyContribution,
     0
   );
-  const highPriorityGoals = orderedGoals.filter((goal) => goal.priority === 'High');
-  const nextPriorityGoal = orderedGoals[0];
+  const highPriorityGoals = activeGoalRows.filter((goal) => goal.priority === 'High');
+  const nextPriorityGoal = activeGoalRows[0] ?? orderedGoals[0];
+  const feasibilityPool = activeGoalRows.length ? activeGoalRows : orderedGoals;
   const averageFeasibility =
-    orderedGoals.reduce((sum, goal) => sum + goal.feasibilityProbability, 0) / orderedGoals.length;
+    feasibilityPool.reduce((sum, goal) => sum + goal.feasibilityProbability, 0) / feasibilityPool.length;
 
   return {
     totalSaved,
     totalTarget,
     monthlyContribution,
     totalLeft: totalTarget - totalSaved,
-    activeGoals: orderedGoals.length,
+    totalGoals: orderedGoals.length,
+    activeGoals: activeGoalRows.length,
+    pausedGoals: orderedGoals.filter((goal) => goal.lifecycleStatus === 'paused').length,
+    completedGoals: orderedGoals.filter((goal) => goal.lifecycleStatus === 'completed').length,
+    archivedGoals: orderedGoals.filter((goal) => goal.lifecycleStatus === 'archived').length,
     highPriorityGoals: highPriorityGoals.length,
     nextPriorityGoal,
     averageFeasibility,
