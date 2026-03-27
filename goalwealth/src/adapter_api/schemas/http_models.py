@@ -38,3 +38,22 @@ if PYDANTIC_AVAILABLE:
 
     class OcrIngressRequestModel(BaseModel):
         raw_text: str = Field(..., min_length=1)
+
+
+    class MeUpdateRequestModel(BaseModel):
+        display_name: str | None = Field(default=None, min_length=1)
+        phone: str | None = None
+        city: str | None = None
+        country_code: str | None = Field(default=None, min_length=2, max_length=2)
+        timezone: str | None = None
+
+
+    class RiskProfileUpsertRequestModel(BaseModel):
+        risk_tolerance: str | None = None
+        investment_horizon: str | None = None
+        knowledge_level: str | None = None
+        liquidity_needs: str | None = None
+        calculated_score: float | None = None
+        max_loss: float | None = None
+        min_return: float | None = None
+        notes: str | None = None
