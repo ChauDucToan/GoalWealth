@@ -353,7 +353,12 @@ export default function AddTransactionScreen() {
                 size={18}
                 color={hexToRgba(colors.text, 0.48)}
               />
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Ignore from Budgets</Text>
+              <View style={styles.fieldLabelWrap}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>Ignore from Budgets</Text>
+                <Text style={[styles.fieldHelper, { color: hexToRgba(colors.text, 0.52) }]}>
+                  Saves the transaction in history without counting it toward monthly budget totals.
+                </Text>
+              </View>
             </View>
             <Pressable
               style={[
@@ -560,6 +565,11 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  fieldLabelWrap: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
   fieldRowRight: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -571,6 +581,11 @@ const styles = StyleSheet.create({
     fontSize: Typography.body,
     fontWeight: '600',
     flexShrink: 1,
+  },
+  fieldHelper: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
   },
   fieldValue: {
     fontSize: Typography.body,

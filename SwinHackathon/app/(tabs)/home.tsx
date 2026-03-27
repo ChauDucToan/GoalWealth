@@ -30,16 +30,19 @@ import { useTabBarClearance } from '@/hooks/use-tab-bar-clearance';
 import { useTheme } from '@/hooks/use-theme-colors';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 function toneColor(colors: ReturnType<typeof useTheme>['colors'], tone: ProposalTone) {
   return colors[tone];
 }
 
+type HomeRouteTarget = Parameters<ReturnType<typeof useRouter>['push']>[0];
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const navigationCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isSmallPhone } = useResponsive();
   const { tabBarFloatingClearance } = useTabBarClearance();
   const {
@@ -94,7 +97,28 @@ export default function HomeScreen() {
   const topSignal = proposalNewsSignals[0];
   const topRebalance = proposalRebalanceActions[0];
 
-  const openRoute = (route: ProposalRoute) => router.push(route as never);
+  useEffect(() => {
+    return () => {
+      if (navigationCooldownRef.current) {
+        clearTimeout(navigationCooldownRef.current);
+      }
+    };
+  }, []);
+
+  const pushDebounced = useCallback((target: HomeRouteTarget) => {
+    if (navigationCooldownRef.current) {
+      return;
+    }
+
+    router.push(target);
+    navigationCooldownRef.current = setTimeout(() => {
+      navigationCooldownRef.current = null;
+    }, 650);
+  }, [router]);
+
+  const openRoute = useCallback((route: ProposalRoute) => {
+    pushDebounced(route as HomeRouteTarget);
+  }, [pushDebounced]);
 
   return (
     <ScrollView
@@ -172,7 +196,7 @@ export default function HomeScreen() {
             <View style={styles.heroButtonWrap}>
               <ThemeButton
                 title="Open advisor"
-                onPress={() => router.push('/(tabs)/assistant')}
+                onPress={() => pushDebounced('/(tabs)/assistant')}
                 colorBackground={colors.card}
                 colorText={colors.primaryDark}
                 style={styles.heroButton}
@@ -181,7 +205,7 @@ export default function HomeScreen() {
             <View style={styles.heroButtonWrap}>
               <ThemeButton
                 title="Review plan"
-                onPress={() => router.push('/(finance)/financial-goals')}
+                onPress={() => pushDebounced('/(finance)/financial-goals')}
                 colorBackground={hexToRgba(colors.card, 0.14)}
                 colorText={colors.card}
                 style={[styles.heroButton, styles.heroOutlineButton]}
@@ -197,7 +221,7 @@ export default function HomeScreen() {
             title="Top priorities"
             meta="Act on the highest-value items first"
             actionLabel="Advisor"
-            onPress={() => router.push('/(tabs)/assistant')}
+            onPress={() => pushDebounced('/(tabs)/assistant')}
           />
 
           <ResponsiveGrid
@@ -245,7 +269,7 @@ export default function HomeScreen() {
                 title="Goal funding"
                 meta={priorityGoal ? priorityGoal.title : 'Goal priority'}
                 actionLabel="Planner"
-                onPress={() => router.push('/(finance)/financial-goals')}
+                onPress={() => pushDebounced('/(finance)/financial-goals')}
               />
 
               <View style={styles.progressHeader}>
@@ -289,7 +313,7 @@ export default function HomeScreen() {
                 title="Portfolio"
                 meta={featuredStock?.symbol ?? 'No symbol selected'}
                 actionLabel="Desk"
-                onPress={() => router.push('/(finance)/investments')}
+                onPress={() => pushDebounced('/(finance)/investments')}
               />
 
               <View style={styles.portfolioHeader}>
@@ -367,16 +391,16 @@ export default function HomeScreen() {
                 tone={topRebalance.tone}
                 rightText={topRebalance.impact}
                 divider={false}
-                onPress={() => router.push('/(finance)/investments')}
+                onPress={() => pushDebounced('/(finance)/investments')}
               />
             </ProductSurfaceCard>
 
             <ProductSurfaceCard>
               <ProductSectionHeader
-                title="Risk check"
+                title="Financial profile"
                 meta="Assessment-based"
-                actionLabel="Refresh"
-                onPress={() => router.push('/(finance)/financial-assessment')}
+                actionLabel="Open"
+                onPress={() => pushDebounced('/(finance)/financial-assessment')}
               />
 
               <View style={styles.metricRow}>
@@ -401,6 +425,14 @@ export default function HomeScreen() {
                 rightText="No live sync"
                 divider={false}
               />
+
+              <ThemeButton
+                title="Open financial assessment"
+                onPress={() => pushDebounced('/(finance)/financial-assessment')}
+                colorBackground={colors.primaryDark}
+                colorText={colors.card}
+                style={styles.assessmentButton}
+              />
             </ProductSurfaceCard>
           </ResponsiveGrid>
         </View>
@@ -411,7 +443,7 @@ export default function HomeScreen() {
               title="Next activity"
               meta="Recent ledger and alert context"
               actionLabel="Ledger"
-              onPress={() => router.push('/(tabs)/transactions')}
+              onPress={() => pushDebounced('/(tabs)/transactions')}
             />
 
             <ProductRow
@@ -434,7 +466,7 @@ export default function HomeScreen() {
                 rightText={formatCurrency(item.amount)}
                 divider={index < recentTransactions.length - 1}
                 onPress={() =>
-                  router.push({
+                  pushDebounced({
                     pathname: '/(finance)/transaction/[id]',
                     params: { id: item.id },
                   })
@@ -618,6 +650,9 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 999,
     overflow: 'hidden',
+  },
+  assessmentButton: {
+    marginTop: 14,
   },
   progressBar: {
     height: '100%',

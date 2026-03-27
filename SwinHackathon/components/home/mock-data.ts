@@ -633,6 +633,7 @@ export const stockHoldingsSeed: StockHolding[] = [
 export const stockWatchlistSeed = ['NVDA', 'AAPL', 'MSFT', 'TSLA', 'GOOGL'];
 
 export const recurringOptions = [
+  'No repeat',
   'Every day',
   'Every week',
   'Every month',

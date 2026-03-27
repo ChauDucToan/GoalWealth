@@ -80,6 +80,46 @@ export type GoalwealthMetaEnvelope = GoalwealthSuccessEnvelope<GoalwealthRootDat
 export type GoalwealthHealthEnvelope = GoalwealthSuccessEnvelope<GoalwealthHealthData>;
 export type GoalwealthReadyEnvelope = GoalwealthSuccessEnvelope<GoalwealthReadyData>;
 
+export type GoalwealthMeUserData = {
+  user_id: string;
+  display_name: string | null;
+  email: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  timezone: string | null;
+  locale: string | null;
+  location: {
+    city: string | null;
+    country: string | null;
+  };
+};
+
+export type GoalwealthMeData = {
+  user: GoalwealthMeUserData;
+  onboarding: {
+    completed: boolean;
+    status: string;
+  };
+  summary: {
+    total_active_goals: number;
+    total_goals: number;
+    risk_tolerance: string | null;
+    recent_document_count: number;
+  };
+  conversation?: {
+    last_topic: string | null;
+    last_message: string | null;
+  };
+};
+
+export type GoalwealthMePatchRequest = {
+  display_name?: string;
+  phone?: string;
+  city?: string;
+  country_code?: string;
+  timezone?: string;
+};
+
 export type GoalwealthChatRequest = {
   message: string;
   session_id?: string;
@@ -130,6 +170,31 @@ export type GoalwealthOcrRecordData = {
 };
 
 export type GoalwealthOcrRecordEnvelope = GoalwealthSuccessEnvelope<GoalwealthOcrRecordData>;
+
+export type GoalwealthRiskProfileData = {
+  user_id: string;
+  risk_profile: {
+    risk_tolerance: GoalwealthRiskTolerance | null;
+    calculated_score: number | null;
+    investment_horizon: GoalwealthInvestmentHorizon | null;
+    knowledge_level: GoalwealthKnowledgeLevel | null;
+    liquidity_needs: GoalwealthLiquidityNeeds | null;
+    max_loss: number | null;
+    min_return: number | null;
+  };
+  source: 'persistence' | 'fallback';
+};
+
+export type GoalwealthRiskProfileUpsertRequest = {
+  risk_tolerance?: GoalwealthRiskTolerance;
+  investment_horizon?: GoalwealthInvestmentHorizon;
+  knowledge_level?: GoalwealthKnowledgeLevel;
+  liquidity_needs?: GoalwealthLiquidityNeeds;
+  calculated_score?: number;
+  max_loss?: number;
+  min_return?: number;
+  notes?: string;
+};
 
 export type GoalwealthInternalErrorResponse = {
   error_code: string;

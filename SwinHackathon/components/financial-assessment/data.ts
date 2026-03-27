@@ -419,6 +419,24 @@ export function buildFinancialProfile(state: FinancialAssessmentState): Financia
   };
 }
 
+function mapPersistedRiskToleranceToLabel(
+  riskTolerance: FinancialAssessmentState['persistedRiskTolerance']
+) {
+  switch (riskTolerance) {
+    case 'aggressive':
+      return 'Moderate Growth';
+    case 'growth':
+      return 'Moderate Growth';
+    case 'balanced':
+    case 'moderate':
+      return 'Balanced';
+    case 'conservative':
+      return 'Capital Preservation';
+    default:
+      return null;
+  }
+}
+
 export function buildAssessmentResult(state: FinancialAssessmentState): AssessmentResult {
   const profile = buildFinancialProfile(state);
   const monthlySaved = Math.round((profile.monthlyIncome * profile.savingsRate) / 100);
@@ -430,7 +448,7 @@ export function buildAssessmentResult(state: FinancialAssessmentState): Assessme
       ? Math.round((profile.liquidAssets / profile.monthlyObligations) * 10) / 10
       : profile.emergencyFundMonths;
   const behaviourScore = state.spendingBehaviourScore ?? 3;
-  const readinessScore = Math.max(
+  const calculatedReadinessScore = Math.max(
     0,
     Math.min(
       100,
@@ -441,13 +459,15 @@ export function buildAssessmentResult(state: FinancialAssessmentState): Assessme
         Math.max(0, 3 - behaviourScore) * 6
     )
   );
+  const readinessScore = state.persistedRiskCalculatedScore ?? calculatedReadinessScore;
 
   const riskLabel =
-    profile.emergencyFundMonths >= 6 && behaviourScore >= 4
+    mapPersistedRiskToleranceToLabel(state.persistedRiskTolerance) ??
+    (profile.emergencyFundMonths >= 6 && behaviourScore >= 4
       ? 'Moderate Growth'
       : profile.emergencyFundMonths >= 3
         ? 'Balanced'
-        : 'Capital Preservation';
+        : 'Capital Preservation');
   const suitabilityStatus =
     profile.emergencyFundMonths >= 3 && debtPressureRatio < 2.2
       ? 'clear'

@@ -73,7 +73,7 @@ const initialDraft: TransactionDraft = {
   merchant: '',
   category: budgetCategories[0]?.name ?? 'Housing',
   note: '',
-  recurring: 'Every month',
+  recurring: 'No repeat',
   dateLabel: 'Today',
   ignoreFromBudgets: false,
 };

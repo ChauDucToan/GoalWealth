@@ -10,24 +10,35 @@ import {
   ProfileSettingsStat,
 } from '@/components/profile-settings/ui';
 import { Typography } from '@/constants/theme';
+import { useMyUser } from '@/context/myUserContext';
 import { useProfileSettings } from '@/context/profileSettingsContext';
 import { useDebouncedPress } from '@/hooks/use-debounced-press';
 import { useTheme } from '@/hooks/use-theme-colors';
+import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
+import { normalizeGoalwealthError } from '@/services/api/errors';
+import { mapGoalwealthMeToUserProfile, patchGoalwealthMe } from '@/services/api/me';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function ProfileAccountScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
+  const { state: userState, dispatch, actions } = useMyUser();
   const { profile, exportStatusLabel, updateProfile, requestExport } = useProfileSettings();
   const exportStatusSummary = exportStatusLabel.includes('requested') ? 'Queued now' : 'Recent';
+  const liveAdapterEnabled = isGoalwealthLiveAdapterEnabled();
   const [draft, setDraft] = useState({
     name: profile.name,
     email: profile.email,
     phone: profile.phone,
+    city: profile.city,
+    countryCode: profile.countryCode,
+    timezone: profile.timezone,
   });
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const { handlePress: handleExportDataPress, isCoolingDown: isExportDataCoolingDown } =
     useDebouncedPress(() => {
       requestExport();
@@ -37,6 +48,80 @@ export default function ProfileAccountScreen() {
     useDebouncedPress(() => {
       router.push({ pathname: '/(profile)/result', params: { mode: 'export' } });
     }, 500);
+
+  useEffect(() => {
+    setDraft({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      city: profile.city,
+      countryCode: profile.countryCode,
+      timezone: profile.timezone,
+    });
+  }, [profile]);
+
+  const handleSaveChanges = async () => {
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      const localPatch = {
+        name: draft.name.trim() || profile.name,
+        email: profile.email,
+        phone: draft.phone.trim() || '',
+        city: draft.city.trim() || '',
+        countryCode: draft.countryCode.trim().toUpperCase() || '',
+        timezone: draft.timezone.trim() || profile.timezone,
+      };
+
+      updateProfile(localPatch);
+
+      if (
+        liveAdapterEnabled &&
+        userState.accessToken?.trim() &&
+        userState.authMode !== 'registered-password'
+      ) {
+        const response = await patchGoalwealthMe(
+          {
+            display_name: localPatch.name,
+            phone: localPatch.phone || undefined,
+            city: localPatch.city || undefined,
+            country_code: localPatch.countryCode || undefined,
+            timezone: localPatch.timezone || undefined,
+          },
+          userState.accessToken
+        );
+
+        updateProfile({
+          name: response.data.user.display_name?.trim() || localPatch.name,
+          email: response.data.user.email?.trim() || profile.email,
+          phone: response.data.user.phone?.trim() || localPatch.phone,
+          city: response.data.user.location.city?.trim() || localPatch.city,
+          countryCode: response.data.user.location.country?.trim() || localPatch.countryCode,
+          timezone: response.data.user.timezone?.trim() || localPatch.timezone,
+          locale: response.data.user.locale?.trim() || profile.locale,
+        });
+        dispatch(actions.updateProfile(mapGoalwealthMeToUserProfile(response.data)));
+      } else {
+        dispatch(
+          actions.updateProfile({
+            name: localPatch.name,
+            phone: localPatch.phone || undefined,
+            city: localPatch.city || undefined,
+            countryCode: localPatch.countryCode || undefined,
+            timezone: localPatch.timezone || undefined,
+          })
+        );
+      }
+
+      router.push({ pathname: '/(profile)/result', params: { mode: 'profile' } });
+    } catch (error) {
+      const normalizedError = normalizeGoalwealthError(error);
+      setSaveError(normalizedError.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <FinanceScreen
@@ -87,14 +172,14 @@ export default function ProfileAccountScreen() {
               <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.54) }]}>Email address</Text>
               <TextInput
                 value={draft.email}
-                onChangeText={(value) => setDraft((current) => ({ ...current, email: value }))}
-                placeholder="Enter your email"
+                editable={false}
+                placeholder="Managed by your sign-in provider"
                 placeholderTextColor={hexToRgba(colors.text, 0.34)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={[
                   styles.input,
-                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft },
+                  { color: hexToRgba(colors.text, 0.56), borderColor: colors.border, backgroundColor: colors.backgroundSoft },
                 ]}
               />
             </View>
@@ -112,6 +197,55 @@ export default function ProfileAccountScreen() {
                 ]}
               />
             </View>
+            <View>
+              <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.54) }]}>City</Text>
+              <TextInput
+                value={draft.city}
+                onChangeText={(value) => setDraft((current) => ({ ...current, city: value }))}
+                placeholder="Enter your city"
+                placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                style={[
+                  styles.input,
+                  { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft },
+                ]}
+              />
+            </View>
+            <View style={styles.splitRow}>
+              <View style={styles.splitField}>
+                <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.54) }]}>Country code</Text>
+                <TextInput
+                  value={draft.countryCode}
+                  onChangeText={(value) =>
+                    setDraft((current) => ({ ...current, countryCode: value.toUpperCase() }))
+                  }
+                  placeholder="VN"
+                  placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                  autoCapitalize="characters"
+                  maxLength={2}
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft },
+                  ]}
+                />
+              </View>
+              <View style={styles.splitField}>
+                <Text style={[styles.fieldLabel, { color: hexToRgba(colors.text, 0.54) }]}>Timezone</Text>
+                <TextInput
+                  value={draft.timezone}
+                  onChangeText={(value) => setDraft((current) => ({ ...current, timezone: value }))}
+                  placeholder="Asia/Ho_Chi_Minh"
+                  placeholderTextColor={hexToRgba(colors.text, 0.34)}
+                  autoCapitalize="none"
+                  style={[
+                    styles.input,
+                    { color: colors.text, borderColor: colors.border, backgroundColor: colors.backgroundSoft },
+                  ]}
+                />
+              </View>
+            </View>
+            {saveError ? (
+              <Text style={[styles.errorText, { color: colors.error }]}>{saveError}</Text>
+            ) : null}
           </View>
         </ProfileSettingsCard>
 
@@ -169,12 +303,10 @@ export default function ProfileAccountScreen() {
 
         <ProfilePrimaryActions
           primaryLabel="Save Changes"
-          onPrimary={() => {
-            updateProfile(draft);
-            router.push({ pathname: '/(profile)/result', params: { mode: 'profile' } });
-          }}
+          onPrimary={handleSaveChanges}
           secondaryLabel="Cancel"
           onSecondary={() => router.back()}
+          primaryDisabled={isSaving}
         />
       </View>
     </FinanceScreen>
@@ -228,12 +360,24 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginTop: 16,
       gap: 14,
     },
+    splitRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    splitField: {
+      flex: 1,
+    },
     fieldLabel: {
       fontSize: 12,
       fontWeight: '700',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
       marginBottom: 8,
+    },
+    errorText: {
+      fontSize: 12,
+      lineHeight: 18,
+      fontWeight: '600',
     },
     input: {
       minHeight: 48,

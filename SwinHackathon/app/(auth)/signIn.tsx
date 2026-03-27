@@ -23,6 +23,7 @@ import {
 } from '@/services/auth/sign-in';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import * as Google from 'expo-auth-session/providers/google';
+import type { AuthSessionResult } from 'expo-auth-session';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
@@ -32,6 +33,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_PLACEHOLDER_CLIENT_ID = 'goalwealth-placeholder.apps.googleusercontent.com';
+
+function isResolvedAuthSessionResult(
+  result: AuthSessionResult
+): result is Extract<AuthSessionResult, { type: 'success' | 'error' }> {
+  return result.type === 'success' || result.type === 'error';
+}
 
 export default function SignIn() {
   const router = useRouter();
@@ -74,6 +81,7 @@ export default function SignIn() {
       webClientId: GOOGLE_PLACEHOLDER_CLIENT_ID,
       iosClientId: GOOGLE_PLACEHOLDER_CLIENT_ID,
       androidClientId: GOOGLE_PLACEHOLDER_CLIENT_ID,
+      redirectUri: undefined,
       scopes: ['openid', 'profile', 'email'],
       selectAccount: true,
     };
@@ -81,6 +89,30 @@ export default function SignIn() {
 
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest(googleRequestConfig);
   const handledGoogleResponseKey = useRef('');
+
+  const completeSignIn = useCallback(async (
+    runner: () => Promise<{
+      accessToken: string;
+      profile: Parameters<typeof actions.signInSuccess>[0];
+      authMode: Parameters<typeof actions.signInSuccess>[2];
+    }>
+  ) => {
+    setIsSubmitting(true);
+    dispatch(actions.setLoading(true));
+
+    try {
+      const result = await runner();
+      dispatch(actions.signInSuccess(result.profile, result.accessToken, result.authMode));
+      router.replace('/(tabs)/home');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign in right now.';
+      setAuthError(message);
+      dispatch(actions.setError(message));
+    } finally {
+      setIsSubmitting(false);
+      dispatch(actions.setLoading(false));
+    }
+  }, [actions, dispatch, router]);
 
   useEffect(() => {
     if (isSessionReady && state.isAuthenticated) {
@@ -111,12 +143,14 @@ export default function SignIn() {
       return;
     }
 
+    const resolvedGoogleResponse = isResolvedAuthSessionResult(googleResponse) ? googleResponse : null;
+
     const responseKey = JSON.stringify({
       type: googleResponse.type,
-      params: 'params' in googleResponse ? googleResponse.params : null,
-      hasAuthentication: Boolean(googleResponse.authentication),
-      hasIdToken: Boolean(googleResponse.authentication?.idToken),
-      hasAccessToken: Boolean(googleResponse.authentication?.accessToken),
+      params: resolvedGoogleResponse?.params ?? null,
+      hasAuthentication: Boolean(resolvedGoogleResponse?.authentication),
+      hasIdToken: Boolean(resolvedGoogleResponse?.authentication?.idToken),
+      hasAccessToken: Boolean(resolvedGoogleResponse?.authentication?.accessToken),
     });
 
     if (handledGoogleResponseKey.current === responseKey) {
@@ -132,14 +166,12 @@ export default function SignIn() {
           step: 'auth_response',
           type: googleResponse.type,
           hasIdToken:
-            Boolean(googleResponse.authentication?.idToken) ||
-            ('params' in googleResponse && typeof googleResponse.params?.id_token === 'string'),
+            Boolean(resolvedGoogleResponse?.authentication?.idToken) ||
+            typeof resolvedGoogleResponse?.params?.id_token === 'string',
           hasAccessToken:
-            Boolean(googleResponse.authentication?.accessToken) ||
-            ('params' in googleResponse &&
-              typeof googleResponse.params?.access_token === 'string'),
-          hasCode:
-            'params' in googleResponse && typeof googleResponse.params?.code === 'string',
+            Boolean(resolvedGoogleResponse?.authentication?.accessToken) ||
+            typeof resolvedGoogleResponse?.params?.access_token === 'string',
+          hasCode: typeof resolvedGoogleResponse?.params?.code === 'string',
         },
         null,
         2
@@ -165,14 +197,14 @@ export default function SignIn() {
     }
 
     const idToken =
-      googleResponse.authentication?.idToken ??
-      ('params' in googleResponse && typeof googleResponse.params?.id_token === 'string'
-        ? googleResponse.params.id_token
+      resolvedGoogleResponse?.authentication?.idToken ??
+      (typeof resolvedGoogleResponse?.params?.id_token === 'string'
+        ? resolvedGoogleResponse.params.id_token
         : '');
     const accessToken =
-      googleResponse.authentication?.accessToken ??
-      ('params' in googleResponse && typeof googleResponse.params?.access_token === 'string'
-        ? googleResponse.params.access_token
+      resolvedGoogleResponse?.authentication?.accessToken ??
+      (typeof resolvedGoogleResponse?.params?.access_token === 'string'
+        ? resolvedGoogleResponse.params.access_token
         : undefined);
 
     if (!idToken) {
@@ -199,30 +231,6 @@ export default function SignIn() {
       setAuthError('');
     }
   };
-
-  const completeSignIn = useCallback(async (
-    runner: () => Promise<{
-      accessToken: string;
-      profile: Parameters<typeof actions.signInSuccess>[0];
-      authMode: Parameters<typeof actions.signInSuccess>[2];
-    }>
-  ) => {
-    setIsSubmitting(true);
-    dispatch(actions.setLoading(true));
-
-    try {
-      const result = await runner();
-      dispatch(actions.signInSuccess(result.profile, result.accessToken, result.authMode));
-      router.replace('/(tabs)/home');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to sign in right now.';
-      setAuthError(message);
-      dispatch(actions.setError(message));
-    } finally {
-      setIsSubmitting(false);
-      dispatch(actions.setLoading(false));
-    }
-  }, [actions, dispatch, router]);
 
   const handleGoogleSignIn = async () => {
     setAuthError('');

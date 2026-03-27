@@ -49,6 +49,20 @@ export default function FinancialAssessmentEntryScreen() {
       ? 'Start assessment'
       : `Continue with ${nextBlock.label}`
     : 'Review condensed flow';
+  const suitabilityMetaLabel =
+    result.suitability.status === 'clear'
+      ? 'Passed'
+      : result.suitability.status === 'caution'
+        ? 'Caution'
+        : 'Blocked';
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/(tabs)/home');
+  };
 
   const incomeSourceLabel =
     incomeSourceOptions.find((item) => item.id === state.incomeSourceId)?.label ?? 'Income pending';
@@ -79,25 +93,57 @@ export default function FinancialAssessmentEntryScreen() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.backgroundSoft }]} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.topBar}>
+          <Pressable
+            style={[styles.topBarButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={handleBack}
+          >
+            <MaterialIcons name="arrow-back" size={18} color={colors.text} />
+          </Pressable>
+        </View>
+
         <View style={[styles.heroCard, { backgroundColor: hexToRgba(colors.primaryDark, 0.08) }]}>
-          <View style={styles.heroCopy}>
-            <Text style={[styles.eyebrow, { color: colors.primaryDark }]}>
-              COMPREHENSIVE ASSESSMENT
-            </Text>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Dynamic assessment with outputs the advisor can actually use.
-            </Text>
-            <Text style={[styles.body, { color: hexToRgba(colors.text, 0.58) }]}>
-              GoalWealth uses this flow to combine risk tolerance, financial capacity, behavioural signals and data quality before surfacing planning or portfolio recommendations.
-            </Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroHeadingWrap}>
+              <Text style={[styles.eyebrow, { color: colors.primaryDark }]}>
+                COMPREHENSIVE ASSESSMENT
+              </Text>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Dynamic assessment with outputs the advisor can actually use.
+              </Text>
+            </View>
+
+            <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
+              <Text style={[styles.heroBadgeValue, { color: colors.primaryDark }]}>
+                {completedBlocks}/{assessmentFlowBlocks.length}
+              </Text>
+              <Text style={[styles.heroBadgeLabel, { color: hexToRgba(colors.text, 0.55) }]}>
+                ready
+              </Text>
+            </View>
           </View>
-          <View style={[styles.heroBadge, { backgroundColor: colors.card }]}>
-            <Text style={[styles.heroBadgeValue, { color: colors.primaryDark }]}>
-              {completedBlocks}/{assessmentFlowBlocks.length}
-            </Text>
-            <Text style={[styles.heroBadgeLabel, { color: hexToRgba(colors.text, 0.55) }]}>
-              blocks ready
-            </Text>
+
+          <Text style={[styles.body, { color: hexToRgba(colors.text, 0.58) }]}>
+            GoalWealth uses this flow to combine risk tolerance, financial capacity, behavioural signals and data quality before surfacing planning or portfolio recommendations.
+          </Text>
+
+          <View style={styles.heroSignalRow}>
+            <View style={[styles.heroSignalChip, { backgroundColor: colors.card }]}>
+              <MaterialIcons name="view-module" size={15} color={colors.primaryDark} />
+              <Text style={[styles.heroSignalText, { color: colors.primaryDark }]}>
+                {assessmentFlowBlocks.length} blocks
+              </Text>
+            </View>
+            <View style={[styles.heroSignalChip, { backgroundColor: colors.card }]}>
+              <MaterialIcons
+                name={nextBlock ? 'arrow-forward' : 'check-circle'}
+                size={15}
+                color={colors.primaryDark}
+              />
+              <Text style={[styles.heroSignalText, { color: colors.primaryDark }]}>
+                {nextBlock ? `${nextBlock.label} next` : 'All blocks ready'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -205,7 +251,7 @@ export default function FinancialAssessmentEntryScreen() {
           <View style={styles.sectionHeader}>
             <Text style={[styles.outputTitle, { color: colors.text }]}>Assessment output</Text>
             <Text style={[styles.outputMeta, { color: colors.primaryDark }]}>
-              {result.suitability.title}
+              {suitabilityMetaLabel}
             </Text>
           </View>
 
@@ -317,58 +363,90 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       paddingHorizontal: 22,
       paddingTop: 16,
       paddingBottom: 28,
-      gap: 16,
+      gap: 18,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    topBarButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     heroCard: {
       borderRadius: 30,
       padding: 20,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
+      gap: 14,
     },
-    heroCopy: {
+    heroTopRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    heroHeadingWrap: {
       flex: 1,
       minWidth: 0,
     },
     eyebrow: {
-      fontSize: 12,
+      fontSize: 11,
       fontWeight: '800',
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
-    title: {
-      marginTop: 10,
-      fontSize: 30,
-      lineHeight: 36,
-      fontWeight: '900',
-      letterSpacing: -0.7,
-    },
-    body: {
-      marginTop: 10,
-      fontSize: Typography.body,
-      lineHeight: 21,
-    },
     heroBadge: {
-      width: 110,
-      height: 110,
-      borderRadius: 32,
+      width: 78,
+      height: 78,
+      borderRadius: 24,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 8,
     },
     heroBadgeValue: {
-      fontSize: 26,
+      fontSize: 20,
       fontWeight: '900',
-      letterSpacing: -0.8,
-      textAlign: 'center',
+      letterSpacing: -0.5,
+    },
+    title: {
+      marginTop: 8,
+      fontSize: 28,
+      lineHeight: 34,
+      fontWeight: '900',
+      letterSpacing: -0.7,
+    },
+    body: {
+      fontSize: Typography.body,
+      lineHeight: 21,
     },
     heroBadgeLabel: {
-      marginTop: 4,
-      fontSize: 11,
+      marginTop: 2,
+      fontSize: 10,
       fontWeight: '700',
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      textAlign: 'center',
+      letterSpacing: 0.4,
+    },
+    heroSignalRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    heroSignalChip: {
+      minHeight: 36,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    heroSignalText: {
+      fontSize: 12,
+      fontWeight: '800',
     },
     statsCard: {
       borderRadius: 24,
@@ -404,7 +482,7 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
       letterSpacing: 0.5,
     },
     sectionList: {
-      gap: 12,
+      gap: 16,
     },
     outputCard: {
       borderRadius: 24,
@@ -419,6 +497,8 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     outputMeta: {
       fontSize: 12,
       fontWeight: '800',
+      flexShrink: 1,
+      textAlign: 'right',
     },
     outputBody: {
       fontSize: Typography.body,
@@ -496,7 +576,7 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     sectionCard: {
       borderRadius: 24,
       borderWidth: 1,
-      padding: 16,
+      padding: 18,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
@@ -514,7 +594,7 @@ function createStyles(colors: ReturnType<typeof useTheme>['colors']) {
     },
     sectionHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
       gap: 10,
     },

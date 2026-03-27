@@ -16,6 +16,7 @@ export function AssessmentShell({
   body,
   children,
   onBack,
+  onExit,
   footer,
   scrollable = false,
   contentContainerStyle,
@@ -27,6 +28,7 @@ export function AssessmentShell({
   body: string;
   children: React.ReactNode;
   onBack?: () => void;
+  onExit?: () => void;
   footer?: React.ReactNode;
   scrollable?: boolean;
   contentContainerStyle?: ViewStyle;
@@ -68,6 +70,17 @@ export function AssessmentShell({
         <Text style={[styles.progressText, { color: hexToRgba(colors.text, 0.5) }]}>
           {step}/{totalSteps}
         </Text>
+        <Pressable
+          style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={
+            onExit ??
+            (() => {
+              router.replace('/(finance)/financial-assessment');
+            })
+          }
+        >
+          <MaterialIcons name="close" size={20} color={colors.text} />
+        </Pressable>
       </View>
 
       <Text style={[styles.eyebrow, { color: colors.primaryDark }]}>{eyebrow}</Text>
@@ -211,16 +224,17 @@ function createStyles(colors: ColorTheme) {
     bodyWrap: {
       flex: 1,
       marginTop: 24,
+      gap: 18,
     },
     bodyWrapScroll: {
       flexGrow: 0,
     },
     footer: {
       marginTop: 'auto',
-      paddingTop: 18,
+      paddingTop: 20,
     },
     footerScroll: {
-      marginTop: 24,
+      marginTop: 28,
     },
     primaryButton: {
       minHeight: 50,
@@ -235,7 +249,7 @@ function createStyles(colors: ColorTheme) {
     sectionCard: {
       borderRadius: 24,
       borderWidth: 1,
-      padding: 16,
+      padding: 18,
     },
     sectionTitle: {
       fontSize: 14,
@@ -248,8 +262,8 @@ function createStyles(colors: ColorTheme) {
       fontWeight: '500',
     },
     sectionContent: {
-      marginTop: 16,
-      gap: 12,
+      marginTop: 18,
+      gap: 14,
     },
   });
 }

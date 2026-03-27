@@ -9,6 +9,8 @@ import {
   loadStoredAuthSession,
   persistAuthSession,
 } from '@/services/auth/session';
+import { isGoalwealthLiveAdapterEnabled } from '@/services/api/config';
+import { getGoalwealthMe, mapGoalwealthMeToUserProfile } from '@/services/api/me';
 import React, {
   createContext,
   Dispatch,
@@ -32,6 +34,7 @@ export const MyUserContext = createContext<MyUserContextValue | null>(null);
 export function MyUserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialUserState);
   const [isSessionReady, setIsSessionReady] = useState(false);
+  const liveAdapterEnabled = isGoalwealthLiveAdapterEnabled();
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +83,43 @@ export function MyUserProvider({ children }: { children: ReactNode }) {
     state.authMode,
     state.isAuthenticated,
     state.profile,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isSessionReady ||
+      !liveAdapterEnabled ||
+      !state.isAuthenticated ||
+      !state.accessToken?.trim() ||
+      state.authMode === 'registered-password'
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void getGoalwealthMe(state.accessToken)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        dispatch(userActions.updateProfile(mapGoalwealthMeToUserProfile(response.data)));
+      })
+      .catch(() => {
+        // The app can continue with the locally restored session if /v1/me is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    dispatch,
+    isSessionReady,
+    liveAdapterEnabled,
+    state.accessToken,
+    state.authMode,
+    state.isAuthenticated,
   ]);
 
   const signOut = async () => {

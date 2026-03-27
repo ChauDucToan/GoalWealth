@@ -13,6 +13,9 @@ type ProfileIdentity = {
   phone: string;
   memberSince: string;
   city: string;
+  countryCode: string;
+  timezone: string;
+  locale: string;
   streakLabel: string;
   avatarInitial: string;
   avatarUri?: string | null;
@@ -75,6 +78,9 @@ const defaultProfile: ProfileIdentity = {
   phone: '+61 432 991 888',
   memberSince: 'Joined March 2024',
   city: 'Melbourne, Australia',
+  countryCode: 'AU',
+  timezone: 'Australia/Melbourne',
+  locale: 'en-AU',
   streakLabel: 'Longest streak: 22 days',
   avatarInitial: 'J',
   avatarUri: null,
@@ -115,6 +121,32 @@ function buildAvatarInitial(name: string, email: string) {
   return source.charAt(0).toUpperCase() || 'G';
 }
 
+function formatLanguageOptionFromLocale(locale: string | undefined, fallback: DisplaySettings['language']) {
+  const normalized = locale?.trim().toLowerCase();
+
+  if (!normalized) {
+    return fallback;
+  }
+
+  if (normalized.startsWith('vi')) {
+    return 'Vietnamese';
+  }
+
+  if (normalized.startsWith('ja')) {
+    return 'Japanese';
+  }
+
+  if (normalized.startsWith('fr')) {
+    return 'French';
+  }
+
+  if (normalized.startsWith('es')) {
+    return 'Spanish';
+  }
+
+  return 'English (US)';
+}
+
 export function ProfileSettingsProvider({ children }: { children: React.ReactNode }) {
   const { state: userState } = useMyUser();
   const [profile, setProfile] = useState(defaultProfile);
@@ -137,12 +169,23 @@ export function ProfileSettingsProvider({ children }: { children: React.ReactNod
       name: userState.profile?.name?.trim() || current.name,
       email: userState.profile?.email?.trim() || current.email,
       phone: userState.profile?.phone?.trim() || current.phone,
+      city: userState.profile?.city?.trim() || current.city,
+      countryCode: userState.profile?.countryCode?.trim() || current.countryCode,
+      timezone: userState.profile?.timezone?.trim() || current.timezone,
+      locale: userState.profile?.locale?.trim() || current.locale,
       avatarUri: userState.profile?.avatarUrl || current.avatarUri,
       avatarInitial: buildAvatarInitial(
         userState.profile?.name ?? current.name,
         userState.profile?.email ?? current.email,
       ),
     }));
+
+    if (userState.profile?.locale?.trim()) {
+      setDisplay((current) => ({
+        ...current,
+        language: formatLanguageOptionFromLocale(userState.profile?.locale, current.language),
+      }));
+    }
   }, [userState.profile]);
 
   const value = useMemo<ProfileSettingsContextValue>(

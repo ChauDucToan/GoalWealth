@@ -5,6 +5,10 @@ export type UserProfile = {
   avatarUrl?: string;
   phone?: string;
   language?: string;
+  locale?: string;
+  timezone?: string;
+  city?: string;
+  countryCode?: string;
   currency?: string;
 };
 

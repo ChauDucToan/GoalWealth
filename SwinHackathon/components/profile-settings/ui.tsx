@@ -349,11 +349,13 @@ export function ProfilePrimaryActions({
   onPrimary,
   secondaryLabel,
   onSecondary,
+  primaryDisabled = false,
 }: {
   primaryLabel: string;
   onPrimary: () => void;
   secondaryLabel: string;
   onSecondary: () => void;
+  primaryDisabled?: boolean;
 }) {
   const { colors } = useTheme();
   const { handlePress: handlePrimaryPress, isCoolingDown: isPrimaryCoolingDown } =
@@ -380,7 +382,7 @@ export function ProfilePrimaryActions({
           colorBackground={colors.primaryDark}
           colorText={colors.card}
           style={styles.fullButton}
-          disabled={isPrimaryCoolingDown}
+          disabled={isPrimaryCoolingDown || primaryDisabled}
         />
       </View>
     </View>
