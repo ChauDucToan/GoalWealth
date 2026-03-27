@@ -68,3 +68,14 @@ if PYDANTIC_AVAILABLE:
         current_progress: float = Field(default=0, ge=0)
         target_date: str | None = None
         description: str | None = None
+
+
+    class GoalUpdateRequestModel(BaseModel):
+        title: str | None = Field(default=None, min_length=1)
+        goal_type: str | None = None
+        status: str | None = None
+        priority: int | None = Field(default=None, ge=1, le=10)
+        target_amount: float | None = Field(default=None, ge=0)
+        current_progress: float | None = Field(default=None, ge=0)
+        target_date: str | None = None
+        description: str | None = None

@@ -4,15 +4,20 @@ from datetime import date
 from typing import Any
 
 from persistence import GoalWealthPersistenceService
-from persistence.service_models import GoalCreateInput
+from persistence.service_models import GoalCreateInput, GoalUpdateInput
 
 from ..schemas.auth import UserClaims
-from ..schemas.profile import ALLOWED_GOAL_STATUSES, ALLOWED_GOAL_TYPES, GoalCreateRequest
+from ..schemas.profile import ALLOWED_GOAL_STATUSES, ALLOWED_GOAL_TYPES, GoalCreateRequest, GoalUpdateRequest
 
 
 class GoalService:
     def __init__(self, *, persistence_service: GoalWealthPersistenceService | None = None):
         self.persistence_service = persistence_service
+
+    def _require_persistence(self) -> GoalWealthPersistenceService:
+        if self.persistence_service is None:
+            raise ValueError("Persistence is not configured")
+        return self.persistence_service
 
     def _serialize_goal(self, goal: Any) -> dict[str, Any]:
         return {
@@ -29,16 +34,43 @@ class GoalService:
             "updated_at": getattr(goal, "updated_at", None).isoformat() if getattr(goal, "updated_at", None) is not None else None,
         }
 
+    def _parse_target_date(self, target_date: str | None) -> date | None:
+        if not target_date:
+            return None
+        try:
+            return date.fromisoformat(target_date)
+        except ValueError as exc:
+            raise ValueError("target_date must be ISO format YYYY-MM-DD") from exc
+
+    def _validate_goal_fields(
+        self,
+        *,
+        goal_type: str | None = None,
+        status: str | None = None,
+        priority: int | None = None,
+        target_amount: float | None = None,
+        current_progress: float | None = None,
+    ) -> None:
+        if goal_type is not None and goal_type not in ALLOWED_GOAL_TYPES:
+            raise ValueError("goal_type is invalid")
+        if status is not None and status not in ALLOWED_GOAL_STATUSES:
+            raise ValueError("status is invalid")
+        if priority is not None and (priority < 1 or priority > 10):
+            raise ValueError("priority is invalid")
+        if target_amount is not None and target_amount < 0:
+            raise ValueError("target_amount must be non-negative")
+        if current_progress is not None and current_progress < 0:
+            raise ValueError("current_progress must be non-negative")
+
     def list_goals(self, current_user: UserClaims | None, *, status: str | None = None) -> tuple[dict[str, Any], list[str]]:
         if current_user is None:
             raise ValueError("Authentication is required")
-        if self.persistence_service is None:
-            raise ValueError("Persistence is not configured")
+        persistence_service = self._require_persistence()
         if status is not None and status not in ALLOWED_GOAL_STATUSES:
             raise ValueError("status is invalid")
 
         statuses = [status] if status is not None else None
-        goals = self.persistence_service.list_goals_for_user(current_user.user_id, statuses=statuses)
+        goals = persistence_service.list_goals_for_user(current_user.user_id, statuses=statuses)
         return {
             "user_id": current_user.user_id,
             "goals": [self._serialize_goal(goal) for goal in goals],
@@ -48,27 +80,16 @@ class GoalService:
     def create_goal(self, current_user: UserClaims | None, payload: GoalCreateRequest) -> tuple[dict[str, Any], list[str]]:
         if current_user is None:
             raise ValueError("Authentication is required")
-        if self.persistence_service is None:
-            raise ValueError("Persistence is not configured")
-        if payload.goal_type not in ALLOWED_GOAL_TYPES:
-            raise ValueError("goal_type is invalid")
-        if payload.status not in ALLOWED_GOAL_STATUSES:
-            raise ValueError("status is invalid")
-        if payload.priority < 1 or payload.priority > 10:
-            raise ValueError("priority is invalid")
-        if payload.target_amount is not None and payload.target_amount < 0:
-            raise ValueError("target_amount must be non-negative")
-        if payload.current_progress < 0:
-            raise ValueError("current_progress must be non-negative")
+        persistence_service = self._require_persistence()
+        self._validate_goal_fields(
+            goal_type=payload.goal_type,
+            status=payload.status,
+            priority=payload.priority,
+            target_amount=payload.target_amount,
+            current_progress=payload.current_progress,
+        )
 
-        parsed_target_date: date | None = None
-        if payload.target_date:
-            try:
-                parsed_target_date = date.fromisoformat(payload.target_date)
-            except ValueError as exc:
-                raise ValueError("target_date must be ISO format YYYY-MM-DD") from exc
-
-        created = self.persistence_service.create_goal(
+        created = persistence_service.create_goal(
             current_user.user_id,
             GoalCreateInput(
                 title=payload.title,
@@ -77,11 +98,71 @@ class GoalService:
                 priority=payload.priority,
                 target_amount=payload.target_amount,
                 current_progress=payload.current_progress,
-                target_date=parsed_target_date,
+                target_date=self._parse_target_date(payload.target_date),
                 description=payload.description,
             ),
         )
         return {
             "user_id": current_user.user_id,
             "goal": self._serialize_goal(created),
+        }, []
+
+    def get_goal(self, current_user: UserClaims | None, goal_id: str) -> tuple[dict[str, Any], list[str]]:
+        if current_user is None:
+            raise ValueError("Authentication is required")
+        persistence_service = self._require_persistence()
+        goal = persistence_service.get_goal_for_user(current_user.user_id, goal_id)
+        if goal is None:
+            raise LookupError("Goal not found")
+        return {
+            "user_id": current_user.user_id,
+            "goal": self._serialize_goal(goal),
+        }, []
+
+    def update_goal(self, current_user: UserClaims | None, goal_id: str, payload: GoalUpdateRequest) -> tuple[dict[str, Any], list[str]]:
+        if current_user is None:
+            raise ValueError("Authentication is required")
+        persistence_service = self._require_persistence()
+
+        provided_fields = {
+            "title": payload.title,
+            "goal_type": payload.goal_type,
+            "status": payload.status,
+            "priority": payload.priority,
+            "target_amount": payload.target_amount,
+            "current_progress": payload.current_progress,
+            "target_date": payload.target_date,
+            "description": payload.description,
+        }
+        if not any(value is not None for value in provided_fields.values()):
+            raise ValueError("At least one goal field is required")
+
+        self._validate_goal_fields(
+            goal_type=payload.goal_type,
+            status=payload.status,
+            priority=payload.priority,
+            target_amount=payload.target_amount,
+            current_progress=payload.current_progress,
+        )
+
+        updated = persistence_service.update_goal_for_user(
+            current_user.user_id,
+            goal_id,
+            GoalUpdateInput(
+                title=payload.title,
+                goal_type=payload.goal_type,
+                status=payload.status,
+                priority=payload.priority,
+                target_amount=payload.target_amount,
+                current_progress=payload.current_progress,
+                target_date=self._parse_target_date(payload.target_date) if payload.target_date is not None else None,
+                description=payload.description,
+            ),
+        )
+        if updated is None:
+            raise LookupError("Goal not found")
+
+        return {
+            "user_id": current_user.user_id,
+            "goal": self._serialize_goal(updated),
         }, []

@@ -11,6 +11,7 @@ from .models import ConversationSummary, Goal, OcrRecord, RiskProfile, User, Use
 from .service_models import (
     ConversationSummaryUpsertInput,
     GoalCreateInput,
+    GoalUpdateInput,
     IdentityUpsertInput,
     OcrRecordCreateInput,
     RiskProfileUpsertInput,
@@ -175,6 +176,10 @@ class GoalRepository:
         session.flush()
         return record
 
+    def get_for_user(self, session: Session, *, user_id: UUID, goal_id: UUID | str) -> Goal | None:
+        stmt = select(Goal).where(Goal.user_id == user_id).where(Goal.id == goal_id).limit(1)
+        return session.scalar(stmt)
+
     def list_for_user(
         self,
         session: Session,
@@ -186,6 +191,38 @@ class GoalRepository:
         if statuses:
             stmt = stmt.where(Goal.status.in_(list(statuses)))
         return list(session.scalars(stmt).all())
+
+    def update_for_user(
+        self,
+        session: Session,
+        *,
+        user_id: UUID,
+        goal_id: UUID | str,
+        payload: GoalUpdateInput,
+    ) -> Goal | None:
+        record = self.get_for_user(session, user_id=user_id, goal_id=goal_id)
+        if record is None:
+            return None
+
+        if payload.title is not None:
+            record.title = payload.title
+        if payload.goal_type is not None:
+            record.goal_type = payload.goal_type
+        if payload.status is not None:
+            record.status = payload.status
+        if payload.priority is not None:
+            record.priority = payload.priority
+        if payload.target_amount is not None:
+            record.target_amount = payload.target_amount
+        if payload.current_progress is not None:
+            record.current_progress = payload.current_progress
+        if payload.target_date is not None:
+            record.target_date = payload.target_date
+        if payload.description is not None:
+            record.description = payload.description
+
+        session.flush()
+        return record
 
     def count_for_user(
         self,
