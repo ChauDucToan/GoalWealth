@@ -9,6 +9,7 @@
 -- - goals
 -- - conversation_summaries
 -- - ocr_records
+-- - recommendation_states
 --
 -- Design notes:
 -- - OAuth2/OIDC provider identity is stored in user_identities.
@@ -266,3 +267,25 @@ CREATE INDEX idx_ocr_records_document_type
 
 CREATE INDEX idx_ocr_records_normalized_data_gin
     ON ocr_records USING GIN (normalized_data_jsonb);
+
+-- =========================================================
+-- recommendation_states
+-- User-controlled state for recommendation cards (phase 1: dismiss only).
+-- =========================================================
+CREATE TABLE recommendation_states (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recommendation_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'dismissed'
+        CHECK (status IN ('dismissed')),
+    dismissed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_recommendation_states_user_recommendation UNIQUE (user_id, recommendation_id)
+);
+
+CREATE INDEX idx_recommendation_states_user_id
+    ON recommendation_states(user_id);
+
+CREATE INDEX idx_recommendation_states_user_status
+    ON recommendation_states(user_id, status);
