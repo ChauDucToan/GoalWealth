@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from persistence import GoalWealthPersistenceService
-from persistence.service_models import OcrRecordCreateInput
+from persistence.service_models import OcrRecordCreateInput, OcrRecordUpdateInput
 
+from internal_backend_api.services.ocr_stub_service import build_openclaw_view
 from internal_backend_api.services.persistence_views import build_openclaw_view_from_persistence
 
 from ..schemas.auth import UserClaims
@@ -18,6 +20,10 @@ class OcrFlowService:
 
     Keeps OCR routers thin and centralizes ingress + record-fetch logic.
     """
+
+    @staticmethod
+    def _normalize_inline(*, ocr_record_id: str, user_id: str) -> dict[str, Any]:
+        return build_openclaw_view(ocr_record_id, user_id=user_id)
 
     def __init__(
         self,
@@ -35,12 +41,15 @@ class OcrFlowService:
         raw_text: str,
         user_id: str | None,
         persisted: bool,
+        normalized_inline: bool,
     ) -> dict[str, Any]:
         return {
             "ocr_record_id": ocr_record_id,
             "status": "accepted",
             "message": (
-                "OCR ingress accepted and stored for downstream normalization."
+                "OCR ingress accepted, normalized inline, and stored for downstream retrieval."
+                if persisted and normalized_inline
+                else "OCR ingress accepted and stored for downstream normalization."
                 if persisted
                 else "OCR ingress skeleton accepted the raw_text payload. Downstream normalization service is not wired yet."
             ),
@@ -48,11 +57,12 @@ class OcrFlowService:
                 "user_id": user_id,
                 "raw_text_length": len(raw_text),
                 "persisted": persisted,
+                "normalized_inline": normalized_inline,
                 "environment": self.ocr_gateway.config.environment,
             },
             "diagnostics": {
                 "auth": "attached" if user_id else "anonymous",
-                "normalization": "not_wired",
+                "normalization": "inline_completed" if normalized_inline else "not_wired",
                 "persistence": "stored" if persisted else "not_configured",
             },
         }
@@ -88,11 +98,57 @@ class OcrFlowService:
                     orchestration_hint_jsonb={},
                 ),
             )
+
+            normalized_view = self._normalize_inline(ocr_record_id=ocr_record_id, user_id=user_id)
+            facts = normalized_view.get("facts") if isinstance(normalized_view.get("facts"), dict) else {}
+            warnings = normalized_view.get("warnings") if isinstance(normalized_view.get("warnings"), list) else []
+            missing_fields = normalized_view.get("missing_fields") if isinstance(normalized_view.get("missing_fields"), list) else []
+            validation_payload = {
+                "warnings": warnings,
+                "missing_fields": missing_fields,
+            }
+            orchestration_hint = (
+                normalized_view.get("orchestration_hint")
+                if isinstance(normalized_view.get("orchestration_hint"), dict)
+                else {}
+            )
+            processed_at_raw = normalized_view.get("updated_at") or normalized_view.get("created_at")
+            processed_at = None
+            if isinstance(processed_at_raw, str):
+                try:
+                    processed_at = datetime.fromisoformat(processed_at_raw.replace("Z", "+00:00"))
+                except ValueError:
+                    processed_at = datetime.now(timezone.utc)
+            if processed_at is None:
+                processed_at = datetime.now(timezone.utc)
+
+            self.persistence_service.update_ocr_record(
+                user_id,
+                ocr_record_id,
+                OcrRecordUpdateInput(
+                    ingest_status="processed",
+                    parse_status=str(normalized_view.get("status") or "processed"),
+                    document_type=str(normalized_view.get("document_type") or "unknown"),
+                    raw_text=request_model.raw_text,
+                    summary_text=str(normalized_view.get("summary_text") or ""),
+                    is_usable=bool(normalized_view.get("usable")),
+                    overall_confidence=normalized_view.get("overall_confidence"),
+                    normalization_confidence=normalized_view.get("overall_confidence"),
+                    manual_review_required=bool(normalized_view.get("manual_review_required")),
+                    auto_apply_allowed=bool(normalized_view.get("auto_apply_allowed")),
+                    normalized_data_jsonb=facts,
+                    validation_jsonb=validation_payload,
+                    orchestration_hint_jsonb=orchestration_hint,
+                    normalizer_version="inline-stub-v1",
+                    processed_at=processed_at,
+                ),
+            )
             return self._build_accepted_response(
                 ocr_record_id=ocr_record_id,
                 raw_text=request_model.raw_text,
                 user_id=user_id,
                 persisted=True,
+                normalized_inline=True,
             )
 
         payload = {
