@@ -6,6 +6,14 @@ from ..dependencies import get_current_user, get_services
 from ..schemas.http_models import PYDANTIC_AVAILABLE
 from ..utils.responses import error_response, success_response
 
+if PYDANTIC_AVAILABLE:
+    try:
+        from fastapi import Request
+        from ..schemas.http_models import ApiEnvelopeModel
+    except ImportError:  # pragma: no cover - optional dependency path
+        Request = Any  # type: ignore[assignment]
+        ApiEnvelopeModel = Any  # type: ignore[assignment]
+
 
 def get_me(request: Any = None) -> dict[str, Any]:
     services = get_services(request)
@@ -37,22 +45,16 @@ def get_me(request: Any = None) -> dict[str, Any]:
     )
 
 
+if PYDANTIC_AVAILABLE:
+    async def get_me_fastapi(request: Request) -> dict[str, Any]:
+        return get_me(request=request)
+
+
 def register(app: Any) -> None:
     if not hasattr(app, "add_api_route"):
         return
 
     if PYDANTIC_AVAILABLE:
-        try:
-            from fastapi import Request
-        except ImportError:
-            app.add_api_route("/v1/me", get_me, methods=["GET"], tags=["me"])
-            return
-
-        from ..schemas.http_models import ApiEnvelopeModel
-
-        async def get_me_fastapi(request: Request) -> dict[str, Any]:
-            return get_me(request=request)
-
         app.add_api_route(
             "/v1/me",
             get_me_fastapi,

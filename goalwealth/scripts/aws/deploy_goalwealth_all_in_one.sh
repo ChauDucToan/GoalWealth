@@ -75,6 +75,11 @@ if [[ ! -f "$GW_SSH_KEY_PATH" ]]; then
   exit 1
 fi
 
+if [[ "${GW_APPLY_DDL_V1:-false}" == "true" && -z "${GW_DATABASE_URL:-}" ]]; then
+  echo "GW_APPLY_DDL_V1=true requires GW_DATABASE_URL to be set" >&2
+  exit 1
+fi
+
 SSH_OPTS=(
   -F /dev/null
   -o StrictHostKeyChecking=no
@@ -223,12 +228,20 @@ ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" \
   GW_NEWS_BASE_URL="$GW_NEWS_BASE_URL" \
   GW_ENABLE_OIDC="${GW_ENABLE_OIDC:-false}" \
   GW_GOOGLE_CLIENT_ID="${GW_GOOGLE_CLIENT_ID:-}" \
+  GW_DATABASE_URL="${GW_DATABASE_URL:-}" \
+  GW_APPLY_DDL_V1="${GW_APPLY_DDL_V1:-false}" \
+  GW_DATABASE_ECHO_SQL="${GW_DATABASE_ECHO_SQL:-false}" \
   GW_INSTALL_OPENCLAW="${GW_INSTALL_OPENCLAW:-false}" \
   GW_OPENCLAW_NPM_PACKAGE="${GW_OPENCLAW_NPM_PACKAGE:-openclaw}" \
+  GW_OPENCLAW_BASE_URL="${GW_OPENCLAW_BASE_URL:-}" \
+  GW_OPENCLAW_TOKEN="${GW_OPENCLAW_TOKEN:-}" \
+  GW_OPENCLAW_AGENT_ID="${GW_OPENCLAW_AGENT_ID:-main}" \
+  GW_OPENCLAW_SESSION_PREFIX="${GW_OPENCLAW_SESSION_PREFIX:-goalwealth}" \
+  GW_OPENCLAW_HTTP_ENDPOINT="${GW_OPENCLAW_HTTP_ENDPOINT:-chat_completions}" \
   'bash /tmp/remote_bootstrap_goalwealth_runtime.sh'
 
 log "running final smoke tests from remote host"
-ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "curl -fsS http://127.0.0.1:${GW_INTERNAL_BACKEND_PORT}/ready >/tmp/gw-internal-ready.json && curl -fsS http://127.0.0.1:${GW_ADAPTER_PORT}/ready >/tmp/gw-adapter-ready.json && curl -fsS -X POST http://127.0.0.1:${GW_ADAPTER_PORT}/v1/chat/respond -H 'Authorization: Bearer dev-token:user-123' -H 'Content-Type: application/json' -d '{\"message\":\"Tin AI mới nhất hôm nay là gì?\",\"timezone\":\"Asia/Ho_Chi_Minh\"}' >/tmp/gw-chat.json && printf 'internal_ready=%s\n' \"$(cat /tmp/gw-internal-ready.json)\" && printf 'adapter_ready=%s\n' \"$(cat /tmp/gw-adapter-ready.json)\" && printf 'chat=%s\n' \"$(cat /tmp/gw-chat.json)\""
+ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "curl -fsS http://127.0.0.1:${GW_INTERNAL_BACKEND_PORT}/ready >/tmp/gw-internal-ready.json && curl -fsS http://127.0.0.1:${GW_ADAPTER_PORT}/ready >/tmp/gw-adapter-ready.json && curl -fsS -H 'Authorization: Bearer dev-token:user-123' http://127.0.0.1:${GW_ADAPTER_PORT}/v1/me >/tmp/gw-me.json && curl -fsS -X POST http://127.0.0.1:${GW_ADAPTER_PORT}/v1/chat/respond -H 'Authorization: Bearer dev-token:user-123' -H 'Content-Type: application/json' -d '{\"message\":\"Tin AI mới nhất hôm nay là gì?\",\"timezone\":\"Asia/Ho_Chi_Minh\"}' >/tmp/gw-chat.json && printf 'internal_ready=%s\n' \"$(cat /tmp/gw-internal-ready.json)\" && printf 'adapter_ready=%s\n' \"$(cat /tmp/gw-adapter-ready.json)\" && printf 'me=%s\n' \"$(cat /tmp/gw-me.json)\" && printf 'chat=%s\n' \"$(cat /tmp/gw-chat.json)\""
 
 cat <<EOF
 

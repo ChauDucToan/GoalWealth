@@ -9,13 +9,61 @@ from .config import InternalBackendApiConfig
 from .errors import ApiHttpError
 from . import routes
 
+try:
+    from fastapi import Body, FastAPI, Request
+    from fastapi.responses import JSONResponse
+except ImportError:  # pragma: no cover - optional dependency path
+    Body = None  # type: ignore[assignment]
+    FastAPI = None  # type: ignore[assignment]
+    Request = Any  # type: ignore[assignment]
+    JSONResponse = Any  # type: ignore[assignment]
+
+
+async def root_handler(request: Request) -> dict[str, Any]:
+    return routes.root(request=request)
+
+
+async def health_handler(request: Request) -> dict[str, Any]:
+    return routes.health(request=request)
+
+
+async def ready_handler(request: Request) -> dict[str, Any]:
+    return routes.ready(request=request)
+
+
+async def memory_view_handler(
+    userId: str,
+    request: Request,
+    includeSections: str | None = None,
+    ocrSummaryLimit: int | None = None,
+) -> dict[str, Any]:
+    return routes.get_memory_user_view(
+        userId,
+        includeSections=includeSections,
+        ocrSummaryLimit=ocrSummaryLimit,
+        request=request,
+    )
+
+
+async def ocr_view_handler(
+    ocrRecordId: str,
+    request: Request,
+    userId: str | None = None,
+) -> dict[str, Any]:
+    return routes.get_ocr_openclaw_view(ocrRecordId, userId=userId, request=request)
+
+
+if Body is not None:
+    async def smart_agent_query_handler(request: Request, payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+        return routes.post_smart_agent_query(request=request, payload=payload)
+else:
+    async def smart_agent_query_handler(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+        return routes.post_smart_agent_query(request=request, payload=payload)
+
 
 
 def create_app() -> Any:
-    try:
-        from fastapi import FastAPI, Request
-        from fastapi.responses import JSONResponse
-    except ImportError:
+    if FastAPI is None:
         return None
 
     config = InternalBackendApiConfig.from_env()
@@ -40,38 +88,6 @@ def create_app() -> Any:
     @application.exception_handler(ApiHttpError)
     async def handle_api_http_error(_: Request, exc: ApiHttpError) -> JSONResponse:
         return JSONResponse(status_code=exc.status_code, content=exc.to_payload())
-
-    async def root_handler(request: Request) -> dict[str, Any]:
-        return routes.root(request=request)
-
-    async def health_handler(request: Request) -> dict[str, Any]:
-        return routes.health(request=request)
-
-    async def ready_handler(request: Request) -> dict[str, Any]:
-        return routes.ready(request=request)
-
-    async def memory_view_handler(
-        userId: str,
-        request: Request,
-        includeSections: str | None = None,
-        ocrSummaryLimit: int | None = None,
-    ) -> dict[str, Any]:
-        return routes.get_memory_user_view(
-            userId,
-            includeSections=includeSections,
-            ocrSummaryLimit=ocrSummaryLimit,
-            request=request,
-        )
-
-    async def ocr_view_handler(
-        ocrRecordId: str,
-        request: Request,
-        userId: str | None = None,
-    ) -> dict[str, Any]:
-        return routes.get_ocr_openclaw_view(ocrRecordId, userId=userId, request=request)
-
-    async def smart_agent_query_handler(request: Request, payload: dict[str, Any]) -> dict[str, Any]:
-        return routes.post_smart_agent_query(request=request, payload=payload)
 
     application.add_api_route("/", root_handler, methods=["GET"], tags=["meta"])
     application.add_api_route("/health", health_handler, methods=["GET"], tags=["health"])
