@@ -92,6 +92,27 @@ class OcrRecordCreateInput:
 
 
 @dataclass(slots=True)
+class OcrRecordUpdateInput:
+    ingest_status: str | None = None
+    parse_status: str | None = None
+    document_type: str | None = None
+    raw_text: str | None = None
+    raw_text_confidence: Decimal | float | None = None
+    summary_text: str | None = None
+    is_usable: bool | None = None
+    overall_confidence: Decimal | float | None = None
+    normalization_confidence: Decimal | float | None = None
+    manual_review_required: bool | None = None
+    auto_apply_allowed: bool | None = None
+    normalized_data_jsonb: dict[str, Any] | None = None
+    validation_jsonb: dict[str, Any] | None = None
+    orchestration_hint_jsonb: dict[str, Any] | None = None
+    parser_model_id: str | None = None
+    normalizer_version: str | None = None
+    processed_at: datetime | None = None
+
+
+@dataclass(slots=True)
 class ResolvedUser:
     user_id: UUID
     created_user: bool

@@ -202,6 +202,7 @@ export GOALWEALTH_ADAPTER_ALLOW_DEV_TOKENS="true"
 export GOALWEALTH_INTERNAL_API_BASE_URL="http://127.0.0.1:$GW_INTERNAL_BACKEND_PORT"
 export GOALWEALTH_INTERNAL_API_BEARER_TOKEN="$GW_INTERNAL_BEARER_TOKEN"
 export GOALWEALTH_INTERNAL_API_TIMEOUT_SECONDS="10"
+export GOALWEALTH_DATABASE_URL="${GW_DATABASE_URL:-}"
 export GOALWEALTH_OPENCLAW_BASE_URL="${GW_OPENCLAW_BASE_URL:-}"
 export GOALWEALTH_OPENCLAW_TOKEN="${GW_OPENCLAW_TOKEN:-}"
 export GOALWEALTH_OPENCLAW_AGENT_ID="${GW_OPENCLAW_AGENT_ID:-main}"
@@ -249,22 +250,61 @@ if [[ "${GW_ENABLE_OIDC:-false}" == "true" && -n "${GW_GOOGLE_CLIENT_ID:-}" ]]; 
   append_env_literal "$APP_DIR/adapter.env" GOALWEALTH_OIDC_TIMEOUT_SECONDS 10
 fi
 
-stop_pid_file() {
-  local pid_file="$1"
-  if [[ -f "$pid_file" ]]; then
-    local pid
-    pid="$(cat "$pid_file" 2>/dev/null || true)"
-    if [[ -n "$pid" ]]; then
-      kill "$pid" >/dev/null 2>&1 || true
-    fi
-    rm -f "$pid_file"
-  fi
+SYSTEMD_INTERNAL_SERVICE="goalwealth-internal-backend.service"
+SYSTEMD_ADAPTER_SERVICE="goalwealth-adapter.service"
+SYSTEMD_INTERNAL_UNIT="/etc/systemd/system/$SYSTEMD_INTERNAL_SERVICE"
+SYSTEMD_ADAPTER_UNIT="/etc/systemd/system/$SYSTEMD_ADAPTER_SERVICE"
+
+write_systemd_unit() {
+  local target_path="$1"
+  local description="$2"
+  local env_file="$3"
+  local exec_start="$4"
+
+  sudo tee "$target_path" >/dev/null <<EOF
+[Unit]
+Description=$description
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$APP_DIR
+EnvironmentFile=$env_file
+ExecStart=$exec_start
+Restart=always
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=20
+StandardOutput=append:$LOG_DIR/$(basename "$target_path").log
+StandardError=append:$LOG_DIR/$(basename "$target_path").log
+
+[Install]
+WantedBy=multi-user.target
+EOF
 }
 
+sudo mkdir -p /etc/systemd/system
+write_systemd_unit \
+  "$SYSTEMD_INTERNAL_UNIT" \
+  "GoalWealth Internal Backend API" \
+  "$APP_DIR/internal-backend.env" \
+  "$APP_DIR/.venv/bin/python3 -m uvicorn internal_backend_api.app:app --host 127.0.0.1 --port $GW_INTERNAL_BACKEND_PORT"
+
+write_systemd_unit \
+  "$SYSTEMD_ADAPTER_UNIT" \
+  "GoalWealth Adapter API" \
+  "$APP_DIR/adapter.env" \
+  "$APP_DIR/.venv/bin/python3 -m uvicorn adapter_api.app:app --host 0.0.0.0 --port $GW_ADAPTER_PORT"
+
+sudo systemctl daemon-reload
+sudo systemctl enable "$SYSTEMD_INTERNAL_SERVICE" "$SYSTEMD_ADAPTER_SERVICE" >/dev/null 2>&1 || true
+sudo systemctl stop "$SYSTEMD_ADAPTER_SERVICE" "$SYSTEMD_INTERNAL_SERVICE" >/dev/null 2>&1 || true
 pkill -f 'uvicorn internal_backend_api.app:app' >/dev/null 2>&1 || true
 pkill -f 'uvicorn adapter_api.app:app' >/dev/null 2>&1 || true
-stop_pid_file "$RUN_DIR/internal-backend.pid"
-stop_pid_file "$RUN_DIR/adapter.pid"
+sudo systemctl restart "$SYSTEMD_INTERNAL_SERVICE"
+sudo systemctl restart "$SYSTEMD_ADAPTER_SERVICE"
 
 if [[ "$GW_APPLY_DDL_V1" == "true" ]]; then
   if [[ -z "$GW_DATABASE_URL" ]]; then
@@ -275,12 +315,6 @@ if [[ "$GW_APPLY_DDL_V1" == "true" ]]; then
   export DDL_PATH GOALWEALTH_DATABASE_URL
   bash "$APP_DIR/goalwealth/scripts/db/apply_ddl_v1.sh" > "$LOG_DIR/db-apply.log" 2>&1
 fi
-
-nohup bash -lc "cd '$APP_DIR' && source .venv/bin/activate && set -a && source internal-backend.env && set +a && bash goalwealth/scripts/local/run_internal_backend_stub.sh" > "$LOG_DIR/internal-backend.log" 2>&1 &
-echo $! > "$RUN_DIR/internal-backend.pid"
-
-nohup bash -lc "cd '$APP_DIR' && source .venv/bin/activate && set -a && source adapter.env && set +a && python3 -m uvicorn adapter_api.app:app --host 0.0.0.0 --port '$GW_ADAPTER_PORT'" > "$LOG_DIR/adapter.log" 2>&1 &
-echo $! > "$RUN_DIR/adapter.pid"
 
 for _ in $(seq 1 30); do
   if curl -fsS "http://127.0.0.1:$GW_INTERNAL_BACKEND_PORT/ready" >/tmp/internal-ready.json 2>/dev/null; then
@@ -329,7 +363,9 @@ me_smoke=$LOG_DIR/me-smoke.json
 ocr_ingress_smoke=$LOG_DIR/ocr-ingress-smoke.json
 ocr_smoke=$LOG_DIR/ocr-smoke.json
 db_apply_log=$LOG_DIR/db-apply.log
-internal_log=$LOG_DIR/internal-backend.log
-adapter_log=$LOG_DIR/adapter.log
+internal_log=$LOG_DIR/$SYSTEMD_INTERNAL_SERVICE.log
+adapter_log=$LOG_DIR/$SYSTEMD_ADAPTER_SERVICE.log
+internal_service=$SYSTEMD_INTERNAL_SERVICE
+adapter_service=$SYSTEMD_ADAPTER_SERVICE
 EOF
 

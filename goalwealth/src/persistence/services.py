@@ -18,6 +18,7 @@ from .service_models import (
     GoalCreateInput,
     IdentityUpsertInput,
     OcrRecordCreateInput,
+    OcrRecordUpdateInput,
     ResolvedUser,
     RiskProfileUpsertInput,
     UserBootstrapSnapshot,
@@ -158,6 +159,15 @@ class GoalWealthPersistenceService:
     def create_ocr_record(self, user_id, payload: OcrRecordCreateInput):
         with self.session_factory.begin() as session:
             return self.ocr_records.create(session, user_id=_coerce_user_id(user_id), payload=payload)
+
+    def update_ocr_record(self, user_id, ocr_record_id: str, payload: OcrRecordUpdateInput):
+        with self.session_factory.begin() as session:
+            return self.ocr_records.update_for_user(
+                session,
+                user_id=_coerce_user_id(user_id),
+                ocr_record_id=ocr_record_id,
+                payload=payload,
+            )
 
     def get_ocr_record(self, user_id, ocr_record_id: str):
         with self.session_factory() as session:

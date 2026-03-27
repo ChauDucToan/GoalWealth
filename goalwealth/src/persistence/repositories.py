@@ -290,6 +290,45 @@ class OcrRecordRepository:
         )
         return session.scalar(stmt)
 
+    def update_for_user(
+        self,
+        session: Session,
+        *,
+        user_id: UUID,
+        ocr_record_id: str,
+        payload,
+    ) -> OcrRecord | None:
+        record = self.get_for_user(session, user_id=user_id, ocr_record_id=ocr_record_id)
+        if record is None:
+            return None
+
+        fields = (
+            "ingest_status",
+            "parse_status",
+            "document_type",
+            "raw_text",
+            "raw_text_confidence",
+            "summary_text",
+            "is_usable",
+            "overall_confidence",
+            "normalization_confidence",
+            "manual_review_required",
+            "auto_apply_allowed",
+            "normalized_data_jsonb",
+            "validation_jsonb",
+            "orchestration_hint_jsonb",
+            "parser_model_id",
+            "normalizer_version",
+            "processed_at",
+        )
+        for field in fields:
+            value = getattr(payload, field, None)
+            if value is not None:
+                setattr(record, field, value)
+
+        session.flush()
+        return record
+
     def count_for_user(self, session: Session, *, user_id: UUID) -> int:
         stmt = select(func.count()).select_from(OcrRecord).where(OcrRecord.user_id == user_id)
         return int(session.scalar(stmt) or 0)
