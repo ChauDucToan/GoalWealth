@@ -7,6 +7,16 @@ from ..schemas.http_models import PYDANTIC_AVAILABLE
 from ..schemas.ocr import OcrIngressRequest
 from ..utils.responses import error_response, success_response
 
+if PYDANTIC_AVAILABLE:
+    try:
+        from fastapi import Body, Request
+        from ..schemas.http_models import ApiEnvelopeModel, OcrIngressRequestModel
+    except ImportError:  # pragma: no cover - optional dependency path
+        Body = None  # type: ignore[assignment]
+        Request = Any  # type: ignore[assignment]
+        ApiEnvelopeModel = Any  # type: ignore[assignment]
+        OcrIngressRequestModel = Any  # type: ignore[assignment]
+
 
 
 def ingest(request: Any = None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -55,28 +65,21 @@ def get_record(ocr_record_id: str, request: Any = None) -> dict[str, Any]:
 
 
 
+if PYDANTIC_AVAILABLE and Body is not None:
+    async def ingest_fastapi(request: Request, payload: OcrIngressRequestModel = Body(...)) -> dict[str, Any]:
+        model_dump = getattr(payload, "model_dump", None)
+        payload_dict = model_dump() if callable(model_dump) else payload.dict()
+        return ingest(request=request, payload=payload_dict)
+
+    async def get_record_fastapi(ocr_record_id: str, request: Request) -> dict[str, Any]:
+        return get_record(ocr_record_id=ocr_record_id, request=request)
+
+
 def register(app: Any) -> None:
     if not hasattr(app, "add_api_route"):
         return
 
-    if PYDANTIC_AVAILABLE:
-        try:
-            from fastapi import Request
-        except ImportError:
-            app.add_api_route("/v1/ocr/ingress", ingest, methods=["POST"], tags=["ocr"])
-            app.add_api_route("/v1/ocr/records/{ocr_record_id}", get_record, methods=["GET"], tags=["ocr"])
-            return
-
-        from ..schemas.http_models import ApiEnvelopeModel, OcrIngressRequestModel
-
-        async def ingest_fastapi(request: Request, payload: OcrIngressRequestModel) -> dict[str, Any]:
-            model_dump = getattr(payload, "model_dump", None)
-            payload_dict = model_dump() if callable(model_dump) else payload.dict()
-            return ingest(request=request, payload=payload_dict)
-
-        async def get_record_fastapi(ocr_record_id: str, request: Request) -> dict[str, Any]:
-            return get_record(ocr_record_id=ocr_record_id, request=request)
-
+    if PYDANTIC_AVAILABLE and Body is not None:
         app.add_api_route(
             "/v1/ocr/ingress",
             ingest_fastapi,

@@ -7,6 +7,16 @@ from ..schemas.chat import ChatRespondRequest
 from ..schemas.http_models import PYDANTIC_AVAILABLE
 from ..utils.responses import error_response, success_response
 
+if PYDANTIC_AVAILABLE:
+    try:
+        from fastapi import Body, Request
+        from ..schemas.http_models import ApiEnvelopeModel, ChatRespondRequestModel
+    except ImportError:  # pragma: no cover - optional dependency path
+        Body = None  # type: ignore[assignment]
+        Request = Any  # type: ignore[assignment]
+        ApiEnvelopeModel = Any  # type: ignore[assignment]
+        ChatRespondRequestModel = Any  # type: ignore[assignment]
+
 
 
 def respond(request: Any = None, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -37,24 +47,18 @@ def respond(request: Any = None, payload: dict[str, Any] | None = None) -> dict[
 
 
 
+if PYDANTIC_AVAILABLE and Body is not None:
+    async def respond_fastapi(request: Request, payload: ChatRespondRequestModel = Body(...)) -> dict[str, Any]:
+        model_dump = getattr(payload, "model_dump", None)
+        payload_dict = model_dump() if callable(model_dump) else payload.dict()
+        return respond(request=request, payload=payload_dict)
+
+
 def register(app: Any) -> None:
     if not hasattr(app, "add_api_route"):
         return
 
-    if PYDANTIC_AVAILABLE:
-        try:
-            from fastapi import Request
-        except ImportError:
-            app.add_api_route("/v1/chat/respond", respond, methods=["POST"], tags=["chat"])
-            return
-
-        from ..schemas.http_models import ApiEnvelopeModel, ChatRespondRequestModel
-
-        async def respond_fastapi(request: Request, payload: ChatRespondRequestModel) -> dict[str, Any]:
-            model_dump = getattr(payload, "model_dump", None)
-            payload_dict = model_dump() if callable(model_dump) else payload.dict()
-            return respond(request=request, payload=payload_dict)
-
+    if PYDANTIC_AVAILABLE and Body is not None:
         app.add_api_route(
             "/v1/chat/respond",
             respond_fastapi,
