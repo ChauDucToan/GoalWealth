@@ -122,12 +122,15 @@ class OcrFlowService:
             if processed_at is None:
                 processed_at = datetime.now(timezone.utc)
 
+            parse_status = str(normalized_view.get("status") or "processed")
+            ingest_status = "failed" if parse_status == "validation_failed" else "ready"
+
             self.persistence_service.update_ocr_record(
                 user_id,
                 ocr_record_id,
                 OcrRecordUpdateInput(
-                    ingest_status="processed",
-                    parse_status=str(normalized_view.get("status") or "processed"),
+                    ingest_status=ingest_status,
+                    parse_status=parse_status,
                     document_type=str(normalized_view.get("document_type") or "unknown"),
                     raw_text=request_model.raw_text,
                     summary_text=str(normalized_view.get("summary_text") or ""),
